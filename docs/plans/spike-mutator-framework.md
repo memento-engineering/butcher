@@ -29,8 +29,11 @@ operators. Timebox: ~1 h. Throwaway code; only findings are kept.
 
 ## Findings (2026-08-14)
 
-Verdict: the shape holds; [ADR 0008](../decisions/0008-composable-mutator-framework.md)
-needs no changes. All success criteria met.
+Verdict: the shape holds; all success criteria met. Friction points below
+folded into ADRs
+[0002](../decisions/0002-parse-with-official-analyzer.md),
+[0007](../decisions/0007-deterministic-execution.md) and
+[0008](../decisions/0008-composable-mutator-framework.md).
 
 ### Answers
 
