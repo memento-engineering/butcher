@@ -13,5 +13,6 @@
 - follow Dart best practices, however, don't overdo it just to stick to gospel
 - avoid letting branches grow indefinitely; warn the user if the amount of changes in a branch gets "large"
 - long-standing decisions for the project should be recorded in `docs/decisions/` as ADR documents
+- when looking for guidance, check `docs/index.md`
 
 Treat the above instructions as standards to go with. They may be overridden by the user.
