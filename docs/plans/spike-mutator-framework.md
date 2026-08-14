@@ -26,3 +26,47 @@ operators. Timebox: ~1 h. Throwaway code; only findings are kept.
 - Mutant list for `sandbox/lib/` is deterministic across runs.
 - Type information (resolved AST) is accessible inside a guard predicate.
 - Findings recorded here: API sketch that worked + friction points.
+
+## Findings (2026-08-14)
+
+Verdict: the shape holds; [ADR 0008](../decisions/0008-composable-mutator-framework.md)
+needs no changes. All success criteria met.
+
+### Answers
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | ~15 declarative lines? | Yes: pure-data swap 16 lines (9 declarative), guarded swap 29 |
+| 2 | One visitor walk enough? | Yes: `RecursiveAstVisitor` dispatching per node kind to the registry |
+| 3 | `Mutation` sufficient? | Yes: span replacement alone produced compiling mutants |
+
+### API sketch that worked
+
+- `Mutation` — immutable: file path, offset, length, original, replacement,
+  operator id, description.
+- `Mutator` — marker interface with `id`.
+- `BinaryExpressionMutator` — base class: `swaps` table
+  (`'+' → ['-']`) + overridable `guard(node)`; turns nodes into `Mutation`s.
+- `MutatorRegistry` — active set; visitor filters by node-kind base type.
+- `MutationVisitor extends RecursiveAstVisitor` — the single walk;
+  mutators never traverse.
+
+### Evidence
+
+- 32 mutants over `sandbox/lib/`; two enumeration runs byte-identical.
+- Guard read resolved types inside switch-expression `when` guards and
+  extension types; correctly vetoed a custom `operator >` on a probe class.
+- 34/35 mutants compiled (`dart analyze` on a temp copy).
+
+### Friction points
+
+- `AnalysisContextCollection` throws on non-normalized paths;
+  normalize with `package:path` first.
+- Visitor emits parent-before-child order (`3.14159 * r * r`: outer `*`
+  first). Deterministic, but the engine must sort by (file, offset)
+  before assigning mutant ids.
+- The one broken mutant: unguarded `+ → -` on string concatenation.
+  Even pure-data swaps need a numeric guard by default on the base
+  class; widening stays an override.
+- Resolution dominates runtime; create the context collection once and
+  reuse it across files.
