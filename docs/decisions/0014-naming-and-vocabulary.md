@@ -5,15 +5,18 @@
 ## Context
 
 - The project needs one vocabulary across docs, CLI, and reports.
-- Radiation physics natively contains the industry terms (mutant, mutagen);
-  every other theme would have to translate them.
+- Radiobiology natively contains the industry terms: radiation is the
+  canonical physical mutagen, and irradiation yields mutants (Muller, 1946).
+  Every other theme would have to translate them.
 - Prior art claims other metaphors: Stryker (X-Men), Infection (disease),
   Cosmic Ray (Python, radiation).
 
 ## Decision
 
 - Package: `radioactive_dart`. CLI executable: `rad`.
-- Physics theme only; a themed name must predict the mechanics it names.
+- Theme: radiobiology. Radiation physics names the apparatus (what the tool
+  does); radiation effects name the subject (what happens to the code).
+- A themed name must predict the mechanics it names.
 
 | Concept | Term |
 |---|---|
@@ -45,7 +48,8 @@ Unthemed, for interop and clarity:
 
 - Reactor / control rods for schemata: rods throttle the whole core;
   schemata selects one branch of N. The name predicts the wrong mechanics.
-- Biology-side terms (hot cell, gene expression, silent mutation): one theme,
-  physics.
+- Hot cell for the isolated copy: containment is plainer.
+- Biological machinery terms (gene expression, silent mutation, apoptosis):
+  the subject keeps only standard radiation-effect terms.
 - Alternative themes (immunology, espionage, alchemy, changeling): each must
   rename "mutant" and fight the standard vocabulary.
