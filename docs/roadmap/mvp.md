@@ -8,7 +8,7 @@ output. Serial, whole-suite-per-mutant.
 - `package:analyzer` AST mutant generation
 - Composable mutator framework; core operators (arithmetic, relational,
   logical, literals)
-- Shadow-copy isolation; the working tree is never touched
+- Filtered shadow-copy isolation; built-in and consumer ignore patterns
 - Baseline verification; timeout floor
 - Outcomes: `Killed` / `Survived` / `Timeout` / `RunError`
 - Console summary: MSI + counts per outcome
