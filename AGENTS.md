@@ -1,0 +1,7 @@
+- never edit AGENTS.md or CLAUDE.md
+- make commits in logical steps and use conventional commit messages
+- don't add long descriptions in git messages; only summarize the reason for the change in the commit title
+- if something is unspecified, abort and ask the user
+- less code is better code, never overengineer; always try to find the minimal amount of changes necessary to complete a task
+- keep existing documentation updated when making changes
+- documentation should consist of short sentences, lists, mermaid diagrams and tables; never long paragraphs
