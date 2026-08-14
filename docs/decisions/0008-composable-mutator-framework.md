@@ -13,6 +13,9 @@
 
 - A mutator declares: node kind, guard predicate, replacement(s).
 - Simple operator swaps are pure data (`'+' → ['-']`) on a shared base class.
+- Base classes guard by type by default (binary swaps: numeric operands
+  only); widening a guard is an explicit override. Easy to write must not
+  mean easy to write wrong.
 - One AST walk dispatches nodes to registered mutators (visitor + strategy +
   registry); mutators never traverse or execute anything.
 - Mutators emit `Mutation` value objects (span, replacement, operator id,
@@ -31,3 +34,5 @@
 
 - Mutators that own traversal or execution.
 - Unbounded operator swarms as the only mode.
+- Unguarded pure-data swaps: the spike's guardless `+ → -` broke string
+  concatenation.

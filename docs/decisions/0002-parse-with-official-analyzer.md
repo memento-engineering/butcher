@@ -17,6 +17,8 @@
 
 - New syntax is supported the day it lands in stable.
 - Mutants are always compilable and type-aware.
+- `AnalysisContextCollection` requires absolute normalized paths; normalize
+  with `package:path` at the boundary.
 
 ## Rejected
 
