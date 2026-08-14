@@ -1,6 +1,7 @@
 # Mutation testing in other ecosystems — ideas worth stealing
 
-Researched 2026-08-14 as input for [DESIGN.md](../DESIGN.md). Four mature tools,
+Researched 2026-08-14 as input for the
+[architecture decisions](../decisions/index.md). Four mature tools,
 each the reference implementation of its ecosystem.
 
 ## Infection (PHP) — https://infection.github.io
