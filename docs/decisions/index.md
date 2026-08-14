@@ -8,7 +8,7 @@ How the decisions compose at runtime:
 
 ```mermaid
 flowchart TD
-    A[verify baseline green] --> B[shadow-copy lib/ + package_config]
+    A[filtered project or workspace copy] --> B[verify baseline green]
     B --> C[analyzer: resolved AST → mutants]
     C --> D[per-test coverage: collect or ingest lcov]
     D --> E[compile schemata once]

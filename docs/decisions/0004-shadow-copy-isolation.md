@@ -10,6 +10,8 @@
 ## Decision
 
 - Copy the project or workspace into a temp dir and mutate `lib/` there.
+- Skip well-known metadata and generated output.
+- Support a gitignore-style file for consumer-defined copy exclusions.
 - Run tests from the copied package root.
 - Mechanics validated by [../plans/spike-shadow-copy.md](../plans/spike-shadow-copy.md).
 
@@ -19,6 +21,8 @@
   construction.
 - No restore logic to get wrong.
 - Workspace dependencies and cwd-relative test assets keep their layout.
+- Consumers can avoid copying large, project-specific directories.
+- Incorrect consumer exclusions fail baseline verification before mutation.
 
 ## Rejected
 
