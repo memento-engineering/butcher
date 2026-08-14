@@ -1,6 +1,6 @@
 # Architecture decision records
 
-Decisions distilled from the tool survey in [../research/](../research/README.md)
+Decisions distilled from the tool survey in [../research/](../research/index.md)
 and mature tools in other ecosystems
 ([../research/other-ecosystems.md](../research/other-ecosystems.md)).
 
