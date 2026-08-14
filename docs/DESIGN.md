@@ -36,6 +36,27 @@ tools in other ecosystems ([research/other-ecosystems.md](research/other-ecosyst
 8. **Deterministic by construction.** Stable mutant IDs (file + node offset +
    operator), seeded ordering, isolated test processes: identical input always
    produces an identical report, so the score is usable as a CI gate.
+9. **Mutators are trivial to write and read.** A composable internal framework
+   keeps each mutator small and declarative; the engine owns everything else.
+
+## Architecture principles
+
+- Small classes, one class per file.
+- Design patterns where they clarify: visitor (traversal), strategy (mutators),
+  registry (operator sets), builder (reports).
+- One AST walk dispatches nodes to registered mutators; mutators never traverse
+  the tree or run anything themselves.
+- A mutator declares: node kind, guard predicate, replacement(s). Simple
+  operator swaps are pure data (`'+' → ['-']`) on a shared base class.
+- Mutators emit `Mutation` value objects (span, replacement, operator id,
+  description). Rewriting, schemata, and execution live in the engine — so the
+  v1.0 schemata switch touches zero mutators.
+- Every stage ships the seams the next stage fills, with trivial defaults:
+  - `CoverageProvider` (MVP: "everything covered" → v0.1 lcov → v1.0 per-test)
+  - `TestSelector` (MVP: whole suite → v1.0 covering-tests-first)
+  - `ReportSink` (MVP: console + Stryker JSON → later formats plug in)
+  - outcome enum includes `NoCoverage`/`Equivalent` from day one
+- Roadmap: [ROADMAP.md](ROADMAP.md).
 
 ## Execution pipeline
 
