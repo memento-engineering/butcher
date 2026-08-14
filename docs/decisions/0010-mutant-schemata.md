@@ -18,5 +18,5 @@
 
 ## Consequences
 
-- Implemented as an engine rewriting strategy; mutators and reports untouched
+- Implemented as an engine rewriting strategy; mutagens and reports untouched
   ([0008](0008-composable-mutator-framework.md)).

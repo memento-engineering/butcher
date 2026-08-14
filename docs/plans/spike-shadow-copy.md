@@ -3,6 +3,10 @@
 Goal: prove the MVP isolation model works on Windows before building on it.
 Timebox: ~30 min. Throwaway code; only findings are kept.
 
+Historical record; predates [0014](../decisions/0014-naming-and-vocabulary.md):
+"shadow copy/tree" is now "containment", "baseline" is now "background
+reading".
+
 ## Questions to answer
 
 1. Can `dart test` run against a mutated copy of `lib/` without touching the

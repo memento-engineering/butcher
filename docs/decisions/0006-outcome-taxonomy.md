@@ -14,12 +14,12 @@
   MemoryError · Equivalent`.
 - The full enum exists from the MVP, even for outcomes produced only by later
   stages.
-- Timeout = `max(baseline × 3, 10 s floor)`.
+- Half-life (per-mutant timeout) = `max(background reading × 3, 10 s floor)`.
 - Policy flags: `--with-timeouts` (count as escaped), `--max-timeouts`
   ceiling.
 
 ## Rejected
 
 - Uncaught timeouts/OOM/crashes.
-- Timeout derived from baseline without a floor: a near-zero baseline
-  collapses it.
+- Half-life derived from the background reading without a floor: a near-zero
+  reading collapses it.

@@ -1,4 +1,4 @@
-# 0011: Per-test coverage routing
+# 0011: Tracer coverage routing
 
 - Status: accepted, planned v1.0 (lcov ingestion: v0.1)
 
@@ -13,7 +13,7 @@
 
 - v0.1: ingest `lcov.info`; mutants on uncovered lines become `NoCoverage`
   and are never executed.
-- v1.0: per-test coverage; run only covering tests, fastest first,
+- v1.0: per-test tracer data; run only covering tests, fastest first,
   first-kill-wins.
 
 ## Consequences

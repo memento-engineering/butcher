@@ -3,6 +3,9 @@
 Goal: validate the mutator API reads as intended before writing many
 operators. Timebox: ~1 h. Throwaway code; only findings are kept.
 
+Historical record; predates [0014](../decisions/0014-naming-and-vocabulary.md):
+"mutator" is now "mutagen".
+
 ## Questions to answer
 
 1. Does a typical mutator fit in ~15 declarative lines?
