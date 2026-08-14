@@ -65,7 +65,39 @@ Timebox: ~30 min. Throwaway code; only findings are kept.
 
 ### Decision
 
-Use option A. It isolates mutations with less copying than option B while
-preserving normal test output and exit codes. Launch tests with
-`Platform.resolvedExecutable` from the temporary package root, and terminate
-timeouts with Windows process-tree kill semantics.
+Option A works for a simple package, but the edge cases below make option B the
+robust MVP choice. Launch tests with `Platform.resolvedExecutable` from the
+copied package root, and terminate timeouts with Windows process-tree kill
+semantics.
+
+## Edge cases
+
+### Dart workspaces
+
+Tested a workspace containing an application package with a sibling package
+dependency.
+
+- Running from the application package root preserved cwd-relative behavior.
+- A relocated package config alone did not work.
+- Dart validated `resolution: workspace` and regenerated workspace resolution.
+- A minimal shadow workspace needed the root and member pubspecs, resolution
+  metadata, and `lib/` for both the mutated package and its sibling dependency.
+- With that layout, the sibling import resolved and the mutant failed with the
+  expected exit code of 1.
+- Relative `rootUri` entries must be resolved before relocating a generated
+  package config.
+
+### Assets
+
+| Asset access | Result | Requirement |
+|---|---|---|
+| `package:` URI under mutated `lib/` | Passed | Included with copied `lib/` |
+| `package:` URI under sibling `lib/` | Passed | Copy the sibling package |
+| `File('test/assets/...')` | Failed, then passed | Copy the same relative path |
+
+- Test processes use the shadow package as their working directory.
+- Tests can read arbitrary relative files, not only files under `test/`.
+- Those paths cannot be inferred reliably from package configuration.
+- Copying the project or workspace preserves these semantics by construction.
+- Flutter asset-bundle behavior was not tested; this spike covers Dart VM
+  tests and direct file access.

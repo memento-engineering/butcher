@@ -9,8 +9,8 @@
 
 ## Decision
 
-- Mutate a shadow copy of `lib/` in a temp dir, wired via a generated
-  `package_config.json`.
+- Copy the project or workspace into a temp dir and mutate `lib/` there.
+- Run tests from the copied package root.
 - Mechanics validated by [../plans/spike-shadow-copy.md](../plans/spike-shadow-copy.md).
 
 ## Consequences
@@ -18,8 +18,11 @@
 - Killing the tool at any point leaves the working tree pristine by
   construction.
 - No restore logic to get wrong.
+- Workspace dependencies and cwd-relative test assets keep their layout.
 
 ## Rejected
 
 - In-place mutation with backup/restore: restore code is exactly what fails
   during a crash.
+- Copying only the mutated package's `lib/`: works for simple packages, but
+  workspace resolution and arbitrary test asset paths require more context.
