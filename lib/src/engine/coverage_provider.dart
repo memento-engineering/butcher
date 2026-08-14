@@ -5,5 +5,6 @@ import '../model/mutant.dart';
 /// Seam for the v1.0 tracer; the MVP default is [FullCoverageProvider] in
 /// full_coverage_provider.dart.
 abstract interface class CoverageProvider {
+  /// Whether any test executes the source [mutant] changes.
   bool isCovered(Mutant mutant);
 }
