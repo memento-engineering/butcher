@@ -33,5 +33,6 @@ flowchart TD
 | [0012](0012-tce-equivalent-detection.md) | TCE equivalent-mutant detection | accepted, planned v2.0 |
 | [0013](0013-score-and-honesty-metrics.md) | Score and honesty metrics | accepted |
 | [0014](0014-naming-and-vocabulary.md) | Naming and vocabulary | accepted |
+| [0015](0015-full-pana-score.md) | Full pana score | accepted |
 
 Feature staging: [../roadmap/index.md](../roadmap/index.md).
