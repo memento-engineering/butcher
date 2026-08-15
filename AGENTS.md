@@ -19,5 +19,6 @@
 - every _user visible_ change should get an entry in the CHANGELOG.md; internal changes don't get one
 - the pubspec.yaml on main always contains the in-development version
 - upon release, the version in pubspec.yaml should be added on top of the unreleased changes in CHANGELOG.md and then bumped according to SemVer
+- avoid adding comments in code; only add them where they actually add value, not to restate what the code already describes
 
 Treat the above instructions as standards to go with. They may be overridden by the user.
