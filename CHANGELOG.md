@@ -21,3 +21,6 @@
   background reading still runs the whole suite.
 - Run logs: one file per containment instead of one per mutant, named after
   the containment the worker owns.
+- Startup cleanup under an exclusive run lock: leftover containments and logs
+  are removed at start, and a run aborts (exit 70) while another holds the
+  lock.

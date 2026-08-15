@@ -20,11 +20,14 @@ ones the tests kill.
 | `-j, --jobs` | Parallel workers; defaults to half the CPU cores |
 | `-v, --verbose` | Also stream structured log events to the console |
 
-- Exit codes: 0 success, 1 below threshold, 64 usage, 70 aborted run.
+- Exit codes: 0 success, 1 gate failed, 64 usage, 70 aborted run.
 - A red test suite aborts the run; a green suite is a precondition.
 - `.radignore` (gitignore-style globs, project root) excludes paths from the
   isolated project copy tests run in.
 - All temp data (containment copies, logs) lives under `<system temp>/rad/`.
+- A run takes an exclusive `<system temp>/rad/.lock`, then clears what earlier
+  runs left there. A run that finds the lock held aborts with exit 70 instead
+  of touching the other run's state; a crashed run leaves the lock behind.
 - Each run writes wide-event CLEF logs to `<system temp>/rad/rad.log`,
   replacing the previous run's file. Suite output of every executed mutant is
   kept in `<system temp>/rad/runs/`, one log per worker named after its

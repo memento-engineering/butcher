@@ -8,7 +8,8 @@ final class RadPaths {
   RadPaths({required String root})
     : root = p.normalize(p.absolute(root)),
       toolLog = p.normalize(p.absolute(p.join(root, 'rad.log'))),
-      runLogs = p.normalize(p.absolute(p.join(root, 'runs')));
+      runLogs = p.normalize(p.absolute(p.join(root, 'runs'))),
+      lockFile = p.normalize(p.absolute(p.join(root, '.lock')));
 
   /// Production paths below the system temp directory.
   factory RadPaths.systemTemp() =>
@@ -20,6 +21,9 @@ final class RadPaths {
   /// Tool-wide CLEF log file.
   final String toolLog;
 
-  /// Directory containing per-mutant CLEF logs.
+  /// Directory containing one CLEF log per containment.
   final String runLogs;
+
+  /// Exclusive lock held for the duration of a run (ADR 0018).
+  final String lockFile;
 }

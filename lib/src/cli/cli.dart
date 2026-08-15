@@ -10,6 +10,7 @@ import '../rad_paths.dart';
 import '../report/console_report_sink.dart';
 import '../report/metrics.dart';
 import '../report/stryker_json_sink.dart';
+import '../run_workspace.dart';
 import '../version.dart';
 
 /// Default path of the Stryker JSON report, relative to the project root.
@@ -17,8 +18,8 @@ const defaultReportPath = 'mutation-report.json';
 
 /// Runs the `rad` CLI over [arguments]; returns the process exit code.
 ///
-/// Exit codes: 0 success, 1 MSI below `--threshold`, 64 usage error,
-/// 70 aborted run (red background reading, failed pub get).
+/// Exit codes: 0 success, 1 criticality or honesty gate, 64 usage error,
+/// 70 aborted run (locked workspace, red background reading, failed pub get).
 ///
 /// [paths] overrides every filesystem location used by the invocation.
 Future<int> radMain(
@@ -88,9 +89,14 @@ Future<int> radMain(
     p.absolute(options.rest.isEmpty ? '.' : options.rest.single),
   );
   final resolvedPaths = paths ?? RadPaths.systemTemp();
-  final runsDir = Directory(resolvedPaths.runLogs)..createSync(recursive: true);
-  for (final entry in runsDir.listSync()) {
-    entry.deleteSync(recursive: true);
+  // Startup cleanup is the first run stage and needs the lock first: it must
+  // never remove another active run's state (ADR 0018).
+  final RunWorkspace workspace;
+  try {
+    workspace = RunWorkspace.acquire(resolvedPaths)..clean();
+  } on RunAborted catch (abort) {
+    stderr.writeln(abort.message);
+    return 70;
   }
   final verbose = options.flag('verbose');
   final watch = Stopwatch()..start();
@@ -121,6 +127,8 @@ Future<int> radMain(
           ),
   );
 
+  // Set on every path below; the workspace lock is released before returning.
+  int exitCode;
   try {
     sink.writeln('irradiating $projectRoot');
     final result = await engine.run();
@@ -168,15 +176,17 @@ Future<int> radMain(
         '--max-timeouts ceiling of $maxTimeouts',
       );
     }
-    return gated ? 1 : 0;
+    exitCode = gated ? 1 : 0;
   } on RunAborted catch (abort) {
     logger.error('run aborted: {Reason}', {
       'Reason': abort.message,
       'DurationMs': watch.elapsedMilliseconds,
     });
     stderr.writeln(abort.message);
-    return 70;
+    exitCode = 70;
   }
+  workspace.release();
+  return exitCode;
 }
 
 int? _jobs(ArgResults options) {

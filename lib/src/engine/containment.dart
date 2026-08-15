@@ -12,6 +12,9 @@ const defaultContainmentExcludes = ['.git', '.dart_tool', 'build', 'coverage'];
 /// Name of the consumer exclusion file, gitignore-style, at the project root.
 const containmentIgnoreFile = '.radignore';
 
+/// Prefix of every containment directory; startup cleanup matches on it.
+const containmentPrefix = 'containment_';
+
 /// A filtered temp-dir copy of the project; all irradiation happens here.
 final class Containment {
   Containment._(this.root);
@@ -31,7 +34,7 @@ final class Containment {
   }) async {
     final source = p.normalize(p.absolute(projectRoot));
     final tempRoot = Directory(paths.root)..createSync(recursive: true);
-    final target = await tempRoot.createTemp('containment_');
+    final target = await tempRoot.createTemp(containmentPrefix);
     final globs = _consumerGlobs(source);
 
     await for (final entity in Directory(

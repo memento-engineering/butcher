@@ -101,6 +101,28 @@ void main() {
 
     final untouched = File(p.join(dir.path, 'lib', 'calc.dart'));
     expect(untouched.readAsStringSync(), _partiallyTestedCalc);
+    expect(
+      File(paths.lockFile).existsSync(),
+      isFalse,
+      reason: 'a clean exit releases the run lock',
+    );
+  });
+
+  test('aborts with exit code 70 while another run holds the lock', () async {
+    final held = RunWorkspace.acquire(paths);
+    addTearDown(held.release);
+    final evidence = File(p.join(paths.runLogs, 'containment_active.log'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('from the active run');
+
+    final exit = await radMain([], out: StringBuffer(), paths: paths);
+
+    expect(exit, 70);
+    expect(
+      evidence.existsSync(),
+      isTrue,
+      reason: 'cleanup must not touch an active run\'s evidence',
+    );
   });
 
   test('gates on --threshold and streams events with --verbose', () async {

@@ -29,4 +29,5 @@ export 'src/report/console_report_sink.dart';
 export 'src/report/metrics.dart';
 export 'src/report/report_sink.dart';
 export 'src/report/stryker_json_sink.dart';
+export 'src/run_workspace.dart';
 export 'src/version.dart';
