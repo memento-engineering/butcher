@@ -17,6 +17,25 @@ int add(int a, int b) => a + b;
 bool isEven(int n) => n % 2 == 0;
 ''';
 
+/// One mutant only: `true -> false` never leaves the loop.
+const _hangingCalc = '''
+bool get ready => true;
+
+int spin() {
+  while (!ready) {}
+  return 1;
+}
+''';
+
+const _hangingTest = '''
+import 'package:fixture/calc.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test('spins', () => expect(spin(), 1));
+}
+''';
+
 void main() {
   late RadPaths paths;
 
@@ -92,6 +111,36 @@ void main() {
     expect(out.toString(), contains('exit 1'));
     expect(out.toString(), isNot(contains('@mt')));
     expect(Directory(paths.runLogs).listSync().whereType<File>(), hasLength(5));
+  });
+
+  test('gates on --max-timeouts and scores timeouts as neither', () async {
+    final dir = await createFixturePackage(
+      calc: _hangingCalc,
+      testSource: _hangingTest,
+    );
+    final out = StringBuffer();
+
+    final exit = await radMain([
+      '--max-timeouts',
+      '0',
+      dir.path,
+    ], out: out, paths: paths);
+
+    expect(exit, 1, reason: out.toString());
+    expect(out.toString(), contains('timeout: 1'));
+    expect(out.toString(), contains('MSI: 100.00%'));
+    expect(out.toString(), contains('Timeout rate: 100.00%'));
+  });
+
+  test('rejects an invalid timeout ceiling with exit code 64', () async {
+    expect(
+      await radMain(['--max-timeouts', '-1'], out: StringBuffer(), paths: paths),
+      64,
+    );
+    expect(
+      await radMain(['--max-timeouts', 'few'], out: StringBuffer(), paths: paths),
+      64,
+    );
   });
 
   test('aborts with exit code 70 on a red background reading', () async {

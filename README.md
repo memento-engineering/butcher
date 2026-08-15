@@ -7,12 +7,15 @@ ones the tests kill.
 
 - Run `dart run radioactive_dart:rad` in a project root.
 - Prints per-outcome counts, MSI, and covered-code MSI.
+- Timed-out mutants are inconclusive: they count as neither killed nor
+  survived, and a timeout rate is printed whenever any occur.
 - Writes a Stryker JSON report (`mutation-report.json`); view it with the
   [Stryker report viewer](https://microsoft.github.io/mutation-testing-elements/).
 
 | Flag | Effect |
 |---|---|
 | `-t, --threshold` | Exit 1 when the MSI is below this percentage |
+| `--max-timeouts` | Exit 1 when more mutants than this time out |
 | `-o, --output` | Report path, relative to the project root |
 | `-j, --jobs` | Parallel workers; defaults to half the CPU cores |
 | `-v, --verbose` | Also stream structured log events to the console |

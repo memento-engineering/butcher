@@ -40,6 +40,12 @@ Future<int> radMain(
       help: 'Path of the Stryker JSON report.',
     )
     ..addOption(
+      'max-timeouts',
+      help:
+          'Honesty gate: exit 1 when more mutants than this time out. '
+          'Timeouts are inconclusive and score as neither killed nor survived.',
+    )
+    ..addOption(
       'jobs',
       abbr: 'j',
       help:
@@ -57,6 +63,7 @@ Future<int> radMain(
   final ArgResults options;
   final double? threshold;
   final int? jobs;
+  final int? maxTimeouts;
   try {
     options = parser.parse(arguments);
     if (options.rest.length > 1) {
@@ -66,6 +73,7 @@ Future<int> radMain(
     }
     threshold = _threshold(options);
     jobs = _jobs(options);
+    maxTimeouts = _maxTimeouts(options);
   } on FormatException catch (error) {
     stderr.writeln(error.message);
     stderr.writeln(_usage(parser));
@@ -130,7 +138,10 @@ Future<int> radMain(
     sink.writeln('report: $reportPath');
 
     final metrics = Metrics.fromResults(result.results);
-    final gated = threshold != null && metrics.msi < threshold;
+    final belowThreshold = threshold != null && metrics.msi < threshold;
+    final tooManyTimeouts =
+        maxTimeouts != null && metrics.timedOut > maxTimeouts;
+    final gated = belowThreshold || tooManyTimeouts;
     logger.info(
       'run complete: MSI {Msi}% over {MutantCount} mutants, exit {ExitCode}',
       {
@@ -145,14 +156,19 @@ Future<int> radMain(
         'Report': reportPath,
       },
     );
-    if (gated) {
+    if (belowThreshold) {
       stderr.writeln(
         'MSI ${metrics.msi.toStringAsFixed(2)}% is below the '
         '${threshold.toStringAsFixed(2)}% threshold',
       );
-      return 1;
     }
-    return 0;
+    if (tooManyTimeouts) {
+      stderr.writeln(
+        '${metrics.timedOut} mutants timed out, above the '
+        '--max-timeouts ceiling of $maxTimeouts',
+      );
+    }
+    return gated ? 1 : 0;
   } on RunAborted catch (abort) {
     logger.error('run aborted: {Reason}', {
       'Reason': abort.message,
@@ -169,6 +185,16 @@ int? _jobs(ArgResults options) {
   final value = int.tryParse(raw);
   if (value == null || value < 1) {
     throw FormatException('--jobs must be a positive integer: $raw');
+  }
+  return value;
+}
+
+int? _maxTimeouts(ArgResults options) {
+  final raw = options.option('max-timeouts');
+  if (raw == null) return null;
+  final value = int.tryParse(raw);
+  if (value == null || value < 0) {
+    throw FormatException('--max-timeouts must be a non-negative integer: $raw');
   }
   return value;
 }
