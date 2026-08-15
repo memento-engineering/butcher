@@ -1,19 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
-
 import '../model/mutant_result.dart';
 import '../model/outcome.dart';
 import 'report_sink.dart';
 
 /// Writes the Stryker `mutation-testing-report-schema` JSON (ADR 0009).
 final class StrykerJsonSink implements ReportSink {
-  /// Creates a sink reading sources under [projectRoot], writing [outputPath].
-  const StrykerJsonSink({required this.projectRoot, required this.outputPath});
+  /// Creates a sink over generation-time [sources], writing [outputPath].
+  const StrykerJsonSink({required this.sources, required this.outputPath});
 
-  /// Root the mutation file paths are relative to.
-  final String projectRoot;
+  /// Pristine source per irradiated file; offsets refer to these texts.
+  final Map<String, String> sources;
 
   /// Destination file of the JSON report.
   final String outputPath;
@@ -35,11 +33,14 @@ final class StrykerJsonSink implements ReportSink {
     final files = <String, Map<String, Object>>{};
     for (final result in results) {
       final mutation = result.mutant.mutation;
-      final file = files.putIfAbsent(mutation.filePath, () {
-        final source = File(p.join(projectRoot, mutation.filePath))
-            .readAsStringSync();
-        return {'language': 'dart', 'source': source, 'mutants': <Object>[]};
-      });
+      final file = files.putIfAbsent(
+        mutation.filePath,
+        () => {
+          'language': 'dart',
+          'source': sources[mutation.filePath] ?? '',
+          'mutants': <Object>[],
+        },
+      );
       final source = file['source']! as String;
       (file['mutants']! as List<Object>).add({
         'id': result.mutant.id,

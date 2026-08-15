@@ -58,7 +58,7 @@ final class Engine {
 
   /// Runs the whole pipeline and returns every classified result.
   Future<RunResult> run() async {
-    final mutants = await MutantGenerator(
+    final (mutants, sources) = await MutantGenerator(
       projectRoot: projectRoot,
       registry: registry,
     ).generate();
@@ -88,6 +88,7 @@ final class Engine {
       }
       return RunResult(
         results: results,
+        sources: sources,
         backgroundReading: background.duration,
         halfLife: halfLife,
       );

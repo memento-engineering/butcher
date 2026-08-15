@@ -36,6 +36,11 @@ Future<int> radMain(List<String> arguments, {StringSink? out}) async {
   final double? threshold;
   try {
     options = parser.parse(arguments);
+    if (options.rest.length > 1) {
+      throw FormatException(
+        'expected at most one project root, got: ${options.rest.join(' ')}',
+      );
+    }
     threshold = _threshold(options);
   } on FormatException catch (error) {
     stderr.writeln(error.message);
@@ -68,7 +73,7 @@ Future<int> radMain(List<String> arguments, {StringSink? out}) async {
     await ConsoleReportSink(out: sink).write(result.results);
     final reportPath = p.join(projectRoot, options.option('output')!);
     await StrykerJsonSink(
-      projectRoot: projectRoot,
+      sources: result.sources,
       outputPath: reportPath,
     ).write(result.results);
     sink.writeln('report: $reportPath');

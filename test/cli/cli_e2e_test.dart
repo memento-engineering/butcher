@@ -63,5 +63,16 @@ void main() {
 
   test('rejects an invalid threshold with exit code 64', () async {
     expect(await radMain(['--threshold', 'nope'], out: StringBuffer()), 64);
+    expect(await radMain(['--threshold', '101'], out: StringBuffer()), 64);
+  });
+
+  test('rejects multiple project roots with exit code 64', () async {
+    expect(await radMain(['a', 'b'], out: StringBuffer()), 64);
+  });
+
+  test('prints usage with exit code 0 for --help', () async {
+    final out = StringBuffer();
+    expect(await radMain(['--help'], out: out), 0);
+    expect(out.toString(), contains('Usage: rad'));
   });
 }

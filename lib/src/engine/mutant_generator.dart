@@ -32,10 +32,13 @@ final class MutantGenerator {
   /// The active mutagen set.
   final MutagenRegistry registry;
 
-  /// All mutants, sorted by (file, offset) with stable ids (ADR 0007).
-  Future<List<Mutant>> generate() async {
+  /// All mutants, sorted with stable ids (ADR 0007), plus the pristine
+  /// source per irradiated file so reports stay aligned even when the
+  /// working tree changes mid-run.
+  Future<(List<Mutant>, Map<String, String>)> generate() async {
+    final sources = <String, String>{};
     final libDir = Directory(p.join(projectRoot, 'lib'));
-    if (!libDir.existsSync()) return const [];
+    if (!libDir.existsSync()) return (const <Mutant>[], sources);
 
     final files =
         libDir
@@ -60,6 +63,7 @@ final class MutantGenerator {
           .currentSession
           .getResolvedUnit(file);
       if (result is! ResolvedUnitResult) continue;
+      sources[relative] = result.content;
       result.unit.accept(
         MutationVisitor(
           registry: registry,
@@ -79,7 +83,7 @@ final class MutantGenerator {
       return a.replacement.compareTo(b.replacement);
     });
 
-    return [
+    final mutants = [
       for (final mutation in mutations)
         Mutant(
           id:
@@ -88,5 +92,6 @@ final class MutantGenerator {
           mutation: mutation,
         ),
     ];
+    return (mutants, sources);
   }
 }

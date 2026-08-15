@@ -14,7 +14,7 @@ Future<void> roundtrip(String source) async {
     ..parent.createSync(recursive: true)
     ..writeAsStringSync(source);
 
-  final mutants = await MutantGenerator(
+  final (mutants, _) = await MutantGenerator(
     projectRoot: dir.path,
     registry: MutagenRegistry.defaults(),
   ).generate();

@@ -62,13 +62,13 @@ void main() {
     () async {
       final dir = await Directory.systemTemp.createTemp('rad_report_');
       addTearDown(() => dir.delete(recursive: true));
-      File(p.join(dir.path, 'lib', 'a.dart'))
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync('// header\nint add(int a, int b) => a + b;\n');
       final output = p.join(dir.path, 'report.json');
 
-      await StrykerJsonSink(projectRoot: dir.path, outputPath: output).write([
-        result(Outcome.killed, offset: 37, id: 'lib/a.dart:37:arithmetic'),
+      await StrykerJsonSink(
+        sources: {'lib/a.dart': '// header\nint add(int a, int b) => a + b;\n'},
+        outputPath: output,
+      ).write([
+        result(Outcome.killed, offset: 37, id: 'lib/a.dart:37:arithmetic:-'),
       ]);
 
       final report =

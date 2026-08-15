@@ -28,7 +28,7 @@ void main() {
         projectRoot: dir.path,
         registry: MutagenRegistry.defaults(),
       );
-      final mutants = await generator.generate();
+      final (mutants, sources) = await generator.generate();
 
       expect(mutants.map((m) => m.mutation.filePath).toSet(), {
         'lib/a.dart',
@@ -39,8 +39,10 @@ void main() {
         'lib/a.dart:27:arithmetic:-',
         'lib/src/b.dart:31:logical:||',
       ]);
+      expect(sources['lib/a.dart'], 'int add(int a, int b) => a + b;\n');
+      expect(sources.keys, isNot(contains('lib/gen.g.dart')));
 
-      final second = await generator.generate();
+      final (second, _) = await generator.generate();
       expect(second.map((m) => m.id), mutants.map((m) => m.id));
     },
   );
@@ -48,10 +50,11 @@ void main() {
   test('returns no mutants without a lib directory', () async {
     final dir = await Directory.systemTemp.createTemp('rad_gen_empty_');
     addTearDown(() => dir.delete(recursive: true));
-    final mutants = await MutantGenerator(
+    final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
       registry: MutagenRegistry.defaults(),
     ).generate();
     expect(mutants, isEmpty);
+    expect(sources, isEmpty);
   });
 }
