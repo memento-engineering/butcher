@@ -1,28 +1,23 @@
 # Changelog
 
-## 0.1.0-dev
+## 0.1.0
 
-- Package scaffold: core value objects and public seam interfaces.
-- MVP engine: mutant generation, containment isolation, background reading,
-  half-life timeouts, outcome classification.
-- Core mutagens: arithmetic, relational, equality, logical, boolean literal.
-- Console summary (MSI, covered-code MSI) and Stryker JSON report.
-- `rad` CLI with `--threshold` criticality gate and `--output`.
-- `.radignore` consumer exclusions for the containment copy.
-- Wide-event CLEF logging to a temp-dir log file; `--verbose` renders
-  events human-readably with colors. Per-mutant run logs are kept separately.
-- Filesystem paths resolve once in an injectable context.
-- Parallel classification: `--jobs` workers, each with its own containment.
-- Timeouts report as an inconclusive peer of killed and survived: they leave
-  both MSI terms, and a timeout rate is printed when any mutant times out.
-- `--max-timeouts` honesty gate: exit 1 when more mutants than the ceiling
-  time out.
-- Mutant runs stop at the first failing test (`dart test --fail-fast`); the
-  background reading still runs the whole suite.
-- Run logs: one file per containment instead of one per mutant, named after
-  the containment the worker owns.
-- Startup cleanup under an exclusive run lock: leftover containments and logs
-  are removed at start, and a run aborts (exit 70) while another holds the
-  lock.
+First release.
+
+- `rad` CLI: irradiates `lib/`, prints per-outcome counts, MSI, and
+  covered-code MSI, and writes a Stryker JSON report (`--output`).
+- AST mutant generation with `package:analyzer`; mutagens for arithmetic,
+  relational, equality, and logical operators plus boolean literals.
+- Containment isolation of the project copy, with `.radignore` exclusions;
+  a red background reading aborts the run.
+- Outcome taxonomy: killed, survived, noCoverage, timeout, unviable, runError.
+  Timeouts are inconclusive: they enter neither MSI term, and a timeout rate
+  is printed when any occur.
+- Gates: `--threshold` on the MSI, `--max-timeouts` on timed-out mutants.
 - `--coverage` ingests an `lcov.info`: mutants on lines no test hits report as
   `noCoverage` and never run.
+- Mutant runs stop at the first failing test (`dart test --fail-fast`).
+- Parallel classification: `--jobs` workers, each with its own containment.
+- Wide-event CLEF logging: one tool log, one run log per containment,
+  `--verbose` renders events to the console.
+- Startup cleanup under an exclusive run lock; a held lock aborts the run.
