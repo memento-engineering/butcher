@@ -21,10 +21,13 @@
 - Determinism ([0007](0007-deterministic-execution.md)) is preserved:
   results are stored by mutant index, so completion order never changes the
   report. Progress output follows completion order.
-- The background reading stays serial and runs once; half-life derivation
-  ([0006](0006-outcome-taxonomy.md)) is unchanged. Heavy oversubscription
-  can push slow suites into `Timeout`; reducing `--jobs` trades speed for
-  timing headroom.
+- Suite concurrency is divided among workers
+  (`dart test --concurrency = cores ~/ workers`): the total stays near the
+  core count instead of oversubscribing multiplicatively.
+- The background reading runs once with that same per-suite concurrency, so
+  half-lives ([0006](0006-outcome-taxonomy.md)) are calibrated under the
+  same conditions the mutant runs see. The first parallel self-run skipped
+  this and drowned in load-induced timeouts (53 of 79).
 
 ## Rejected
 

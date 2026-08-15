@@ -8,10 +8,16 @@ import 'test_runner.dart';
 /// Runs `dart test` via [Platform.resolvedExecutable] (ADR 0003).
 final class DartTestRunner implements TestRunner {
   /// Creates a runner executing inside [root].
-  const DartTestRunner(this.root);
+  ///
+  /// [concurrency] caps the suite's own test concurrency so parallel
+  /// workers share the cores instead of oversubscribing them (ADR 0017).
+  const DartTestRunner(this.root, {this.concurrency});
 
   /// Package root the suite runs from.
   final String root;
+
+  /// Value for `dart test --concurrency`; `null` keeps the suite default.
+  final int? concurrency;
 
   @override
   Future<TestRun> run({List<String>? tests, Duration? timeout}) async {
@@ -20,6 +26,7 @@ final class DartTestRunner implements TestRunner {
       'test',
       '--reporter',
       'json',
+      if (concurrency != null) '--concurrency=$concurrency',
       for (final name in tests ?? const <String>[]) ...['--plain-name', name],
     ], workingDirectory: root);
 

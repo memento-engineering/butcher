@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:path/path.dart' as p;
 import 'package:radioactive_dart/radioactive_dart.dart';
@@ -69,7 +70,7 @@ void main() {
       final progress = <String>[];
       final result = await Engine(
         projectRoot: await miniProject(),
-        runnerFactory: (_) => runner,
+        runnerFactory: (_, _) => runner,
         onProgress: (done, total, result) =>
             progress.add('$done/$total ${result.outcome.name}'),
       ).run();
@@ -86,7 +87,7 @@ void main() {
     final runner = FakeRunner();
     final result = await Engine(
       projectRoot: await miniProject(),
-      runnerFactory: (_) => runner,
+      runnerFactory: (_, _) => runner,
       coverage: const NothingCovered(),
     ).run();
 
@@ -97,7 +98,7 @@ void main() {
   test('aborts on a red background reading', () async {
     final engine = Engine(
       projectRoot: await miniProject(),
-      runnerFactory: (_) => FakeRunner(baselineExitCode: 1),
+      runnerFactory: (_, _) => FakeRunner(baselineExitCode: 1),
     );
     await expectLater(engine.run(), throwsA(isA<RunAborted>()));
   });
@@ -110,7 +111,7 @@ void main() {
       await Engine(
         projectRoot: await miniProject(),
         jobs: 99,
-        runnerFactory: (root) {
+        runnerFactory: (root, _) {
           roots.add(root);
           return runner;
         },
@@ -133,7 +134,7 @@ void main() {
     final runner = FakeRunner(mutantExitCode: 70, mutantOutput: 'venting core');
     await Engine(
       projectRoot: await miniProject(),
-      runnerFactory: (_) => runner,
+      runnerFactory: (_, _) => runner,
       logger: RadLogger(verbose: false, path: logPath, console: StringBuffer()),
       failedRunLogDir: failedDir,
     ).run();
@@ -166,11 +167,27 @@ void main() {
     final runner = FakeRunner();
     await Engine(
       projectRoot: await miniProject(),
-      runnerFactory: (_) => runner,
+      runnerFactory: (_, _) => runner,
       failedRunLogDir: failedDir,
     ).run();
 
     expect(Directory(failedDir).existsSync(), isFalse);
+  });
+
+  test('divides the suite concurrency among workers', () async {
+    final concurrencies = <int>[];
+    final runner = FakeRunner();
+    await Engine(
+      projectRoot: await miniProject(),
+      jobs: 2,
+      runnerFactory: (_, suiteConcurrency) {
+        concurrencies.add(suiteConcurrency);
+        return runner;
+      },
+    ).run();
+
+    final expected = max(1, Platform.numberOfProcessors ~/ 2);
+    expect(concurrencies, [expected, expected]);
   });
 
   test('keeps report order deterministic under parallel completion', () async {
@@ -181,7 +198,7 @@ void main() {
     final result = await Engine(
       projectRoot: await miniProject(),
       jobs: 2,
-      runnerFactory: (_) => runner,
+      runnerFactory: (_, _) => runner,
       onProgress: (done, total, r) => completionOrder.add(r.mutant.id),
     ).run();
 

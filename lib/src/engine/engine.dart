@@ -29,6 +29,10 @@ typedef ProgressCallback = void Function(
   MutantResult result,
 );
 
+/// Builds a runner rooted at a containment; [suiteConcurrency] is this
+/// worker's share of the cores (ADR 0017).
+typedef RunnerFactory = TestRunner Function(String root, int suiteConcurrency);
+
 /// Orchestrates a full run: generate, contain, verify, irradiate, classify.
 final class Engine {
   /// Creates an engine for the project at [projectRoot].
@@ -37,7 +41,7 @@ final class Engine {
     MutagenRegistry? registry,
     this.coverage = const FullCoverageProvider(),
     this.selector = const WholeSuiteSelector(),
-    this.runnerFactory = DartTestRunner.new,
+    this.runnerFactory = _defaultRunnerFactory,
     this.onProgress,
     this.logger,
     int? jobs,
@@ -45,6 +49,9 @@ final class Engine {
   }) : registry = registry ?? MutagenRegistry.defaults(),
        jobs = jobs ?? defaultJobs,
        failedRunLogDir = failedRunLogDir ?? radFailedRunsPath();
+
+  static TestRunner _defaultRunnerFactory(String root, int suiteConcurrency) =>
+      DartTestRunner(root, concurrency: suiteConcurrency);
 
   /// Default worker count: half the cores, since each suite process
   /// parallelizes internally already (ADR 0017).
@@ -63,7 +70,7 @@ final class Engine {
   final TestSelector selector;
 
   /// Builds the runner for a containment root; seam for `flutter test`.
-  final TestRunner Function(String root) runnerFactory;
+  final RunnerFactory runnerFactory;
 
   /// Optional per-mutant progress hook, called in completion order.
   final ProgressCallback? onProgress;
@@ -121,11 +128,22 @@ final class Engine {
     ]);
     try {
       await Future.wait(containments.map((c) => _resolveDependencies(c.root)));
-      final runners = [for (final c in containments) runnerFactory(c.root)];
-      logger?.info('prepared {Workers} containments in {DurationMs} ms', {
-        'Workers': workers,
-        'DurationMs': prepareWatch.elapsedMilliseconds,
-      });
+      // Divide the cores among workers so parallel suites do not
+      // oversubscribe; the background reading uses the same concurrency to
+      // keep half-lives calibrated (ADR 0017).
+      final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ workers);
+      final runners = [
+        for (final c in containments) runnerFactory(c.root, suiteConcurrency),
+      ];
+      logger?.info(
+        'prepared {Workers} containments in {DurationMs} ms, '
+        '{SuiteConcurrency} test threads each',
+        {
+          'Workers': workers,
+          'SuiteConcurrency': suiteConcurrency,
+          'DurationMs': prepareWatch.elapsedMilliseconds,
+        },
+      );
 
       final background = await runners.first.run();
       if (background.exitCode != 0) {
