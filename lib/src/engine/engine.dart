@@ -13,6 +13,7 @@ import 'mutant_generator.dart';
 import 'outcome_classifier.dart';
 import 'run_aborted.dart';
 import 'run_result.dart';
+import 'test_events.dart';
 import 'test_runner.dart';
 import 'test_selector.dart';
 import 'whole_suite_selector.dart';
@@ -69,10 +70,12 @@ final class Engine {
 
       final background = await runner.run();
       if (background.exitCode != 0) {
+        final summary = TestEvents.parse(background.output).summarize();
         throw RunAborted(
           'background reading is red; a green suite is a precondition '
           '(ADR 0005). If a copy exclusion removed a required asset, fix '
-          '$containmentIgnoreFile.\n${background.output}',
+          '$containmentIgnoreFile.\n'
+          '${summary.isEmpty ? background.output : summary}',
         );
       }
       final halfLife = halfLifeFor(background.duration);

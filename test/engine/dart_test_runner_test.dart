@@ -12,7 +12,7 @@ void main() {
     final run = await DartTestRunner(dir.path).run();
     expect(run.exitCode, 0);
     expect(run.timedOut, isFalse);
-    expect(run.output, contains('All tests passed!'));
+    expect(run.output, contains('"type":"done"'));
     expect(run.duration, greaterThan(Duration.zero));
   });
 

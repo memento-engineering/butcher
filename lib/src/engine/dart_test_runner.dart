@@ -18,6 +18,8 @@ final class DartTestRunner implements TestRunner {
     final watch = Stopwatch()..start();
     final process = await Process.start(Platform.resolvedExecutable, [
       'test',
+      '--reporter',
+      'json',
       for (final name in tests ?? const <String>[]) ...['--plain-name', name],
     ], workingDirectory: root);
 
