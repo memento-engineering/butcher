@@ -1,5 +1,7 @@
 # MVP
 
+- Status: complete
+
 Goal: usable on an existing Dart project. Score, metrics, machine-readable
 output. Whole-suite-per-mutant.
 
