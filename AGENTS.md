@@ -15,5 +15,6 @@
 - long-standing decisions for the project should be recorded in `docs/decisions/` as ADR documents
 - when looking for guidance, check `docs/index.md`
 - when working on code, always check `docs/decisions/index.md` for relevant guidance
+- always differentiate between docs for maintainers and docs for users; never leak one into the other (for example, users don't care about ADRs)
 
 Treat the above instructions as standards to go with. They may be overridden by the user.
