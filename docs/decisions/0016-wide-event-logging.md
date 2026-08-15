@@ -12,15 +12,16 @@
 
 ## Decision
 
-- One logger (`RadLogger`) per run, created by the CLI and shared with the
-  engine; both views log into it: the tool (start, report, exit) and the
-  engine (generation, containments, background reading, classifications).
+- One tool logger (`RadLogger`) per run is created by the CLI and shared with
+  the engine for start, report, exit, and orchestration events.
+- Each worker appends mutant-run events to its containment log through the
+  same logger implementation and CLEF schema.
 - Two levels only: `info` and `error`.
 - CLEF (Compact Log Event Format): one JSON line per event with `@t`
   timestamp, `@mt` message template whose `{Property}` holes name the
   event's properties, and `@l` only on errors (absent means info).
-- Log file at `<system temp>/rad/rad.log`; a new run deletes the previous
-  file. Flushed per event, so a crash loses nothing.
+- Tool log at `<system temp>/rad/rad.log`. Startup cleanup removes the previous
+  file ([0018](0018-run-workspace-lifecycle.md)). Events flush immediately.
 - Wide events, each carrying a per-run `RunId` property:
 
 | Message template | Extra properties |
@@ -33,16 +34,16 @@
 - Console output stays human-readable and non-verbose by default;
   `--verbose` renders each event for humans: time, level, message with
   interpolated properties, ANSI-colored when the terminal supports it.
-- Mutated-run suite output is kept under `<system temp>/rad/runs/` for every
-  executed mutant. The folder always remains present; the CLI clears only its
-  previous contents when a new tool run starts. Engine instances never clear
-  it. Each filename starts with its engine `RunId`, so nested engine runs
-  cannot overwrite the active tool run's files. Mutants with no coverage do
-  not execute and therefore have no run log. These logs are CLEF too: one
-  event carries the full mutation context and suite output, with error level
-  for abnormal outcomes (`Timeout`, `Unviable`, `RunError`, `MemoryError`),
-  plus one `nested test error` event per parsed failure. All events correlate
-  with the tool log via the shared `RunId`.
+- Mutated-run suite output is kept under `<system temp>/rad/runs/`.
+- The run directory is never removed. Startup cleanup removes only its
+  immediate children ([0018](0018-run-workspace-lifecycle.md)).
+- Each worker writes one `<containment-name>.log` file. The random containment
+  name is the filename; mutation IDs never participate in path construction.
+- Every executed mutant appends one wide event carrying its mutation context,
+  suite output, containment name, and shared `RunId`.
+- Abnormal outcomes (`Timeout`, `Unviable`, `RunError`, `MemoryError`) use error
+  level. Parsed test failures remain structured nested-error events.
+- Mutants with no coverage do not execute and produce no containment event.
 
 ## Rejected
 
@@ -51,3 +52,4 @@
 - A logging framework dependency: two levels and one sink do not need one.
 - Appending to a growing log file: old runs are noise; the report is the
   durable artifact.
+- Per-mutant filenames: encoded operators collide and create excessive files.

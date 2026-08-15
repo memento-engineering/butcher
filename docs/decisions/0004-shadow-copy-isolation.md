@@ -13,6 +13,8 @@
   `lib/` there.
 - By default, all rad temp data (containments, logs) lives under one
   `<system temp>/rad/` folder.
+- The run workspace is locked and cleaned only at the start of the next run
+  ([0018](0018-run-workspace-lifecycle.md)).
 - Resolve the root, tool log, and run-log folder once in `RadPaths`; pass that
   context through the CLI, engine, containment, and logger seams.
 - Tests inject an isolated `RadPaths` root and never touch production paths.

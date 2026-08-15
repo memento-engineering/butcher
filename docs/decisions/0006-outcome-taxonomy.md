@@ -15,11 +15,13 @@
 - The full enum exists from the MVP, even for outcomes produced only by later
   stages.
 - Half-life (per-mutant timeout) = `max(background reading × 3, 10 s floor)`.
-- Policy flags: `--with-timeouts` (count as escaped), `--max-timeouts`
-  ceiling.
+- `Killed`, `Survived`, and `Timeout` remain separate peer outcomes in results.
+- Timeouts are inconclusive. They count as neither killed nor survived.
+- `--max-timeouts` fails a run when its timeout ceiling is exceeded.
 
 ## Rejected
 
 - Uncaught timeouts/OOM/crashes.
+- Folding timeouts into killed or survived results.
 - Half-life derived from the background reading without a floor: a near-zero
   reading collapses it.

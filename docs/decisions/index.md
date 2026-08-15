@@ -8,13 +8,14 @@ How the decisions compose at runtime:
 
 ```mermaid
 flowchart TD
-    A[containment: filtered project or workspace copy] --> B[background reading: verify suite green]
-    B --> C[analyzer: resolved AST → mutants]
-    C --> D[tracer: collect or ingest per-test lcov]
-    D --> E[compile schemata once]
-    E --> F[per mutant: covering tests, fastest first, first kill wins]
-    F --> G[TCE pass over survivors]
-    G --> H[reports + criticality gate]
+    A[lock + startup cleanup] --> B[containment: filtered project or workspace copy]
+    B --> C[background reading: verify suite green]
+    C --> D[analyzer: resolved AST → mutants]
+    D --> E[tracer: collect or ingest per-test lcov]
+    E --> F[compile schemata once]
+    F --> G[per mutant: covering tests, fastest first, first kill wins]
+    G --> H[TCE pass over survivors]
+    H --> I[reports + criticality gate]
 ```
 
 | ADR | Title | Status |
@@ -36,5 +37,6 @@ flowchart TD
 | [0015](0015-full-pana-score.md) | Full pana score | accepted |
 | [0016](0016-wide-event-logging.md) | Wide-event logging | accepted |
 | [0017](0017-parallel-classification.md) | Parallel classification | accepted |
+| [0018](0018-run-workspace-lifecycle.md) | Run workspace lifecycle | accepted, staged v0.1–v0.2 |
 
 Feature staging: [../roadmap/index.md](../roadmap/index.md).
