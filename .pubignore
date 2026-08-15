@@ -1,0 +1,11 @@
+# Replaces .gitignore for `dart pub publish`, so it repeats its entries.
+.dart_tool/
+pubspec.lock
+/mutation-report.json
+/self-run.log
+
+# Maintainer-only material; users read the README and pub.dev API docs.
+/AGENTS.md
+/CLAUDE.md
+/docs/
+/sandbox/
