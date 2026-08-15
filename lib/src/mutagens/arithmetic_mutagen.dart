@@ -9,12 +9,12 @@ final class ArithmeticMutagen extends BinaryExpressionMutagen {
   String get id => 'arithmetic';
 
   @override
-  Map<String, String> get swaps => const {
-    '+': '-',
-    '-': '+',
-    '*': '/',
-    '/': '*',
-    '%': '*',
-    '~/': '*',
+  Map<String, List<String>> get swaps => const {
+    '+': ['-', '*'],
+    '-': ['+', '*'],
+    '*': ['/', '+'],
+    '/': ['*', '-'],
+    '%': ['*', '~/'],
+    '~/': ['*', '%'],
   };
 }

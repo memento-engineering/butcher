@@ -74,13 +74,17 @@ final class MutantGenerator {
       if (byFile != 0) return byFile;
       final byOffset = a.offset.compareTo(b.offset);
       if (byOffset != 0) return byOffset;
-      return a.operatorId.compareTo(b.operatorId);
+      final byOperator = a.operatorId.compareTo(b.operatorId);
+      if (byOperator != 0) return byOperator;
+      return a.replacement.compareTo(b.replacement);
     });
 
     return [
       for (final mutation in mutations)
         Mutant(
-          id: '${mutation.filePath}:${mutation.offset}:${mutation.operatorId}',
+          id:
+              '${mutation.filePath}:${mutation.offset}'
+              ':${mutation.operatorId}:${mutation.replacement}',
           mutation: mutation,
         ),
     ];

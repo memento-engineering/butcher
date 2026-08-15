@@ -36,10 +36,11 @@ void main() {
         (raw as Map<String, dynamic>)['id']: raw['status'],
     };
 
-    expect(statusById['lib/calc.dart:27:arithmetic'], 'Killed');
-    expect(statusById['lib/calc.dart:56:arithmetic'], 'Survived');
-    expect(statusById['lib/calc.dart:60:equality'], 'Survived');
-    expect(out.toString(), contains('MSI: 33.33%'));
+    expect(statusById['lib/calc.dart:27:arithmetic:-'], 'Killed');
+    expect(statusById['lib/calc.dart:27:arithmetic:*'], 'Killed');
+    expect(statusById['lib/calc.dart:56:arithmetic:*'], 'Survived');
+    expect(statusById['lib/calc.dart:60:equality:!='], 'Survived');
+    expect(out.toString(), contains('MSI: 40.00%'));
 
     final untouched = File(p.join(dir.path, 'lib', 'calc.dart'));
     expect(untouched.readAsStringSync(), _partiallyTestedCalc);

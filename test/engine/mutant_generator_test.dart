@@ -35,8 +35,9 @@ void main() {
         'lib/src/b.dart',
       });
       expect(mutants.map((m) => m.id), [
-        'lib/a.dart:27:arithmetic',
-        'lib/src/b.dart:31:logical',
+        'lib/a.dart:27:arithmetic:*',
+        'lib/a.dart:27:arithmetic:-',
+        'lib/src/b.dart:31:logical:||',
       ]);
 
       final second = await generator.generate();

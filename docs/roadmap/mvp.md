@@ -25,5 +25,5 @@ output. Serial, whole-suite-per-mutant.
 - Engine owns file rewriting and execution; mutagens only emit `Mutation`
   value objects. The v1.0 schemata switch must touch zero mutagens.
 - Test runner behind an interface; v0.1 adds a `flutter test` implementation.
-- Mutant IDs derived from file + node offset + operator: stable inputs for
-  v2.0 history files.
+- Mutant IDs derived from file + node offset + operator + replacement:
+  stable inputs for v2.0 history files.

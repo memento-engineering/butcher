@@ -4,6 +4,7 @@ import 'binary_expression_mutagen.dart';
 
 /// Swaps `&&` with `||` and back.
 ///
+/// The counterpart is the only short-circuit peer, so each site has one swap.
 /// Widened guard: logical operands are `bool` by language rules.
 final class LogicalMutagen extends BinaryExpressionMutagen {
   /// Creates the mutagen; it holds no state.
@@ -13,7 +14,10 @@ final class LogicalMutagen extends BinaryExpressionMutagen {
   String get id => 'logical';
 
   @override
-  Map<String, String> get swaps => const {'&&': '||', '||': '&&'};
+  Map<String, List<String>> get swaps => const {
+    '&&': ['||'],
+    '||': ['&&'],
+  };
 
   @override
   bool guard(BinaryExpression node) => true;

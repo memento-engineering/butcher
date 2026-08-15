@@ -9,9 +9,10 @@
 
 ## Decision
 
-- Stable mutant IDs: file + node offset + operator.
-- Mutations sorted by (file, offset) before ID assignment: AST visit order
-  (parent before child) is not source order.
+- Stable mutant IDs: file + node offset + operator + replacement; the
+  replacement disambiguates multi-swap operators (`'+' → ['-', '*']`).
+- Mutations sorted by (file, offset, operator, replacement) before ID
+  assignment: AST visit order (parent before child) is not source order.
 - Seeded ordering; isolated test processes.
 - Identical input always produces an identical report.
 

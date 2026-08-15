@@ -30,12 +30,12 @@ Future<List<Mutation>> mutationsOf(String source) async {
 }
 
 void main() {
-  test('mutates int arithmetic', () async {
+  test('mutates int arithmetic with every declared swap', () async {
     final mutations = await mutationsOf('int f(int a, int b) => a + b;');
-    final swap = mutations.singleWhere((m) => m.operatorId == 'arithmetic');
-    expect(swap.original, '+');
-    expect(swap.replacement, '-');
-    expect(swap.length, 1);
+    final swaps = mutations.where((m) => m.operatorId == 'arithmetic').toList();
+    expect(swaps.map((m) => m.original).toSet(), {'+'});
+    expect(swaps.map((m) => m.replacement), unorderedEquals(['-', '*']));
+    expect(swaps.map((m) => m.length).toSet(), {1});
   });
 
   test('guards string concatenation from arithmetic swaps', () async {
@@ -63,8 +63,7 @@ class Probe {
 bool f(Probe a, Probe b, int x, int y) => a < b && x < y;
 ''');
     final swaps = mutations.where((m) => m.operatorId == 'relational');
-    expect(swaps, hasLength(1));
-    expect(swaps.single.replacement, '>=');
+    expect(swaps.map((m) => m.replacement), unorderedEquals(['<=', '>=']));
   });
 
   test('flips boolean literals', () async {
