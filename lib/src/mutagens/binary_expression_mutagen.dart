@@ -1,0 +1,44 @@
+import 'package:analyzer/dart/ast/ast.dart';
+
+import '../model/mutation.dart';
+import 'mutagen.dart';
+
+/// Base for operator-swap mutagens on binary expressions.
+///
+/// Subclasses declare [swaps] as pure data. The default [guard] admits
+/// numeric operands only; widening it is an explicit override (ADR 0008).
+abstract class BinaryExpressionMutagen implements Mutagen {
+  /// Allows subclasses to have const constructors.
+  const BinaryExpressionMutagen();
+
+  /// Operator lexeme mapped to its replacement lexeme.
+  Map<String, String> get swaps;
+
+  /// Whether [node] is safe to mutate; defaults to numeric operands only.
+  bool guard(BinaryExpression node) =>
+      _isNumeric(node.leftOperand) && _isNumeric(node.rightOperand);
+
+  /// The mutations this mutagen proposes for [node] in [filePath], or none.
+  List<Mutation> mutate(BinaryExpression node, String filePath) {
+    final operator = node.operator;
+    final replacement = swaps[operator.lexeme];
+    if (replacement == null || !guard(node)) return const [];
+    return [
+      Mutation(
+        filePath: filePath,
+        offset: operator.offset,
+        length: operator.length,
+        original: operator.lexeme,
+        replacement: replacement,
+        operatorId: id,
+        description: 'replace ${operator.lexeme} with $replacement',
+      ),
+    ];
+  }
+
+  static bool _isNumeric(Expression operand) {
+    final type = operand.staticType;
+    if (type == null) return false;
+    return type.isDartCoreInt || type.isDartCoreDouble || type.isDartCoreNum;
+  }
+}
