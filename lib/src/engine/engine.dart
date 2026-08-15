@@ -140,6 +140,15 @@ final class Engine {
       final runners = [
         for (final c in containments) runnerFactory(c.root, suiteConcurrency),
       ];
+      // One run log per containment, named after it (ADR 0016).
+      final runLogs = [
+        for (final c in containments)
+          RadLogger(
+            verbose: false,
+            path: p.join(paths.runLogs, '${c.name}.log'),
+            runId: runId,
+          ),
+      ];
       logger?.info(
         'prepared {Workers} containments in {DurationMs} ms, '
         '{SuiteConcurrency} test threads each',
@@ -193,16 +202,13 @@ final class Engine {
             'Done': done,
             'Total': mutants.length,
             'Worker': slot,
+            'Containment': containments[slot].name,
             'ExitCode': result.testRun?.exitCode,
             'TimedOut': result.testRun?.timedOut,
             'DurationMs': result.testRun?.duration.inMilliseconds,
           });
           if (result.testRun != null) {
-            final logFile = _keepRunLog(result);
-            logger?.info('kept run log for {MutantId} at {Path}', {
-              'MutantId': result.mutant.id,
-              'Path': logFile,
-            });
+            _logMutantRun(runLogs[slot], containments[slot].name, result);
           }
           onProgress?.call(done, mutants.length, result);
         }
@@ -250,17 +256,18 @@ final class Engine {
     }
   }
 
-  /// Writes a CLEF log for one mutant run, correlated with the tool log
-  /// through the shared `RunId` (ADR 0016).
-  String _keepRunLog(MutantResult result) {
+  /// Appends one wide event for [result] to its worker's [runLog],
+  /// correlated with the tool log through the shared `RunId` (ADR 0016).
+  void _logMutantRun(
+    RadLogger runLog,
+    String containment,
+    MutantResult result,
+  ) {
     final run = result.testRun!;
     final mutation = result.mutant.mutation;
-    final directory = Directory(paths.runLogs)..createSync(recursive: true);
-    final name = result.mutant.id.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
-    final file = File(p.join(directory.path, '$runId-$name.log'));
-    final runLogger = RadLogger(verbose: false, path: file.path, runId: runId);
     final properties = {
       'MutantId': result.mutant.id,
+      'Containment': containment,
       'Outcome': result.outcome.name,
       'Mutation': mutation.description,
       'File': mutation.filePath,
@@ -273,17 +280,13 @@ final class Engine {
       'Output': run.output,
     };
     if (failedOutcomes.contains(result.outcome)) {
-      runLogger.error('mutant run failed: {MutantId} as {Outcome}', properties);
+      runLog.error('mutant run failed: {MutantId} as {Outcome}', properties);
     } else {
-      runLogger.info(
-        'mutant run completed: {MutantId} as {Outcome}',
-        properties,
-      );
+      runLog.info('mutant run completed: {MutantId} as {Outcome}', properties);
     }
     for (final error in TestEvents.parse(run.output).errors) {
-      runLogger.error('nested test error: {Error}', {'Error': error});
+      runLog.error('nested test error: {Error}', {'Error': error});
     }
-    return file.path;
   }
 
   /// Per-mutant timeout: `max(background × 3, 10 s floor)` (ADR 0006).

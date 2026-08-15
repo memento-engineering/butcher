@@ -19,6 +19,9 @@ final class Containment {
   /// Absolute path of the copied project root.
   final String root;
 
+  /// Random directory name of this containment; names its run log (ADR 0016).
+  String get name => p.basename(root);
+
   final Map<String, String> _pristine = {};
 
   /// Copies [projectRoot] into a fresh temp dir, honoring exclusions.

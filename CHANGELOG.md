@@ -19,3 +19,5 @@
   time out.
 - Mutant runs stop at the first failing test (`dart test --fail-fast`); the
   background reading still runs the whole suite.
+- Run logs: one file per containment instead of one per mutant, named after
+  the containment the worker owns.

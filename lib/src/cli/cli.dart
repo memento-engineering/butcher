@@ -194,7 +194,9 @@ int? _maxTimeouts(ArgResults options) {
   if (raw == null) return null;
   final value = int.tryParse(raw);
   if (value == null || value < 0) {
-    throw FormatException('--max-timeouts must be a non-negative integer: $raw');
+    throw FormatException(
+      '--max-timeouts must be a non-negative integer: $raw',
+    );
   }
   return value;
 }

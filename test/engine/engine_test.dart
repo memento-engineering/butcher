@@ -92,11 +92,11 @@ void main() {
       expect(result.halfLife, const Duration(seconds: 10));
       expect(progress, ['1/2 killed', '2/2 killed']);
       expect(runner.timeouts, [null, result.halfLife, result.halfLife]);
-      expect(
-        runner.failFasts,
-        [false, true, true],
-        reason: 'mutant runs stop at the first failure, the reading does not',
-      );
+      expect(runner.failFasts, [
+        false,
+        true,
+        true,
+      ], reason: 'mutant runs stop at the first failure, the reading does not');
     },
   );
 
@@ -163,6 +163,7 @@ void main() {
     await Engine(
       projectRoot: await miniProject(),
       paths: paths,
+      jobs: 2,
       runnerFactory: (_, _) => runner,
       logger: toolLogger,
     ).run();
@@ -174,30 +175,43 @@ void main() {
     expect(log, contains('"@mt":"background reading green'));
     expect(log, contains('"@mt":"classified {MutantId} as {Outcome}'));
     expect(log, contains('"Outcome":"runError"'));
-    expect(log, contains('"@mt":"kept run log for {MutantId}'));
+    expect(
+      log,
+      contains('"Containment":"containment_'),
+      reason: 'the tool log points at the run log that holds the detail',
+    );
 
-    final kept = Directory(paths.runLogs).listSync().whereType<File>().toList();
+    final newLogs = Directory(paths.runLogs)
+        .listSync()
+        .whereType<File>()
+        .where((file) => p.basename(file.path) != 'stale.log')
+        .toList();
     expect(
-      kept,
-      hasLength(3),
-      reason: 'existing logs remain alongside new logs',
+      newLogs.map((file) => p.basename(file.path)),
+      everyElement(startsWith('containment_')),
+      reason: 'one run log per containment, named after it',
     );
-    final newLogs = kept.where((file) => p.basename(file.path) != 'stale.log');
-    final keptEvent = jsonDecode(
-      newLogs.first.readAsLinesSync().first,
-    ) as Map<String, dynamic>;
-    expect(keptEvent['@mt'], 'mutant run failed: {MutantId} as {Outcome}');
-    expect(keptEvent['@l'], 'Error');
-    expect(keptEvent['Outcome'], 'runError');
-    expect(keptEvent['Output'], contains('venting core'));
+    final events = [
+      for (final file in newLogs)
+        for (final line in file.readAsLinesSync())
+          jsonDecode(line) as Map<String, dynamic>,
+    ];
+    expect(events, hasLength(2), reason: 'one event per executed mutant');
+    for (final event in events) {
+      expect(event['@mt'], 'mutant run failed: {MutantId} as {Outcome}');
+      expect(event['@l'], 'Error');
+      expect(event['Outcome'], 'runError');
+      expect(event['Output'], contains('venting core'));
+      expect(event['Containment'], startsWith('containment_'));
+      expect(
+        event['RunId'],
+        toolLogger.runId,
+        reason: 'run logs correlate with the tool log',
+      );
+    }
     expect(
-      keptEvent['RunId'],
-      toolLogger.runId,
-      reason: 'run logs correlate with the tool log',
-    );
-    expect(
-      kept.map((f) => p.basename(f.path)),
-      contains('stale.log'),
+      File(p.join(paths.runLogs, 'stale.log')).existsSync(),
+      isTrue,
       reason: 'nested engine runs must not clear another run\'s logs',
     );
 
@@ -205,9 +219,9 @@ void main() {
     await Engine(
       projectRoot: await miniProject(),
       paths: paths,
+      jobs: 2,
       runnerFactory: (_, _) => FakeRunner(),
     ).run();
-    expect(Directory(paths.runLogs).listSync().whereType<File>(), hasLength(5));
     expect(
       firstRunPaths.every((path) => File(path).existsSync()),
       isTrue,
@@ -228,10 +242,14 @@ void main() {
     ).run();
 
     final kept = Directory(paths.runLogs).listSync().whereType<File>().toList();
-    expect(kept, hasLength(2));
-    for (final file in kept) {
-      final event =
-          jsonDecode(file.readAsLinesSync().first) as Map<String, dynamic>;
+    expect(kept, isNotEmpty);
+    final events = [
+      for (final file in kept)
+        for (final line in file.readAsLinesSync())
+          jsonDecode(line) as Map<String, dynamic>,
+    ];
+    expect(events, hasLength(2));
+    for (final event in events) {
       expect(event['@mt'], 'mutant run completed: {MutantId} as {Outcome}');
       expect(event, isNot(contains('@l')));
       expect(event['Outcome'], 'killed');

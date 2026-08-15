@@ -39,8 +39,10 @@ void main() {
 ''',
     );
 
-    final run = await DartTestRunner(dir.path, concurrency: 1)
-        .run(failFast: true);
+    final run = await DartTestRunner(
+      dir.path,
+      concurrency: 1,
+    ).run(failFast: true);
 
     expect(run.exitCode, 1);
     expect(run.output, isNot(contains('adds again')));

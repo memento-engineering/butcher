@@ -67,7 +67,13 @@ void main() {
       logLines.where((e) => (e['@mt'] as String).startsWith('classified')),
       hasLength(5),
     );
-    expect(Directory(paths.runLogs).listSync().whereType<File>(), hasLength(5));
+    final runLogs = Directory(paths.runLogs).listSync().whereType<File>();
+    expect(
+      runLogs.map((file) => p.basename(file.path)),
+      everyElement(startsWith('containment_')),
+      reason: 'one run log per containment, named after it',
+    );
+    expect(runLogs, hasLength(2), reason: 'one per --jobs worker');
     expect(File(p.join(paths.runLogs, 'stale.log')).existsSync(), isFalse);
     expect(
       out.toString(),
@@ -110,7 +116,7 @@ void main() {
     expect(out.toString(), contains('as survived'));
     expect(out.toString(), contains('exit 1'));
     expect(out.toString(), isNot(contains('@mt')));
-    expect(Directory(paths.runLogs).listSync().whereType<File>(), hasLength(5));
+    expect(Directory(paths.runLogs).listSync().whereType<File>(), isNotEmpty);
   });
 
   test('gates on --max-timeouts and scores timeouts as neither', () async {
@@ -120,11 +126,11 @@ void main() {
     );
     final out = StringBuffer();
 
-    final exit = await radMain([
-      '--max-timeouts',
-      '0',
-      dir.path,
-    ], out: out, paths: paths);
+    final exit = await radMain(
+      ['--max-timeouts', '0', dir.path],
+      out: out,
+      paths: paths,
+    );
 
     expect(exit, 1, reason: out.toString());
     expect(out.toString(), contains('timeout: 1'));
@@ -134,11 +140,19 @@ void main() {
 
   test('rejects an invalid timeout ceiling with exit code 64', () async {
     expect(
-      await radMain(['--max-timeouts', '-1'], out: StringBuffer(), paths: paths),
+      await radMain(
+        ['--max-timeouts', '-1'],
+        out: StringBuffer(),
+        paths: paths,
+      ),
       64,
     );
     expect(
-      await radMain(['--max-timeouts', 'few'], out: StringBuffer(), paths: paths),
+      await radMain(
+        ['--max-timeouts', 'few'],
+        out: StringBuffer(),
+        paths: paths,
+      ),
       64,
     );
   });
