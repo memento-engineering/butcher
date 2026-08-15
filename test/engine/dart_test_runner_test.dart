@@ -25,6 +25,27 @@ void main() {
     expect(run.timedOut, isFalse);
   });
 
+  test('stops at the first failure with failFast', () async {
+    final dir = await createFixturePackage(
+      calc: 'int add(int a, int b) => a - b;\n',
+      testSource: '''
+import 'package:fixture/calc.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test('adds', () => expect(add(2, 3), 5));
+  test('adds again', () => expect(add(4, 5), 9));
+}
+''',
+    );
+
+    final run = await DartTestRunner(dir.path, concurrency: 1)
+        .run(failFast: true);
+
+    expect(run.exitCode, 1);
+    expect(run.output, isNot(contains('adds again')));
+  });
+
   test('kills a hung suite at its half-life', () async {
     final dir = await createFixturePackage(
       testSource: '''

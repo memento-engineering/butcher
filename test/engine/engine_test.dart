@@ -30,9 +30,17 @@ final class FakeRunner implements TestRunner {
 
   final List<Duration?> timeouts = [];
 
+  /// One entry per call: whether it asked the suite to stop at first failure.
+  final List<bool> failFasts = [];
+
   @override
-  Future<TestRun> run({List<String>? tests, Duration? timeout}) async {
+  Future<TestRun> run({
+    List<String>? tests,
+    Duration? timeout,
+    bool failFast = false,
+  }) async {
     timeouts.add(timeout);
+    failFasts.add(failFast);
     final baseline = timeouts.length == 1;
     final call = timeouts.length - 2;
     if (!baseline && call < delays.length) {
@@ -84,6 +92,11 @@ void main() {
       expect(result.halfLife, const Duration(seconds: 10));
       expect(progress, ['1/2 killed', '2/2 killed']);
       expect(runner.timeouts, [null, result.halfLife, result.halfLife]);
+      expect(
+        runner.failFasts,
+        [false, true, true],
+        reason: 'mutant runs stop at the first failure, the reading does not',
+      );
     },
   );
 

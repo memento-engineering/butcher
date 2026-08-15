@@ -17,3 +17,5 @@
   both MSI terms, and a timeout rate is printed when any mutant times out.
 - `--max-timeouts` honesty gate: exit 1 when more mutants than the ceiling
   time out.
+- Mutant runs stop at the first failing test (`dart test --fail-fast`); the
+  background reading still runs the whole suite.

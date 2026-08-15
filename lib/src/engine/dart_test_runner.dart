@@ -20,12 +20,17 @@ final class DartTestRunner implements TestRunner {
   final int? concurrency;
 
   @override
-  Future<TestRun> run({List<String>? tests, Duration? timeout}) async {
+  Future<TestRun> run({
+    List<String>? tests,
+    Duration? timeout,
+    bool failFast = false,
+  }) async {
     final watch = Stopwatch()..start();
     final process = await Process.start(Platform.resolvedExecutable, [
       'test',
       '--reporter',
       'json',
+      if (failFast) '--fail-fast',
       if (concurrency != null) '--concurrency=$concurrency',
       for (final name in tests ?? const <String>[]) ...['--plain-name', name],
     ], workingDirectory: root);

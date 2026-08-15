@@ -234,6 +234,8 @@ final class Engine {
       final run = await runner.run(
         tests: selector.select(mutant),
         timeout: halfLife,
+        // One failing test already kills the mutant; the rest is wasted work.
+        failFast: true,
       );
       return MutantResult(
         mutant: mutant,
