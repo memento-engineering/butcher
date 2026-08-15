@@ -3,15 +3,15 @@ import 'package:radioactive_dart/radioactive_dart.dart';
 Future<void> main() async {
   final engine = Engine(
     projectRoot: '.',
-    onProgress: (done, total, mutant, outcome) =>
-        print('[$done/$total] ${mutant.id} -> ${outcome.name}'),
+    onProgress: (done, total, result) =>
+        print('[$done/$total] ${result.mutant.id} -> ${result.outcome.name}'),
   );
 
   final result = await engine.run();
 
   await ConsoleReportSink().write(result.results);
   await StrykerJsonSink(
-    projectRoot: '.',
+    sources: result.sources,
     outputPath: 'mutation-report.json',
   ).write(result.results);
 }
