@@ -16,7 +16,7 @@ final class RadLogger {
   ///
   /// [colors] defaults to auto-detection: on only when writing to a
   /// terminal that supports ANSI escapes. Pass [runId] to correlate this
-  /// log with another one (e.g. failed-run logs with the tool log).
+  /// log with another one (e.g. mutant-run logs with the tool log).
   RadLogger({
     required this.verbose,
     String? path,

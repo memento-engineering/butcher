@@ -19,11 +19,13 @@ const defaultReportPath = 'mutation-report.json';
 /// Exit codes: 0 success, 1 MSI below `--threshold`, 64 usage error,
 /// 70 aborted run (red background reading, failed pub get).
 ///
-/// [logPath] overrides the log file location, [RadLogger.defaultPath].
+/// [logPath] overrides the log file location, [RadLogger.defaultPath];
+/// [runLogDir] overrides where mutant-run logs are kept.
 Future<int> radMain(
   List<String> arguments, {
   StringSink? out,
   String? logPath,
+  String? runLogDir,
 }) async {
   final sink = out ?? stdout;
   final parser = ArgParser()
@@ -94,6 +96,7 @@ Future<int> radMain(
     projectRoot: projectRoot,
     jobs: jobs,
     logger: logger,
+    runLogDir: runLogDir,
     onProgress: verbose
         // The rendered `classified` event already covers verbose progress.
         ? null

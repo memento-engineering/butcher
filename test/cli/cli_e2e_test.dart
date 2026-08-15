@@ -20,11 +20,13 @@ void main() {
     final dir = await createFixturePackage(calc: _partiallyTestedCalc);
     final out = StringBuffer();
     final logPath = p.join(dir.path, 'rad.log');
+    final runLogDir = p.join(dir.path, 'runs');
 
     final exit = await radMain(
       ['--output', 'report.json', '--jobs', '2', dir.path],
       out: out,
       logPath: logPath,
+      runLogDir: runLogDir,
     );
 
     expect(exit, 0, reason: out.toString());
@@ -40,6 +42,7 @@ void main() {
       logLines.where((e) => (e['@mt'] as String).startsWith('classified')),
       hasLength(5),
     );
+    expect(Directory(runLogDir).listSync().whereType<File>(), hasLength(5));
     expect(
       out.toString(),
       isNot(contains('@mt')),

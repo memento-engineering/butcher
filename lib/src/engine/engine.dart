@@ -45,10 +45,10 @@ final class Engine {
     this.onProgress,
     this.logger,
     int? jobs,
-    String? failedRunLogDir,
+    String? runLogDir,
   }) : registry = registry ?? MutagenRegistry.defaults(),
        jobs = jobs ?? defaultJobs,
-       failedRunLogDir = failedRunLogDir ?? radFailedRunsPath();
+       runLogDir = runLogDir ?? radRunsPath();
 
   static TestRunner _defaultRunnerFactory(String root, int suiteConcurrency) =>
       DartTestRunner(root, concurrency: suiteConcurrency);
@@ -81,10 +81,10 @@ final class Engine {
   /// Receives engine wide events; `null` disables engine logging.
   final RadLogger? logger;
 
-  /// Where suite logs of failed mutant runs are kept (ADR 0016).
-  final String failedRunLogDir;
+  /// Where suite logs of mutant runs are kept (ADR 0016).
+  final String runLogDir;
 
-  /// Outcomes whose suite output is kept for manual analysis.
+  /// Outcomes recorded as errors in their run log.
   static const failedOutcomes = {
     Outcome.timeout,
     Outcome.unviable,
@@ -118,8 +118,8 @@ final class Engine {
       },
     );
 
-    final failedDir = Directory(failedRunLogDir);
-    if (failedDir.existsSync()) failedDir.deleteSync(recursive: true);
+    final runsDir = Directory(runLogDir);
+    if (runsDir.existsSync()) runsDir.deleteSync(recursive: true);
 
     final prepareWatch = Stopwatch()..start();
     final workers = max(1, min(jobs, mutants.length));
@@ -192,10 +192,9 @@ final class Engine {
             'TimedOut': result.testRun?.timedOut,
             'DurationMs': result.testRun?.duration.inMilliseconds,
           });
-          if (failedOutcomes.contains(result.outcome) &&
-              result.testRun != null) {
-            final logFile = _keepFailedRunLog(result);
-            logger?.info('kept failed run log for {MutantId} at {Path}', {
+          if (result.testRun != null) {
+            final logFile = _keepRunLog(result);
+            logger?.info('kept run log for {MutantId} at {Path}', {
               'MutantId': result.mutant.id,
               'Path': logFile,
             });
@@ -244,29 +243,40 @@ final class Engine {
     }
   }
 
-  /// Writes a CLEF log for one failed mutant run, correlated with the tool
-  /// log through the shared `RunId` (ADR 0016).
-  String _keepFailedRunLog(MutantResult result) {
+  /// Writes a CLEF log for one mutant run, correlated with the tool log
+  /// through the shared `RunId` (ADR 0016).
+  String _keepRunLog(MutantResult result) {
     final run = result.testRun!;
     final mutation = result.mutant.mutation;
-    final directory = Directory(failedRunLogDir)..createSync(recursive: true);
+    final directory = Directory(runLogDir)..createSync(recursive: true);
     final name = result.mutant.id.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
     final file = File(p.join(directory.path, '$name.log'));
-    final runLogger =
-        RadLogger(verbose: false, path: file.path, runId: logger?.runId)
-          ..error('mutant run failed: {MutantId} as {Outcome}', {
-            'MutantId': result.mutant.id,
-            'Outcome': result.outcome.name,
-            'Mutation': mutation.description,
-            'File': mutation.filePath,
-            'Offset': mutation.offset,
-            'Operator': mutation.operatorId,
-            'Replacement': mutation.replacement,
-            'ExitCode': run.exitCode,
-            'TimedOut': run.timedOut,
-            'DurationMs': run.duration.inMilliseconds,
-            'Output': run.output,
-          });
+    final runLogger = RadLogger(
+      verbose: false,
+      path: file.path,
+      runId: logger?.runId,
+    );
+    final properties = {
+      'MutantId': result.mutant.id,
+      'Outcome': result.outcome.name,
+      'Mutation': mutation.description,
+      'File': mutation.filePath,
+      'Offset': mutation.offset,
+      'Operator': mutation.operatorId,
+      'Replacement': mutation.replacement,
+      'ExitCode': run.exitCode,
+      'TimedOut': run.timedOut,
+      'DurationMs': run.duration.inMilliseconds,
+      'Output': run.output,
+    };
+    if (failedOutcomes.contains(result.outcome)) {
+      runLogger.error('mutant run failed: {MutantId} as {Outcome}', properties);
+    } else {
+      runLogger.info(
+        'mutant run completed: {MutantId} as {Outcome}',
+        properties,
+      );
+    }
     for (final error in TestEvents.parse(run.output).errors) {
       runLogger.error('nested test error: {Error}', {'Error': error});
     }

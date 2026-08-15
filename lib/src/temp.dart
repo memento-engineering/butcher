@@ -12,5 +12,5 @@ String radTempPath() => p.join(Directory.systemTemp.path, 'rad');
 Directory radTempRoot() =>
     Directory(radTempPath())..createSync(recursive: true);
 
-/// Default folder for suite logs of failed mutant runs (ADR 0016).
-String radFailedRunsPath() => p.join(radTempPath(), 'failed-runs');
+/// Default folder for suite logs of mutant runs (ADR 0016).
+String radRunsPath() => p.join(radTempPath(), 'runs');

@@ -123,12 +123,12 @@ void main() {
     },
   );
 
-  test('logs engine stages and keeps failed run logs for analysis', () async {
+  test('logs engine stages and keeps run logs for analysis', () async {
     final temp = await Directory.systemTemp.createTemp('rad_engine_log_');
     addTearDown(() => temp.delete(recursive: true));
     final logPath = p.join(temp.path, 'rad.log');
-    final failedDir = p.join(temp.path, 'failed-runs');
-    File(p.join(failedDir, 'stale.log'))
+    final runsDir = p.join(temp.path, 'runs');
+    File(p.join(runsDir, 'stale.log'))
       ..parent.createSync(recursive: true)
       ..writeAsStringSync('from a previous run');
 
@@ -142,7 +142,7 @@ void main() {
       projectRoot: await miniProject(),
       runnerFactory: (_, _) => runner,
       logger: toolLogger,
-      failedRunLogDir: failedDir,
+      runLogDir: runsDir,
     ).run();
 
     final log = File(logPath).readAsStringSync();
@@ -152,10 +152,10 @@ void main() {
     expect(log, contains('"@mt":"background reading green'));
     expect(log, contains('"@mt":"classified {MutantId} as {Outcome}'));
     expect(log, contains('"Outcome":"runError"'));
-    expect(log, contains('"@mt":"kept failed run log for {MutantId}'));
+    expect(log, contains('"@mt":"kept run log for {MutantId}'));
 
-    final kept = Directory(failedDir).listSync().whereType<File>().toList();
-    expect(kept, hasLength(2), reason: 'one log per failed mutant run');
+    final kept = Directory(runsDir).listSync().whereType<File>().toList();
+    expect(kept, hasLength(2), reason: 'one log per mutant run');
     final keptEvent =
         jsonDecode(kept.first.readAsLinesSync().first) as Map<String, dynamic>;
     expect(keptEvent['@mt'], 'mutant run failed: {MutantId} as {Outcome}');
@@ -165,28 +165,37 @@ void main() {
     expect(
       keptEvent['RunId'],
       toolLogger.runId,
-      reason: 'failed-run logs correlate with the tool log',
+      reason: 'run logs correlate with the tool log',
     );
     expect(
       kept.map((f) => p.basename(f.path)),
       isNot(contains('stale.log')),
-      reason: 'a new run clears the previous failed-run logs',
+      reason: 'a new run clears the previous run logs',
     );
   });
 
-  test('keeps no failed run logs when mutants are killed cleanly', () async {
+  test('keeps run logs when mutants are killed cleanly', () async {
     final temp = await Directory.systemTemp.createTemp('rad_engine_clean_');
     addTearDown(() => temp.delete(recursive: true));
-    final failedDir = p.join(temp.path, 'failed-runs');
+    final runsDir = p.join(temp.path, 'runs');
 
     final runner = FakeRunner();
     await Engine(
       projectRoot: await miniProject(),
       runnerFactory: (_, _) => runner,
-      failedRunLogDir: failedDir,
+      runLogDir: runsDir,
     ).run();
 
-    expect(Directory(failedDir).existsSync(), isFalse);
+    final kept = Directory(runsDir).listSync().whereType<File>().toList();
+    expect(kept, hasLength(2));
+    for (final file in kept) {
+      final event =
+          jsonDecode(file.readAsLinesSync().first) as Map<String, dynamic>;
+      expect(event['@mt'], 'mutant run completed: {MutantId} as {Outcome}');
+      expect(event, isNot(contains('@l')));
+      expect(event['Outcome'], 'killed');
+      expect(event['Output'], contains('"result":"failure"'));
+    }
   });
 
   test('divides the suite concurrency among workers', () async {

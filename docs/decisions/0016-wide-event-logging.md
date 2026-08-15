@@ -33,13 +33,13 @@
 - Console output stays human-readable and non-verbose by default;
   `--verbose` renders each event for humans: time, level, message with
   interpolated properties, ANSI-colored when the terminal supports it.
-- Mutated-run suite output is kept under `<system temp>/rad/failed-runs/`
-  only for abnormal outcomes (`Timeout`, `Unviable`, `RunError`,
-  `MemoryError`) for manual analysis; a new run clears the folder. These
-  logs are CLEF too: a `mutant run failed` error event carrying the full
-  mutation context and suite output, one `nested test error` event per
-  parsed failure, all correlated with the tool log via the shared `RunId`.
-  The tool log survives every outcome and reports the results.
+- Mutated-run suite output is kept under `<system temp>/rad/runs/` for every
+  executed mutant; a new run clears the folder. Mutants with no coverage do
+  not execute and therefore have no run log. These logs are CLEF too: one
+  event carries the full mutation context and suite output, with error level
+  for abnormal outcomes (`Timeout`, `Unviable`, `RunError`, `MemoryError`),
+  plus one `nested test error` event per parsed failure. All events correlate
+  with the tool log via the shared `RunId`.
 
 ## Rejected
 
