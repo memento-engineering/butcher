@@ -1,10 +1,14 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:path/path.dart' as p;
+
+import '../log/rad_logger.dart';
 import '../model/mutant.dart';
 import '../model/mutant_result.dart';
 import '../model/outcome.dart';
 import '../mutagens/mutagen_registry.dart';
+import '../temp.dart';
 import 'containment.dart';
 import 'coverage_provider.dart';
 import 'dart_test_runner.dart';
@@ -35,9 +39,12 @@ final class Engine {
     this.selector = const WholeSuiteSelector(),
     this.runnerFactory = DartTestRunner.new,
     this.onProgress,
+    this.logger,
     int? jobs,
+    String? failedRunLogDir,
   }) : registry = registry ?? MutagenRegistry.defaults(),
-       jobs = jobs ?? defaultJobs;
+       jobs = jobs ?? defaultJobs,
+       failedRunLogDir = failedRunLogDir ?? radFailedRunsPath();
 
   /// Default worker count: half the cores, since each suite process
   /// parallelizes internally already (ADR 0017).
@@ -64,13 +71,50 @@ final class Engine {
   /// Number of parallel workers, each owning a containment (ADR 0017).
   final int jobs;
 
+  /// Receives engine wide events; `null` disables engine logging.
+  final RadLogger? logger;
+
+  /// Where suite logs of failed mutant runs are kept (ADR 0016).
+  final String failedRunLogDir;
+
+  /// Outcomes whose suite output is kept for manual analysis.
+  static const failedOutcomes = {
+    Outcome.timeout,
+    Outcome.unviable,
+    Outcome.runError,
+    Outcome.memoryError,
+  };
+
   /// Runs the whole pipeline and returns every classified result.
   Future<RunResult> run() async {
+    final generationWatch = Stopwatch()..start();
     final (mutants, sources) = await MutantGenerator(
       projectRoot: projectRoot,
       registry: registry,
     ).generate();
+    final perFile = <String, int>{for (final file in sources.keys) file: 0};
+    for (final mutant in mutants) {
+      perFile.update(mutant.mutation.filePath, (count) => count + 1);
+    }
+    perFile.forEach(
+      (file, count) => logger?.info('found {MutantCount} mutants in {File}', {
+        'MutantCount': count,
+        'File': file,
+      }),
+    );
+    logger?.info(
+      'generated {MutantCount} mutants in {FileCount} files in {DurationMs} ms',
+      {
+        'MutantCount': mutants.length,
+        'FileCount': sources.length,
+        'DurationMs': generationWatch.elapsedMilliseconds,
+      },
+    );
 
+    final failedDir = Directory(failedRunLogDir);
+    if (failedDir.existsSync()) failedDir.deleteSync(recursive: true);
+
+    final prepareWatch = Stopwatch()..start();
     final workers = max(1, min(jobs, mutants.length));
     final containments = await Future.wait([
       for (var i = 0; i < workers; i++) Containment.create(projectRoot),
@@ -78,6 +122,10 @@ final class Engine {
     try {
       await Future.wait(containments.map((c) => _resolveDependencies(c.root)));
       final runners = [for (final c in containments) runnerFactory(c.root)];
+      logger?.info('prepared {Workers} containments in {DurationMs} ms', {
+        'Workers': workers,
+        'DurationMs': prepareWatch.elapsedMilliseconds,
+      });
 
       final background = await runners.first.run();
       if (background.exitCode != 0) {
@@ -90,6 +138,14 @@ final class Engine {
         );
       }
       final halfLife = halfLifeFor(background.duration);
+      logger?.info(
+        'background reading green in {DurationMs} ms, '
+        'half-life {HalfLifeMs} ms',
+        {
+          'DurationMs': background.duration.inMilliseconds,
+          'HalfLifeMs': halfLife.inMilliseconds,
+        },
+      );
 
       // One shared queue; results keyed by index so completion order never
       // changes the report (ADR 0007, ADR 0017).
@@ -108,6 +164,24 @@ final class Engine {
           );
           results[index] = result;
           done++;
+          logger?.info('classified {MutantId} as {Outcome} ({Done}/{Total})', {
+            'MutantId': result.mutant.id,
+            'Outcome': result.outcome.name,
+            'Done': done,
+            'Total': mutants.length,
+            'Worker': slot,
+            'ExitCode': result.testRun?.exitCode,
+            'TimedOut': result.testRun?.timedOut,
+            'DurationMs': result.testRun?.duration.inMilliseconds,
+          });
+          if (failedOutcomes.contains(result.outcome) &&
+              result.testRun != null) {
+            final logFile = _keepFailedRunLog(result);
+            logger?.info('kept failed run log for {MutantId} at {Path}', {
+              'MutantId': result.mutant.id,
+              'Path': logFile,
+            });
+          }
           onProgress?.call(done, mutants.length, result);
         }
       }
@@ -150,6 +224,26 @@ final class Engine {
     } finally {
       await containment.restore(mutant.mutation.filePath);
     }
+  }
+
+  String _keepFailedRunLog(MutantResult result) {
+    final run = result.testRun!;
+    final directory = Directory(failedRunLogDir)..createSync(recursive: true);
+    final name = result.mutant.id.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+    final file = File(p.join(directory.path, '$name.log'));
+    file.writeAsStringSync(
+      [
+        'mutant: ${result.mutant.id}',
+        'mutation: ${result.mutant.mutation.description}',
+        'outcome: ${result.outcome.name}',
+        'exit code: ${run.exitCode}',
+        'timed out: ${run.timedOut}',
+        'duration: ${run.duration.inMilliseconds} ms',
+        '',
+        run.output,
+      ].join('\n'),
+    );
+    return file.path;
   }
 
   /// Per-mutant timeout: `max(background × 3, 10 s floor)` (ADR 0006).

@@ -33,13 +33,16 @@ void main() {
         .readAsLinesSync()
         .map((line) => jsonDecode(line) as Map<String, dynamic>)
         .toList();
-    expect(logLines.first['type'], 'run_start');
-    expect(logLines.last['type'], 'run_complete');
-    expect(logLines.last['msi'], closeTo(40, 0.01));
-    expect(logLines.where((e) => e['type'] == 'mutant'), hasLength(5));
+    expect(logLines.first['@mt'], startsWith('starting rad'));
+    expect(logLines.last['@mt'], startsWith('run complete'));
+    expect(logLines.last['Msi'], closeTo(40, 0.01));
+    expect(
+      logLines.where((e) => (e['@mt'] as String).startsWith('classified')),
+      hasLength(5),
+    );
     expect(
       out.toString(),
-      isNot(contains('"type":"mutant"')),
+      isNot(contains('@mt')),
       reason: 'non-verbose console stays human-readable',
     );
     final reportFile = File(p.join(dir.path, 'report.json'));
@@ -74,9 +77,10 @@ void main() {
       logPath: p.join(dir.path, 'rad.log'),
     );
     expect(exit, 1, reason: out.toString());
-    expect(out.toString(), contains('"type":"run_start"'));
-    expect(out.toString(), contains('"type":"mutant"'));
-    expect(out.toString(), contains('"exit_code":1'));
+    expect(out.toString(), contains('INF starting rad'));
+    expect(out.toString(), contains('as survived'));
+    expect(out.toString(), contains('exit 1'));
+    expect(out.toString(), isNot(contains('@mt')));
   });
 
   test('aborts with exit code 70 on a red background reading', () async {
@@ -90,7 +94,9 @@ void main() {
       logPath: logPath,
     );
     expect(exit, 70);
-    expect(File(logPath).readAsStringSync(), contains('"type":"run_aborted"'));
+    final logText = File(logPath).readAsStringSync();
+    expect(logText, contains('"@mt":"run aborted: {Reason}"'));
+    expect(logText, contains('"@l":"Error"'));
   });
 
   test('rejects an invalid threshold with exit code 64', () async {

@@ -78,43 +78,28 @@ Future<int> radMain(
   final projectRoot = p.normalize(
     p.absolute(options.rest.isEmpty ? '.' : options.rest.single),
   );
+  final verbose = options.flag('verbose');
   final watch = Stopwatch()..start();
-  final logger = RadLogger(
-    verbose: options.flag('verbose'),
-    path: logPath,
-    console: sink,
-  );
-  logger.info('run_start', {
-    'tool_version': packageVersion,
-    'dart': Platform.version,
-    'os': Platform.operatingSystem,
-    'project_root': projectRoot,
-    'jobs': jobs ?? Engine.defaultJobs,
-    'argv': arguments,
+  final logger = RadLogger(verbose: verbose, path: logPath, console: sink);
+  logger.info('starting rad {ToolVersion} on {ProjectRoot} with {Jobs} jobs', {
+    'ToolVersion': packageVersion,
+    'ProjectRoot': projectRoot,
+    'Jobs': jobs ?? Engine.defaultJobs,
+    'Dart': Platform.version,
+    'Os': Platform.operatingSystem,
+    'Argv': arguments,
   });
 
   final engine = Engine(
     projectRoot: projectRoot,
     jobs: jobs,
-    onProgress: (done, total, result) {
-      final mutation = result.mutant.mutation;
-      sink.writeln(
-        '[$done/$total] ${result.mutant.id} -> ${result.outcome.name}',
-      );
-      logger.info('mutant', {
-        'id': result.mutant.id,
-        'file': mutation.filePath,
-        'offset': mutation.offset,
-        'operator': mutation.operatorId,
-        'replacement': mutation.replacement,
-        'outcome': result.outcome.name,
-        'exit_code': result.testRun?.exitCode,
-        'timed_out': result.testRun?.timedOut,
-        'duration_ms': result.testRun?.duration.inMilliseconds,
-        'done': done,
-        'total': total,
-      });
-    },
+    logger: logger,
+    onProgress: verbose
+        // The rendered `classified` event already covers verbose progress.
+        ? null
+        : (done, total, result) => sink.writeln(
+            '[$done/$total] ${result.mutant.id} -> ${result.outcome.name}',
+          ),
   );
 
   try {
@@ -135,17 +120,20 @@ Future<int> radMain(
 
     final metrics = Metrics.fromResults(result.results);
     final gated = threshold != null && metrics.msi < threshold;
-    logger.info('run_complete', {
-      'mutants': result.results.length,
-      'counts': metrics.counts.map((k, v) => MapEntry(k.name, v)),
-      'msi': metrics.msi,
-      'covered_msi': metrics.coveredMsi,
-      'background_ms': result.backgroundReading.inMilliseconds,
-      'half_life_ms': result.halfLife.inMilliseconds,
-      'duration_ms': watch.elapsedMilliseconds,
-      'report': reportPath,
-      'exit_code': gated ? 1 : 0,
-    });
+    logger.info(
+      'run complete: MSI {Msi}% over {MutantCount} mutants, exit {ExitCode}',
+      {
+        'Msi': double.parse(metrics.msi.toStringAsFixed(2)),
+        'MutantCount': result.results.length,
+        'ExitCode': gated ? 1 : 0,
+        'Counts': metrics.counts.map((k, v) => MapEntry(k.name, v)),
+        'CoveredMsi': double.parse(metrics.coveredMsi.toStringAsFixed(2)),
+        'BackgroundMs': result.backgroundReading.inMilliseconds,
+        'HalfLifeMs': result.halfLife.inMilliseconds,
+        'DurationMs': watch.elapsedMilliseconds,
+        'Report': reportPath,
+      },
+    );
     if (gated) {
       stderr.writeln(
         'MSI ${metrics.msi.toStringAsFixed(2)}% is below the '
@@ -155,9 +143,9 @@ Future<int> radMain(
     }
     return 0;
   } on RunAborted catch (abort) {
-    logger.error('run_aborted', {
-      'message': abort.message,
-      'duration_ms': watch.elapsedMilliseconds,
+    logger.error('run aborted: {Reason}', {
+      'Reason': abort.message,
+      'DurationMs': watch.elapsedMilliseconds,
     });
     stderr.writeln(abort.message);
     return 70;

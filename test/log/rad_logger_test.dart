@@ -20,61 +20,84 @@ void main() {
           .map((line) => jsonDecode(line) as Map<String, dynamic>)
           .toList();
 
-  test('writes JSON lines with level, type, run id, and timestamp', () {
-    final logger =
-        RadLogger(verbose: false, path: path, console: StringBuffer())
-          ..info('run_start', {'os': 'windows'})
-          ..error('run_aborted', {'message': 'red baseline'});
+  RadLogger logger({bool verbose = false, StringSink? console, bool? colors}) =>
+      RadLogger(
+        verbose: verbose,
+        path: path,
+        console: console ?? StringBuffer(),
+        colors: colors,
+      );
+
+  test('writes CLEF lines: @t, @mt, properties, and @l only on errors', () {
+    final log = logger()
+      ..info('starting rad {ToolVersion}', {'ToolVersion': '0.1.0-dev'})
+      ..error('run aborted: {Reason}', {'Reason': 'red baseline'});
 
     final lines = events();
     expect(lines, hasLength(2));
-    expect(lines.first['level'], 'info');
-    expect(lines.first['type'], 'run_start');
-    expect(lines.first['os'], 'windows');
-    expect(lines.first['run_id'], logger.runId);
-    expect(DateTime.parse(lines.first['timestamp'] as String), isNotNull);
-    expect(lines.last['level'], 'error');
-    expect(lines.last['message'], 'red baseline');
-    expect(lines.last['run_id'], lines.first['run_id']);
+    expect(lines.first['@mt'], 'starting rad {ToolVersion}');
+    expect(lines.first['ToolVersion'], '0.1.0-dev');
+    expect(lines.first.containsKey('@l'), isFalse, reason: 'info is default');
+    expect(lines.first['RunId'], log.runId);
+    expect(DateTime.parse(lines.first['@t'] as String), isNotNull);
+    expect(lines.last['@l'], 'Error');
+    expect(lines.last['Reason'], 'red baseline');
+    expect(lines.last['RunId'], lines.first['RunId']);
   });
 
   test('replaces the log file of a previous run', () {
-    RadLogger(
-      verbose: false,
-      path: path,
-      console: StringBuffer(),
-    ).info('run_start', {'run': 1});
-    RadLogger(
-      verbose: false,
-      path: path,
-      console: StringBuffer(),
-    ).info('run_start', {'run': 2});
+    logger().info('run {N}', {'N': 1});
+    logger().info('run {N}', {'N': 2});
 
     final lines = events();
     expect(lines, hasLength(1));
-    expect(lines.single['run'], 2);
+    expect(lines.single['N'], 2);
   });
 
   test('defaults to the log file inside the single rad temp folder', () {
     expect(RadLogger.defaultPath, p.join(radTempPath(), 'rad.log'));
   });
 
-  test('streams events to the console only when verbose', () {
+  test('renders humans-first console lines only when verbose', () {
     final quiet = StringBuffer();
-    RadLogger(
-      verbose: false,
-      path: path,
-      console: quiet,
-    ).info('mutant', {'id': 'x'});
+    logger(console: quiet).info('classified {MutantId}', {'MutantId': 'x'});
     expect(quiet.toString(), isEmpty);
 
     final loud = StringBuffer();
-    RadLogger(
+    logger(verbose: true, console: loud)
+      ..info('classified {MutantId} as {Outcome}', {
+        'MutantId': 'lib/a.dart:27:arithmetic:-',
+        'Outcome': 'killed',
+      })
+      ..error('run aborted: {Reason}', {'Reason': 'red'});
+
+    final rendered = loud.toString();
+    expect(rendered, isNot(contains('@mt')), reason: 'no raw JSON');
+    expect(
+      rendered,
+      contains('INF classified lib/a.dart:27:arithmetic:- as killed'),
+    );
+    expect(rendered, contains('ERR run aborted: red'));
+    expect(rendered, matches(RegExp(r'\d{2}:\d{2}:\d{2} ')));
+    expect(rendered, isNot(contains('\x1B')), reason: 'no colors off-terminal');
+  });
+
+  test('colors the level and interpolated properties when enabled', () {
+    final loud = StringBuffer();
+    logger(
       verbose: true,
-      path: path,
       console: loud,
-    ).info('mutant', {'id': 'x'});
-    expect(loud.toString(), contains('"type":"mutant"'));
-    expect(loud.toString(), contains('"id":"x"'));
+      colors: true,
+    ).info('classified {MutantId}', {'MutantId': 'x'});
+
+    final rendered = loud.toString();
+    expect(rendered, contains('\x1B[32mINF\x1B[0m'));
+    expect(rendered, contains('\x1B[36mx\x1B[0m'));
+  });
+
+  test('leaves unknown template holes untouched', () {
+    final loud = StringBuffer();
+    logger(verbose: true, console: loud).info('missing {Nope}');
+    expect(loud.toString(), contains('missing {Nope}'));
   });
 }

@@ -12,22 +12,31 @@
 
 ## Decision
 
-- One logger (`RadLogger`) per run, created by the CLI; the engine stays
-  logger-free and feeds it through its seams.
+- One logger (`RadLogger`) per run, created by the CLI and shared with the
+  engine; both views log into it: the tool (start, report, exit) and the
+  engine (generation, containments, background reading, classifications).
 - Two levels only: `info` and `error`.
-- JSON-lines log file at `<system temp>/rad/rad.log`; a new run deletes the
-  previous file. Flushed per event, so a crash loses nothing.
-- Wide events, each carrying `timestamp` and a per-run `run_id`:
+- CLEF (Compact Log Event Format): one JSON line per event with `@t`
+  timestamp, `@mt` message template whose `{Property}` holes name the
+  event's properties, and `@l` only on errors (absent means info).
+- Log file at `<system temp>/rad/rad.log`; a new run deletes the previous
+  file. Flushed per event, so a crash loses nothing.
+- Wide events, each carrying a per-run `RunId` property:
 
-| Event | Context |
+| Message template | Extra properties |
 |---|---|
-| `run_start` | tool version, Dart version, OS, project root, argv |
-| `mutant` (one per mutant) | id, file, offset, operator, replacement, outcome, exit code, timed out, duration, progress |
-| `run_complete` | outcome counts, MSI, covered MSI, background reading, half-life, duration, report path, exit code |
-| `run_aborted` | abort message |
+| `starting rad {ToolVersion} on {ProjectRoot} with {Jobs} jobs` | Dart version, OS, argv |
+| `classified {MutantId} as {Outcome} ({Done}/{Total})` | file, offset, operator, replacement, exit code, timed out, duration |
+| `run complete: MSI {Msi}% over {MutantCount} mutants, exit {ExitCode}` | outcome counts, covered MSI, background reading, half-life, duration, report path |
+| `run aborted: {Reason}` | duration |
 
 - Console output stays human-readable and non-verbose by default;
-  `--verbose` additionally streams the structured events to the console.
+  `--verbose` renders each event for humans: time, level, message with
+  interpolated properties, ANSI-colored when the terminal supports it.
+- Mutated-run suite output is kept under `<system temp>/rad/failed-runs/`
+  only for abnormal outcomes (`Timeout`, `Unviable`, `RunError`,
+  `MemoryError`) for manual analysis; a new run clears the folder. The tool
+  log survives every outcome and reports the results.
 
 ## Rejected
 

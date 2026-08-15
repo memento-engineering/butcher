@@ -11,3 +11,6 @@ String radTempPath() => p.join(Directory.systemTemp.path, 'rad');
 /// file) lives below this folder, keeping the temp dir uncluttered.
 Directory radTempRoot() =>
     Directory(radTempPath())..createSync(recursive: true);
+
+/// Default folder for suite logs of failed mutant runs (ADR 0016).
+String radFailedRunsPath() => p.join(radTempPath(), 'failed-runs');

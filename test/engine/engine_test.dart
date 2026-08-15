@@ -10,9 +10,16 @@ const _killedOutput = '''
 ''';
 
 final class FakeRunner implements TestRunner {
-  FakeRunner({this.baselineExitCode = 0, this.delays = const []});
+  FakeRunner({
+    this.baselineExitCode = 0,
+    this.mutantExitCode = 1,
+    this.mutantOutput = _killedOutput,
+    this.delays = const [],
+  });
 
   final int baselineExitCode;
+  final int mutantExitCode;
+  final String mutantOutput;
 
   /// Per-call delays after the baseline; missing entries mean no delay.
   final List<Duration> delays;
@@ -28,9 +35,9 @@ final class FakeRunner implements TestRunner {
       await Future<void>.delayed(delays[call]);
     }
     return TestRun(
-      exitCode: baseline ? baselineExitCode : 1,
+      exitCode: baseline ? baselineExitCode : mutantExitCode,
       timedOut: false,
-      output: baseline ? '' : _killedOutput,
+      output: baseline ? '' : mutantOutput,
       duration: const Duration(seconds: 1),
     );
   }
@@ -113,6 +120,58 @@ void main() {
       expect(roots.toSet(), hasLength(2), reason: 'containments are distinct');
     },
   );
+
+  test('logs engine stages and keeps failed run logs for analysis', () async {
+    final temp = await Directory.systemTemp.createTemp('rad_engine_log_');
+    addTearDown(() => temp.delete(recursive: true));
+    final logPath = p.join(temp.path, 'rad.log');
+    final failedDir = p.join(temp.path, 'failed-runs');
+    File(p.join(failedDir, 'stale.log'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('from a previous run');
+
+    final runner = FakeRunner(mutantExitCode: 70, mutantOutput: 'venting core');
+    await Engine(
+      projectRoot: await miniProject(),
+      runnerFactory: (_) => runner,
+      logger: RadLogger(verbose: false, path: logPath, console: StringBuffer()),
+      failedRunLogDir: failedDir,
+    ).run();
+
+    final log = File(logPath).readAsStringSync();
+    expect(log, contains('"@mt":"found {MutantCount} mutants in {File}"'));
+    expect(log, contains('"@mt":"generated {MutantCount} mutants'));
+    expect(log, contains('"@mt":"prepared {Workers} containments'));
+    expect(log, contains('"@mt":"background reading green'));
+    expect(log, contains('"@mt":"classified {MutantId} as {Outcome}'));
+    expect(log, contains('"Outcome":"runError"'));
+    expect(log, contains('"@mt":"kept failed run log for {MutantId}'));
+
+    final kept = Directory(failedDir).listSync().whereType<File>().toList();
+    expect(kept, hasLength(2), reason: 'one log per failed mutant run');
+    expect(kept.first.readAsStringSync(), contains('outcome: runError'));
+    expect(kept.first.readAsStringSync(), contains('venting core'));
+    expect(
+      kept.map((f) => p.basename(f.path)),
+      isNot(contains('stale.log')),
+      reason: 'a new run clears the previous failed-run logs',
+    );
+  });
+
+  test('keeps no failed run logs when mutants are killed cleanly', () async {
+    final temp = await Directory.systemTemp.createTemp('rad_engine_clean_');
+    addTearDown(() => temp.delete(recursive: true));
+    final failedDir = p.join(temp.path, 'failed-runs');
+
+    final runner = FakeRunner();
+    await Engine(
+      projectRoot: await miniProject(),
+      runnerFactory: (_) => runner,
+      failedRunLogDir: failedDir,
+    ).run();
+
+    expect(Directory(failedDir).existsSync(), isFalse);
+  });
 
   test('keeps report order deterministic under parallel completion', () async {
     final runner = FakeRunner(

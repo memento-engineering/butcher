@@ -22,8 +22,9 @@ ones the tests kill.
 - `.radignore` (gitignore-style globs, project root) excludes paths from the
   isolated project copy tests run in.
 - All temp data (containment copies, logs) lives under `<system temp>/rad/`.
-- Each run writes wide-event JSON logs to `<system temp>/rad/rad.log`,
-  replacing the previous run's file.
+- Each run writes wide-event CLEF logs to `<system temp>/rad/rad.log`,
+  replacing the previous run's file. Suite output of failed mutant runs is
+  kept in `<system temp>/rad/failed-runs/`.
 
 ## More
 
