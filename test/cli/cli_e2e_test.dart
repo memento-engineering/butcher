@@ -78,6 +78,7 @@ void main() {
       ['--threshold', '90', '--verbose', dir.path],
       out: out,
       logPath: p.join(dir.path, 'rad.log'),
+      runLogDir: p.join(dir.path, 'runs'),
     );
     expect(exit, 1, reason: out.toString());
     expect(out.toString(), contains('INF starting rad'));
@@ -95,6 +96,7 @@ void main() {
       [dir.path],
       out: StringBuffer(),
       logPath: logPath,
+      runLogDir: p.join(dir.path, 'runs'),
     );
     expect(exit, 70);
     final logText = File(logPath).readAsStringSync();

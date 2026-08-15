@@ -24,7 +24,8 @@ ones the tests kill.
 - All temp data (containment copies, logs) lives under `<system temp>/rad/`.
 - Each run writes wide-event CLEF logs to `<system temp>/rad/rad.log`,
   replacing the previous run's file. Suite output of every executed mutant is
-  kept in `<system temp>/rad/runs/`.
+  kept in `<system temp>/rad/runs/`. The folder remains present; a new run
+  clears only its contents.
 
 ## More
 

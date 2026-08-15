@@ -85,15 +85,20 @@ void main() {
   );
 
   test('skips uncovered mutants without running tests', () async {
+    final root = await miniProject();
+    final runsDir = p.join(root, 'run-logs');
     final runner = FakeRunner();
     final result = await Engine(
-      projectRoot: await miniProject(),
+      projectRoot: root,
       runnerFactory: (_, _) => runner,
       coverage: const NothingCovered(),
+      runLogDir: runsDir,
     ).run();
 
     expect(result.results.map((r) => r.outcome).toSet(), {Outcome.noCoverage});
     expect(runner.timeouts, hasLength(1), reason: 'only the baseline ran');
+    expect(Directory(runsDir).existsSync(), isTrue);
+    expect(Directory(runsDir).listSync(), isEmpty);
   });
 
   test('aborts on a red background reading', () async {
@@ -170,7 +175,7 @@ void main() {
     expect(
       kept.map((f) => p.basename(f.path)),
       isNot(contains('stale.log')),
-      reason: 'a new run clears the previous run logs',
+      reason: 'a new run clears the previous run logs but keeps the folder',
     );
   });
 

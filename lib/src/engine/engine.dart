@@ -94,6 +94,11 @@ final class Engine {
 
   /// Runs the whole pipeline and returns every classified result.
   Future<RunResult> run() async {
+    final runsDir = Directory(runLogDir)..createSync(recursive: true);
+    for (final entry in runsDir.listSync()) {
+      entry.deleteSync(recursive: true);
+    }
+
     final generationWatch = Stopwatch()..start();
     final (mutants, sources) = await MutantGenerator(
       projectRoot: projectRoot,
@@ -117,9 +122,6 @@ final class Engine {
         'DurationMs': generationWatch.elapsedMilliseconds,
       },
     );
-
-    final runsDir = Directory(runLogDir);
-    if (runsDir.existsSync()) runsDir.deleteSync(recursive: true);
 
     final prepareWatch = Stopwatch()..start();
     final workers = max(1, min(jobs, mutants.length));
