@@ -34,5 +34,6 @@ flowchart TD
 | [0013](0013-score-and-honesty-metrics.md) | Score and honesty metrics | accepted |
 | [0014](0014-naming-and-vocabulary.md) | Naming and vocabulary | accepted |
 | [0015](0015-full-pana-score.md) | Full pana score | accepted |
+| [0016](0016-wide-event-logging.md) | Wide-event logging | accepted |
 
 Feature staging: [../roadmap/index.md](../roadmap/index.md).
