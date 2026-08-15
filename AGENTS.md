@@ -16,5 +16,8 @@
 - when looking for guidance, check `docs/index.md`
 - when working on code, always check `docs/decisions/index.md` for relevant guidance
 - always differentiate between docs for maintainers and docs for users; never leak one into the other (for example, users don't care about ADRs)
+- every _user visible_ change should get an entry in the CHANGELOG.md; internal changes don't get one
+- the pubspec.yaml on main always contains the in-development version
+- upon release, the version in pubspec.yaml should be added on top of the unreleased changes in CHANGELOG.md and then bumped according to SemVer
 
 Treat the above instructions as standards to go with. They may be overridden by the user.
