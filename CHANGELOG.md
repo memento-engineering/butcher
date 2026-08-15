@@ -11,4 +11,5 @@
 - `.radignore` consumer exclusions for the containment copy.
 - Wide-event CLEF logging to a temp-dir log file; `--verbose` renders
   events human-readably with colors. Per-mutant run logs are kept separately.
+- Filesystem paths resolve once in an injectable context.
 - Parallel classification: `--jobs` workers, each with its own containment.

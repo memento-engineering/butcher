@@ -8,7 +8,7 @@ import '../model/mutant.dart';
 import '../model/mutant_result.dart';
 import '../model/outcome.dart';
 import '../mutagens/mutagen_registry.dart';
-import '../temp.dart';
+import '../rad_paths.dart';
 import 'containment.dart';
 import 'coverage_provider.dart';
 import 'dart_test_runner.dart';
@@ -38,6 +38,7 @@ final class Engine {
   /// Creates an engine for the project at [projectRoot].
   Engine({
     required this.projectRoot,
+    required this.paths,
     MutagenRegistry? registry,
     this.coverage = const FullCoverageProvider(),
     this.selector = const WholeSuiteSelector(),
@@ -45,10 +46,11 @@ final class Engine {
     this.onProgress,
     this.logger,
     int? jobs,
-    String? runLogDir,
   }) : registry = registry ?? MutagenRegistry.defaults(),
        jobs = jobs ?? defaultJobs,
-       runLogDir = runLogDir ?? radRunsPath();
+       runId =
+           logger?.runId ??
+           DateTime.now().microsecondsSinceEpoch.toRadixString(36);
 
   static TestRunner _defaultRunnerFactory(String root, int suiteConcurrency) =>
       DartTestRunner(root, concurrency: suiteConcurrency);
@@ -59,6 +61,9 @@ final class Engine {
 
   /// Absolute or relative path of the project under test.
   final String projectRoot;
+
+  /// Filesystem locations resolved by the caller for this invocation.
+  final RadPaths paths;
 
   /// The active mutagen set.
   final MutagenRegistry registry;
@@ -81,8 +86,8 @@ final class Engine {
   /// Receives engine wide events; `null` disables engine logging.
   final RadLogger? logger;
 
-  /// Where suite logs of mutant runs are kept (ADR 0016).
-  final String runLogDir;
+  /// Correlates and namespaces every mutant-run log from this engine run.
+  final String runId;
 
   /// Outcomes recorded as errors in their run log.
   static const failedOutcomes = {
@@ -94,10 +99,7 @@ final class Engine {
 
   /// Runs the whole pipeline and returns every classified result.
   Future<RunResult> run() async {
-    final runsDir = Directory(runLogDir)..createSync(recursive: true);
-    for (final entry in runsDir.listSync()) {
-      entry.deleteSync(recursive: true);
-    }
+    Directory(paths.runLogs).createSync(recursive: true);
 
     final generationWatch = Stopwatch()..start();
     final (mutants, sources) = await MutantGenerator(
@@ -126,7 +128,8 @@ final class Engine {
     final prepareWatch = Stopwatch()..start();
     final workers = max(1, min(jobs, mutants.length));
     final containments = await Future.wait([
-      for (var i = 0; i < workers; i++) Containment.create(projectRoot),
+      for (var i = 0; i < workers; i++)
+        Containment.create(projectRoot, paths: paths),
     ]);
     try {
       await Future.wait(containments.map((c) => _resolveDependencies(c.root)));
@@ -250,14 +253,10 @@ final class Engine {
   String _keepRunLog(MutantResult result) {
     final run = result.testRun!;
     final mutation = result.mutant.mutation;
-    final directory = Directory(runLogDir)..createSync(recursive: true);
+    final directory = Directory(paths.runLogs)..createSync(recursive: true);
     final name = result.mutant.id.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
-    final file = File(p.join(directory.path, '$name.log'));
-    final runLogger = RadLogger(
-      verbose: false,
-      path: file.path,
-      runId: logger?.runId,
-    );
+    final file = File(p.join(directory.path, '$runId-$name.log'));
+    final runLogger = RadLogger(verbose: false, path: file.path, runId: runId);
     final properties = {
       'MutantId': result.mutant.id,
       'Outcome': result.outcome.name,

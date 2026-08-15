@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import '../engine/engine.dart';
 import '../engine/run_aborted.dart';
 import '../log/rad_logger.dart';
+import '../rad_paths.dart';
 import '../report/console_report_sink.dart';
 import '../report/metrics.dart';
 import '../report/stryker_json_sink.dart';
@@ -19,13 +20,11 @@ const defaultReportPath = 'mutation-report.json';
 /// Exit codes: 0 success, 1 MSI below `--threshold`, 64 usage error,
 /// 70 aborted run (red background reading, failed pub get).
 ///
-/// [logPath] overrides the log file location, [RadLogger.defaultPath];
-/// [runLogDir] overrides where mutant-run logs are kept.
+/// [paths] overrides every filesystem location used by the invocation.
 Future<int> radMain(
   List<String> arguments, {
   StringSink? out,
-  String? logPath,
-  String? runLogDir,
+  RadPaths? paths,
 }) async {
   final sink = out ?? stdout;
   final parser = ArgParser()
@@ -80,9 +79,18 @@ Future<int> radMain(
   final projectRoot = p.normalize(
     p.absolute(options.rest.isEmpty ? '.' : options.rest.single),
   );
+  final resolvedPaths = paths ?? RadPaths.systemTemp();
+  final runsDir = Directory(resolvedPaths.runLogs)..createSync(recursive: true);
+  for (final entry in runsDir.listSync()) {
+    entry.deleteSync(recursive: true);
+  }
   final verbose = options.flag('verbose');
   final watch = Stopwatch()..start();
-  final logger = RadLogger(verbose: verbose, path: logPath, console: sink);
+  final logger = RadLogger(
+    verbose: verbose,
+    path: resolvedPaths.toolLog,
+    console: sink,
+  );
   logger.info('starting rad {ToolVersion} on {ProjectRoot} with {Jobs} jobs', {
     'ToolVersion': packageVersion,
     'ProjectRoot': projectRoot,
@@ -94,9 +102,9 @@ Future<int> radMain(
 
   final engine = Engine(
     projectRoot: projectRoot,
+    paths: resolvedPaths,
     jobs: jobs,
     logger: logger,
-    runLogDir: runLogDir,
     onProgress: verbose
         // The rendered `classified` event already covers verbose progress.
         ? null

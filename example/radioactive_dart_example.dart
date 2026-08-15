@@ -3,6 +3,7 @@ import 'package:radioactive_dart/radioactive_dart.dart';
 Future<void> main() async {
   final engine = Engine(
     projectRoot: '.',
+    paths: RadPaths.systemTemp(),
     onProgress: (done, total, result) =>
         print('[$done/$total] ${result.mutant.id} -> ${result.outcome.name}'),
   );

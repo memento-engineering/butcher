@@ -6,6 +6,8 @@ import 'package:radioactive_dart/src/engine/containment.dart';
 import 'package:radioactive_dart/src/engine/mutant_generator.dart';
 import 'package:test/test.dart';
 
+import '../helpers/paths.dart';
+
 /// Generates on a one-file project, applies every mutant, checks the splice.
 Future<void> roundtrip(String source) async {
   final dir = await Directory.systemTemp.createTemp('rad_roundtrip_');
@@ -20,7 +22,8 @@ Future<void> roundtrip(String source) async {
   ).generate();
   expect(mutants, isNotEmpty);
 
-  final containment = await Containment.create(dir.path);
+  final paths = await isolatedRadPaths('rad_roundtrip_state_');
+  final containment = await Containment.create(dir.path, paths: paths);
   addTearDown(containment.dispose);
   final copy = File(p.join(containment.root, 'lib', 'a.dart'));
   for (final mutant in mutants) {

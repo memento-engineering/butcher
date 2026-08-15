@@ -5,10 +5,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:radioactive_dart/radioactive_dart.dart';
 import 'package:radioactive_dart/src/cli/cli.dart';
 import 'package:test/test.dart';
 
 import '../helpers/fixtures.dart';
+import '../helpers/paths.dart';
 
 const _partiallyTestedCalc = '''
 int add(int a, int b) => a + b;
@@ -16,22 +18,26 @@ bool isEven(int n) => n % 2 == 0;
 ''';
 
 void main() {
+  late RadPaths paths;
+
+  setUp(() async => paths = await isolatedRadPaths('rad_cli_state_'));
+
   test('produces a Stryker JSON report and kills tested mutants', () async {
     final dir = await createFixturePackage(calc: _partiallyTestedCalc);
     final out = StringBuffer();
-    final logPath = p.join(dir.path, 'rad.log');
-    final runLogDir = p.join(dir.path, 'runs');
+    File(p.join(paths.runLogs, 'stale.log'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('from a previous run');
 
     final exit = await radMain(
       ['--output', 'report.json', '--jobs', '2', dir.path],
       out: out,
-      logPath: logPath,
-      runLogDir: runLogDir,
+      paths: paths,
     );
 
     expect(exit, 0, reason: out.toString());
 
-    final logLines = File(logPath)
+    final logLines = File(paths.toolLog)
         .readAsLinesSync()
         .map((line) => jsonDecode(line) as Map<String, dynamic>)
         .toList();
@@ -42,7 +48,8 @@ void main() {
       logLines.where((e) => (e['@mt'] as String).startsWith('classified')),
       hasLength(5),
     );
-    expect(Directory(runLogDir).listSync().whereType<File>(), hasLength(5));
+    expect(Directory(paths.runLogs).listSync().whereType<File>(), hasLength(5));
+    expect(File(p.join(paths.runLogs, 'stale.log')).existsSync(), isFalse);
     expect(
       out.toString(),
       isNot(contains('@mt')),
@@ -77,50 +84,58 @@ void main() {
     final exit = await radMain(
       ['--threshold', '90', '--verbose', dir.path],
       out: out,
-      logPath: p.join(dir.path, 'rad.log'),
-      runLogDir: p.join(dir.path, 'runs'),
+      paths: paths,
     );
     expect(exit, 1, reason: out.toString());
     expect(out.toString(), contains('INF starting rad'));
     expect(out.toString(), contains('as survived'));
     expect(out.toString(), contains('exit 1'));
     expect(out.toString(), isNot(contains('@mt')));
+    expect(Directory(paths.runLogs).listSync().whereType<File>(), hasLength(5));
   });
 
   test('aborts with exit code 70 on a red background reading', () async {
     final dir = await createFixturePackage(
       calc: 'int add(int a, int b) => a * b;\n',
     );
-    final logPath = p.join(dir.path, 'rad.log');
-    final exit = await radMain(
-      [dir.path],
-      out: StringBuffer(),
-      logPath: logPath,
-      runLogDir: p.join(dir.path, 'runs'),
-    );
+    final exit = await radMain([dir.path], out: StringBuffer(), paths: paths);
     expect(exit, 70);
-    final logText = File(logPath).readAsStringSync();
+    final logText = File(paths.toolLog).readAsStringSync();
     expect(logText, contains('"@mt":"run aborted: {Reason}"'));
     expect(logText, contains('"@l":"Error"'));
+    expect(Directory(paths.runLogs).existsSync(), isTrue);
+    expect(Directory(paths.runLogs).listSync(), isEmpty);
   });
 
   test('rejects an invalid threshold with exit code 64', () async {
-    expect(await radMain(['--threshold', 'nope'], out: StringBuffer()), 64);
-    expect(await radMain(['--threshold', '101'], out: StringBuffer()), 64);
+    expect(
+      await radMain(['--threshold', 'nope'], out: StringBuffer(), paths: paths),
+      64,
+    );
+    expect(
+      await radMain(['--threshold', '101'], out: StringBuffer(), paths: paths),
+      64,
+    );
   });
 
   test('rejects multiple project roots with exit code 64', () async {
-    expect(await radMain(['a', 'b'], out: StringBuffer()), 64);
+    expect(await radMain(['a', 'b'], out: StringBuffer(), paths: paths), 64);
   });
 
   test('rejects an invalid job count with exit code 64', () async {
-    expect(await radMain(['--jobs', '0'], out: StringBuffer()), 64);
-    expect(await radMain(['--jobs', 'many'], out: StringBuffer()), 64);
+    expect(
+      await radMain(['--jobs', '0'], out: StringBuffer(), paths: paths),
+      64,
+    );
+    expect(
+      await radMain(['--jobs', 'many'], out: StringBuffer(), paths: paths),
+      64,
+    );
   });
 
   test('prints usage with exit code 0 for --help', () async {
     final out = StringBuffer();
-    expect(await radMain(['--help'], out: out), 0);
+    expect(await radMain(['--help'], out: out, paths: paths), 0);
     expect(out.toString(), contains('Usage: rad'));
   });
 }

@@ -11,8 +11,11 @@
 
 - Copy the project or workspace into a temp dir (the containment) and mutate
   `lib/` there.
-- All rad temp data (containments, logs) lives under one `<system temp>/rad/`
-  folder.
+- By default, all rad temp data (containments, logs) lives under one
+  `<system temp>/rad/` folder.
+- Resolve the root, tool log, and run-log folder once in `RadPaths`; pass that
+  context through the CLI, engine, containment, and logger seams.
+- Tests inject an isolated `RadPaths` root and never touch production paths.
 - Skip well-known metadata and generated output.
 - Support a gitignore-style file for consumer-defined copy exclusions:
   `.radignore` at the project root.

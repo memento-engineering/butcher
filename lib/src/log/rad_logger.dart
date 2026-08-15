@@ -1,10 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
-
-import '../temp.dart';
-
 /// The single logger of a run; emits wide events as CLEF lines (ADR 0016).
 ///
 /// Every event is one Compact Log Event Format JSON line: `@t` timestamp,
@@ -19,22 +15,18 @@ final class RadLogger {
   /// log with another one (e.g. mutant-run logs with the tool log).
   RadLogger({
     required this.verbose,
-    String? path,
+    required this.path,
     StringSink? console,
     bool? colors,
     String? runId,
-  }) : path = path ?? defaultPath,
-       console = console ?? stdout,
+  }) : console = console ?? stdout,
        colors = colors ?? (console == null && stdout.supportsAnsiEscapes),
        runId =
            runId ?? DateTime.now().microsecondsSinceEpoch.toRadixString(36) {
-    final file = File(this.path);
+    final file = File(path);
     if (file.existsSync()) file.deleteSync();
     file.parent.createSync(recursive: true);
   }
-
-  /// Default log file location: `rad.log` in the rad temp folder.
-  static String get defaultPath => p.join(radTempPath(), 'rad.log');
 
   /// Whether events also render to [console].
   final bool verbose;

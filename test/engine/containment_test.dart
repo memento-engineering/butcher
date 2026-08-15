@@ -5,6 +5,8 @@ import 'package:radioactive_dart/radioactive_dart.dart';
 import 'package:radioactive_dart/src/engine/containment.dart';
 import 'package:test/test.dart';
 
+import '../helpers/paths.dart';
+
 Future<Directory> fixtureProject() async {
   final dir = await Directory.systemTemp.createTemp('rad_containment_src_');
   addTearDown(() => dir.delete(recursive: true));
@@ -27,16 +29,18 @@ Future<Directory> fixtureProject() async {
 
 void main() {
   late Directory source;
+  late RadPaths paths;
   late Containment containment;
 
   setUp(() async {
     source = await fixtureProject();
-    containment = await Containment.create(source.path);
+    paths = await isolatedRadPaths('rad_containment_state_');
+    containment = await Containment.create(source.path, paths: paths);
     addTearDown(containment.dispose);
   });
 
-  test('lives inside the single rad temp folder', () {
-    expect(p.isWithin(radTempPath(), containment.root), isTrue);
+  test('lives inside the configured temp folder', () {
+    expect(p.isWithin(paths.root, containment.root), isTrue);
   });
 
   test('copies the project without excluded paths', () {

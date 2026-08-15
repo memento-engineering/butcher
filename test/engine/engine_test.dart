@@ -6,6 +6,8 @@ import 'package:path/path.dart' as p;
 import 'package:radioactive_dart/radioactive_dart.dart';
 import 'package:test/test.dart';
 
+import '../helpers/paths.dart';
+
 const _killedOutput = '''
 {"test":{"id":3,"name":"adds"},"type":"testStart"}
 {"testID":3,"result":"failure","skipped":false,"hidden":false,"type":"testDone"}
@@ -71,6 +73,7 @@ void main() {
       final progress = <String>[];
       final result = await Engine(
         projectRoot: await miniProject(),
+        paths: await isolatedRadPaths('rad_engine_state_'),
         runnerFactory: (_, _) => runner,
         onProgress: (done, total, result) =>
             progress.add('$done/$total ${result.outcome.name}'),
@@ -86,24 +89,25 @@ void main() {
 
   test('skips uncovered mutants without running tests', () async {
     final root = await miniProject();
-    final runsDir = p.join(root, 'run-logs');
+    final paths = await isolatedRadPaths('rad_engine_state_');
     final runner = FakeRunner();
     final result = await Engine(
       projectRoot: root,
+      paths: paths,
       runnerFactory: (_, _) => runner,
       coverage: const NothingCovered(),
-      runLogDir: runsDir,
     ).run();
 
     expect(result.results.map((r) => r.outcome).toSet(), {Outcome.noCoverage});
     expect(runner.timeouts, hasLength(1), reason: 'only the baseline ran');
-    expect(Directory(runsDir).existsSync(), isTrue);
-    expect(Directory(runsDir).listSync(), isEmpty);
+    expect(Directory(paths.runLogs).existsSync(), isTrue);
+    expect(Directory(paths.runLogs).listSync(), isEmpty);
   });
 
   test('aborts on a red background reading', () async {
     final engine = Engine(
       projectRoot: await miniProject(),
+      paths: await isolatedRadPaths('rad_engine_state_'),
       runnerFactory: (_, _) => FakeRunner(baselineExitCode: 1),
     );
     await expectLater(engine.run(), throwsA(isA<RunAborted>()));
@@ -116,6 +120,7 @@ void main() {
       final runner = FakeRunner();
       await Engine(
         projectRoot: await miniProject(),
+        paths: await isolatedRadPaths('rad_engine_state_'),
         jobs: 99,
         runnerFactory: (root, _) {
           roots.add(root);
@@ -128,29 +133,28 @@ void main() {
     },
   );
 
-  test('logs engine stages and keeps run logs for analysis', () async {
+  test('logs engine stages without removing existing run logs', () async {
     final temp = await Directory.systemTemp.createTemp('rad_engine_log_');
     addTearDown(() => temp.delete(recursive: true));
-    final logPath = p.join(temp.path, 'rad.log');
-    final runsDir = p.join(temp.path, 'runs');
-    File(p.join(runsDir, 'stale.log'))
+    final paths = RadPaths(root: temp.path);
+    File(p.join(paths.runLogs, 'stale.log'))
       ..parent.createSync(recursive: true)
       ..writeAsStringSync('from a previous run');
 
     final runner = FakeRunner(mutantExitCode: 70, mutantOutput: 'venting core');
     final toolLogger = RadLogger(
       verbose: false,
-      path: logPath,
+      path: paths.toolLog,
       console: StringBuffer(),
     );
     await Engine(
       projectRoot: await miniProject(),
+      paths: paths,
       runnerFactory: (_, _) => runner,
       logger: toolLogger,
-      runLogDir: runsDir,
     ).run();
 
-    final log = File(logPath).readAsStringSync();
+    final log = File(paths.toolLog).readAsStringSync();
     expect(log, contains('"@mt":"found {MutantCount} mutants in {File}"'));
     expect(log, contains('"@mt":"generated {MutantCount} mutants'));
     expect(log, contains('"@mt":"prepared {Workers} containments'));
@@ -159,10 +163,16 @@ void main() {
     expect(log, contains('"Outcome":"runError"'));
     expect(log, contains('"@mt":"kept run log for {MutantId}'));
 
-    final kept = Directory(runsDir).listSync().whereType<File>().toList();
-    expect(kept, hasLength(2), reason: 'one log per mutant run');
-    final keptEvent =
-        jsonDecode(kept.first.readAsLinesSync().first) as Map<String, dynamic>;
+    final kept = Directory(paths.runLogs).listSync().whereType<File>().toList();
+    expect(
+      kept,
+      hasLength(3),
+      reason: 'existing logs remain alongside new logs',
+    );
+    final newLogs = kept.where((file) => p.basename(file.path) != 'stale.log');
+    final keptEvent = jsonDecode(
+      newLogs.first.readAsLinesSync().first,
+    ) as Map<String, dynamic>;
     expect(keptEvent['@mt'], 'mutant run failed: {MutantId} as {Outcome}');
     expect(keptEvent['@l'], 'Error');
     expect(keptEvent['Outcome'], 'runError');
@@ -174,24 +184,37 @@ void main() {
     );
     expect(
       kept.map((f) => p.basename(f.path)),
-      isNot(contains('stale.log')),
-      reason: 'a new run clears the previous run logs but keeps the folder',
+      contains('stale.log'),
+      reason: 'nested engine runs must not clear another run\'s logs',
+    );
+
+    final firstRunPaths = newLogs.map((file) => file.path).toList();
+    await Engine(
+      projectRoot: await miniProject(),
+      paths: paths,
+      runnerFactory: (_, _) => FakeRunner(),
+    ).run();
+    expect(Directory(paths.runLogs).listSync().whereType<File>(), hasLength(5));
+    expect(
+      firstRunPaths.every((path) => File(path).existsSync()),
+      isTrue,
+      reason: 'a later successful engine run keeps abnormal-run logs',
     );
   });
 
   test('keeps run logs when mutants are killed cleanly', () async {
     final temp = await Directory.systemTemp.createTemp('rad_engine_clean_');
     addTearDown(() => temp.delete(recursive: true));
-    final runsDir = p.join(temp.path, 'runs');
+    final paths = RadPaths(root: temp.path);
 
     final runner = FakeRunner();
     await Engine(
       projectRoot: await miniProject(),
+      paths: paths,
       runnerFactory: (_, _) => runner,
-      runLogDir: runsDir,
     ).run();
 
-    final kept = Directory(runsDir).listSync().whereType<File>().toList();
+    final kept = Directory(paths.runLogs).listSync().whereType<File>().toList();
     expect(kept, hasLength(2));
     for (final file in kept) {
       final event =
@@ -208,6 +231,7 @@ void main() {
     final runner = FakeRunner();
     await Engine(
       projectRoot: await miniProject(),
+      paths: await isolatedRadPaths('rad_engine_state_'),
       jobs: 2,
       runnerFactory: (_, suiteConcurrency) {
         concurrencies.add(suiteConcurrency);
@@ -226,6 +250,7 @@ void main() {
     final completionOrder = <String>[];
     final result = await Engine(
       projectRoot: await miniProject(),
+      paths: await isolatedRadPaths('rad_engine_state_'),
       jobs: 2,
       runnerFactory: (_, _) => runner,
       onProgress: (done, total, r) => completionOrder.add(r.mutant.id),

@@ -34,13 +34,15 @@
   `--verbose` renders each event for humans: time, level, message with
   interpolated properties, ANSI-colored when the terminal supports it.
 - Mutated-run suite output is kept under `<system temp>/rad/runs/` for every
-  executed mutant. The folder always remains present; a new run clears only
-  its contents. Mutants with no coverage do not execute and therefore have no
-  run log. These logs are CLEF too: one event carries the full mutation
-  context and suite output, with error level for abnormal outcomes (`Timeout`,
-  `Unviable`, `RunError`, `MemoryError`), plus one `nested test error` event per
-  parsed failure. All events correlate with the tool log via the shared
-  `RunId`.
+  executed mutant. The folder always remains present; the CLI clears only its
+  previous contents when a new tool run starts. Engine instances never clear
+  it. Each filename starts with its engine `RunId`, so nested engine runs
+  cannot overwrite the active tool run's files. Mutants with no coverage do
+  not execute and therefore have no run log. These logs are CLEF too: one
+  event carries the full mutation context and suite output, with error level
+  for abnormal outcomes (`Timeout`, `Unviable`, `RunError`, `MemoryError`),
+  plus one `nested test error` event per parsed failure. All events correlate
+  with the tool log via the shared `RunId`.
 
 ## Rejected
 

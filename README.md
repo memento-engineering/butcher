@@ -25,7 +25,8 @@ ones the tests kill.
 - Each run writes wide-event CLEF logs to `<system temp>/rad/rad.log`,
   replacing the previous run's file. Suite output of every executed mutant is
   kept in `<system temp>/rad/runs/`. The folder remains present; a new run
-  clears only its contents.
+  clears only its previous contents. Nested engine runs cannot clear or
+  overwrite the active tool run's files.
 
 ## More
 

@@ -54,8 +54,10 @@ void main() {
     expect(lines.single['N'], 2);
   });
 
-  test('defaults to the log file inside the single rad temp folder', () {
-    expect(RadLogger.defaultPath, p.join(radTempPath(), 'rad.log'));
+  test('uses paths resolved by the caller', () {
+    final paths = RadPaths(root: p.dirname(path));
+    expect(paths.toolLog, path);
+    expect(paths.runLogs, p.join(p.dirname(path), 'runs'));
   });
 
   test('renders humans-first console lines only when verbose', () {
