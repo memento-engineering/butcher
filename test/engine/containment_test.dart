@@ -47,28 +47,31 @@ void main() {
     expect(has('assets/big/blob.bin'), isFalse);
   });
 
-  test('applies and restores a mutation without touching the source tree', () async {
-    const mutation = Mutation(
-      filePath: 'lib/a.dart',
-      offset: 27,
-      length: 1,
-      original: '+',
-      replacement: '-',
-      operatorId: 'arithmetic',
-      description: 'replace + with -',
-    );
-    final copied = File(p.join(containment.root, 'lib/a.dart'));
+  test(
+    'applies and restores a mutation without touching the source tree',
+    () async {
+      const mutation = Mutation(
+        filePath: 'lib/a.dart',
+        offset: 27,
+        length: 1,
+        original: '+',
+        replacement: '-',
+        operatorId: 'arithmetic',
+        description: 'replace + with -',
+      );
+      final copied = File(p.join(containment.root, 'lib/a.dart'));
 
-    await containment.apply(mutation);
-    expect(copied.readAsStringSync(), contains('a - b'));
-    expect(
-      File(p.join(source.path, 'lib/a.dart')).readAsStringSync(),
-      contains('a + b'),
-    );
+      await containment.apply(mutation);
+      expect(copied.readAsStringSync(), contains('a - b'));
+      expect(
+        File(p.join(source.path, 'lib/a.dart')).readAsStringSync(),
+        contains('a + b'),
+      );
 
-    await containment.restore('lib/a.dart');
-    expect(copied.readAsStringSync(), contains('a + b'));
-  });
+      await containment.restore('lib/a.dart');
+      expect(copied.readAsStringSync(), contains('a + b'));
+    },
+  );
 
   test('rejects a mutation whose original text does not match', () async {
     const drifted = Mutation(

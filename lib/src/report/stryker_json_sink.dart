@@ -36,9 +36,8 @@ final class StrykerJsonSink implements ReportSink {
     for (final result in results) {
       final mutation = result.mutant.mutation;
       final file = files.putIfAbsent(mutation.filePath, () {
-        final source = File(
-          p.join(projectRoot, mutation.filePath),
-        ).readAsStringSync();
+        final source = File(p.join(projectRoot, mutation.filePath))
+            .readAsStringSync();
         return {'language': 'dart', 'source': source, 'mutants': <Object>[]};
       });
       final source = file['source']! as String;

@@ -1,0 +1,6 @@
+irradiating D:\repos\ricardoboss\radioactive_dart
+[1/58] lib/src/cli/cli.dart:1068:bool-literal -> survived
+[2/58] lib/src/cli/cli.dart:2350:equality -> unviable
+[3/58] lib/src/cli/cli.dart:2358:logical -> unviable
+[4/58] lib/src/cli/cli.dart:2365:relational -> killed
+[5/58] lib/src/cli/cli.dart:2741:equality -> unviable

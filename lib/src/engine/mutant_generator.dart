@@ -42,9 +42,7 @@ final class MutantGenerator {
             .listSync(recursive: true)
             .whereType<File>()
             .where((f) => f.path.endsWith('.dart'))
-            .where(
-              (f) => !generatedFileSuffixes.any((s) => f.path.endsWith(s)),
-            )
+            .where((f) => !generatedFileSuffixes.any((s) => f.path.endsWith(s)))
             .map((f) => p.normalize(f.absolute.path))
             .toList()
           ..sort();

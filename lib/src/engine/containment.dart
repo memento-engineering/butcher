@@ -26,8 +26,9 @@ final class Containment {
     final target = await Directory.systemTemp.createTemp('rad_containment_');
     final globs = _consumerGlobs(source);
 
-    await for (final entity
-        in Directory(source).list(recursive: true, followLinks: false)) {
+    await for (final entity in Directory(
+      source,
+    ).list(recursive: true, followLinks: false)) {
       final relative = p
           .relative(entity.path, from: source)
           .replaceAll(r'\', '/');

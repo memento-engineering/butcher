@@ -18,8 +18,12 @@ import 'test_selector.dart';
 import 'whole_suite_selector.dart';
 
 /// Called after each classified mutant with progress counters.
-typedef ProgressCallback =
-    void Function(int done, int total, Mutant mutant, Outcome outcome);
+typedef ProgressCallback = void Function(
+  int done,
+  int total,
+  Mutant mutant,
+  Outcome outcome,
+);
 
 /// Orchestrates a full run: generate, contain, verify, irradiate, classify.
 final class Engine {

@@ -47,10 +47,8 @@ void main() {
 
   test('ConsoleReportSink prints counts and both scores', () async {
     final out = StringBuffer();
-    await ConsoleReportSink(out: out).write([
-      result(Outcome.killed),
-      result(Outcome.survived),
-    ]);
+    await ConsoleReportSink(out: out)
+        .write([result(Outcome.killed), result(Outcome.survived)]);
     final text = out.toString();
     expect(text, contains('2 mutants:'));
     expect(text, contains('killed: 1'));
@@ -59,34 +57,36 @@ void main() {
     expect(text, isNot(contains('timeout')));
   });
 
-  test('StrykerJsonSink writes schema-shaped JSON with 1-based positions',
-      () async {
-    final dir = await Directory.systemTemp.createTemp('rad_report_');
-    addTearDown(() => dir.delete(recursive: true));
-    File(p.join(dir.path, 'lib', 'a.dart'))
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync('// header\nint add(int a, int b) => a + b;\n');
-    final output = p.join(dir.path, 'report.json');
+  test(
+    'StrykerJsonSink writes schema-shaped JSON with 1-based positions',
+    () async {
+      final dir = await Directory.systemTemp.createTemp('rad_report_');
+      addTearDown(() => dir.delete(recursive: true));
+      File(p.join(dir.path, 'lib', 'a.dart'))
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('// header\nint add(int a, int b) => a + b;\n');
+      final output = p.join(dir.path, 'report.json');
 
-    await StrykerJsonSink(projectRoot: dir.path, outputPath: output).write([
-      result(Outcome.killed, offset: 37, id: 'lib/a.dart:37:arithmetic'),
-    ]);
+      await StrykerJsonSink(projectRoot: dir.path, outputPath: output).write([
+        result(Outcome.killed, offset: 37, id: 'lib/a.dart:37:arithmetic'),
+      ]);
 
-    final report =
-        jsonDecode(File(output).readAsStringSync()) as Map<String, dynamic>;
-    expect(report['schemaVersion'], '1');
-    final file =
-        (report['files'] as Map<String, dynamic>)['lib/a.dart']
-            as Map<String, dynamic>;
-    expect(file['language'], 'dart');
-    expect(file['source'], contains('int add'));
-    final mutant =
-        (file['mutants'] as List<dynamic>).single as Map<String, dynamic>;
-    expect(mutant['status'], 'Killed');
-    expect(mutant['mutatorName'], 'arithmetic');
-    expect(mutant['location'], {
-      'start': {'line': 2, 'column': 28},
-      'end': {'line': 2, 'column': 29},
-    });
-  });
+      final report =
+          jsonDecode(File(output).readAsStringSync()) as Map<String, dynamic>;
+      expect(report['schemaVersion'], '1');
+      final file =
+          (report['files'] as Map<String, dynamic>)['lib/a.dart']
+              as Map<String, dynamic>;
+      expect(file['language'], 'dart');
+      expect(file['source'], contains('int add'));
+      final mutant =
+          (file['mutants'] as List<dynamic>).single as Map<String, dynamic>;
+      expect(mutant['status'], 'Killed');
+      expect(mutant['mutatorName'], 'arithmetic');
+      expect(mutant['location'], {
+        'start': {'line': 2, 'column': 28},
+        'end': {'line': 2, 'column': 29},
+      });
+    },
+  );
 }

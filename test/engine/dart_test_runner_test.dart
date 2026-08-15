@@ -35,9 +35,8 @@ void main() {
 }
 ''',
     );
-    final run = await DartTestRunner(
-      dir.path,
-    ).run(timeout: const Duration(seconds: 10));
+    final run = await DartTestRunner(dir.path)
+        .run(timeout: const Duration(seconds: 10));
     expect(run.timedOut, isTrue);
     expect(run.exitCode, -1);
   });

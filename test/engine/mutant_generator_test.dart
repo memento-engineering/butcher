@@ -10,40 +10,39 @@ Future<Directory> fixtureProject() async {
   addTearDown(() => dir.delete(recursive: true));
   final src = Directory(p.join(dir.path, 'lib', 'src'))
     ..createSync(recursive: true);
-  File(
-    p.join(dir.path, 'lib', 'a.dart'),
-  ).writeAsStringSync('int add(int a, int b) => a + b;\n');
-  File(
-    p.join(src.path, 'b.dart'),
-  ).writeAsStringSync('bool both(bool a, bool b) => a && b;\n');
-  File(
-    p.join(dir.path, 'lib', 'gen.g.dart'),
-  ).writeAsStringSync('int genAdd(int a, int b) => a + b;\n');
+  File(p.join(dir.path, 'lib', 'a.dart'))
+      .writeAsStringSync('int add(int a, int b) => a + b;\n');
+  File(p.join(src.path, 'b.dart'))
+      .writeAsStringSync('bool both(bool a, bool b) => a && b;\n');
+  File(p.join(dir.path, 'lib', 'gen.g.dart'))
+      .writeAsStringSync('int genAdd(int a, int b) => a + b;\n');
   return dir;
 }
 
 void main() {
-  test('generates sorted mutants with stable ids, skipping generated files',
-      () async {
-    final dir = await fixtureProject();
-    final generator = MutantGenerator(
-      projectRoot: dir.path,
-      registry: MutagenRegistry.defaults(),
-    );
-    final mutants = await generator.generate();
+  test(
+    'generates sorted mutants with stable ids, skipping generated files',
+    () async {
+      final dir = await fixtureProject();
+      final generator = MutantGenerator(
+        projectRoot: dir.path,
+        registry: MutagenRegistry.defaults(),
+      );
+      final mutants = await generator.generate();
 
-    expect(mutants.map((m) => m.mutation.filePath).toSet(), {
-      'lib/a.dart',
-      'lib/src/b.dart',
-    });
-    expect(mutants.map((m) => m.id), [
-      'lib/a.dart:27:arithmetic',
-      'lib/src/b.dart:31:logical',
-    ]);
+      expect(mutants.map((m) => m.mutation.filePath).toSet(), {
+        'lib/a.dart',
+        'lib/src/b.dart',
+      });
+      expect(mutants.map((m) => m.id), [
+        'lib/a.dart:27:arithmetic',
+        'lib/src/b.dart:31:logical',
+      ]);
 
-    final second = await generator.generate();
-    expect(second.map((m) => m.id), mutants.map((m) => m.id));
-  });
+      final second = await generator.generate();
+      expect(second.map((m) => m.id), mutants.map((m) => m.id));
+    },
+  );
 
   test('returns no mutants without a lib directory', () async {
     final dir = await Directory.systemTemp.createTemp('rad_gen_empty_');
