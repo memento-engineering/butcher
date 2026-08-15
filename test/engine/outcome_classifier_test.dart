@@ -1,7 +1,5 @@
 import 'package:radioactive_dart/radioactive_dart.dart';
-import 'package:radioactive_dart/src/engine/engine.dart';
 import 'package:radioactive_dart/src/engine/outcome_classifier.dart';
-import 'package:radioactive_dart/src/engine/test_run.dart';
 import 'package:test/test.dart';
 
 TestRun run({int exitCode = 0, bool timedOut = false, String output = ''}) =>

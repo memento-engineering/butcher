@@ -2,7 +2,13 @@
 library;
 
 export 'src/engine/coverage_provider.dart';
+export 'src/engine/dart_test_runner.dart';
+export 'src/engine/engine.dart';
 export 'src/engine/full_coverage_provider.dart';
+export 'src/engine/run_aborted.dart';
+export 'src/engine/run_result.dart';
+export 'src/engine/test_run.dart';
+export 'src/engine/test_runner.dart';
 export 'src/engine/test_selector.dart';
 export 'src/engine/whole_suite_selector.dart';
 export 'src/model/mutant.dart';
@@ -17,4 +23,7 @@ export 'src/mutagens/logical_mutagen.dart';
 export 'src/mutagens/mutagen.dart';
 export 'src/mutagens/mutagen_registry.dart';
 export 'src/mutagens/relational_mutagen.dart';
+export 'src/report/console_report_sink.dart';
+export 'src/report/metrics.dart';
 export 'src/report/report_sink.dart';
+export 'src/report/stryker_json_sink.dart';

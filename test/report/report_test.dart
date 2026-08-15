@@ -3,9 +3,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:radioactive_dart/radioactive_dart.dart';
-import 'package:radioactive_dart/src/report/console_report_sink.dart';
-import 'package:radioactive_dart/src/report/metrics.dart';
-import 'package:radioactive_dart/src/report/stryker_json_sink.dart';
 import 'package:test/test.dart';
 
 MutantResult result(Outcome outcome, {int offset = 27, String id = 'm'}) =>
