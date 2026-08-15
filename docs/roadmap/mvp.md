@@ -10,7 +10,7 @@ output. Serial, whole-suite-per-mutant.
   logical, literals)
 - Filtered containment isolation; built-in and consumer ignore patterns
 - Background reading; half-life floor
-- Outcomes: `Killed` / `Survived` / `Timeout` / `RunError`
+- Outcomes: `Killed` / `Survived` / `Timeout` / `Unviable` / `RunError`
 - Console summary: MSI + counts per outcome
 - Stryker JSON report
 - `--threshold` criticality gate via exit code

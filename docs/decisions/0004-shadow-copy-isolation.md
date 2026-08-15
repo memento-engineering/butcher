@@ -12,7 +12,8 @@
 - Copy the project or workspace into a temp dir (the containment) and mutate
   `lib/` there.
 - Skip well-known metadata and generated output.
-- Support a gitignore-style file for consumer-defined copy exclusions.
+- Support a gitignore-style file for consumer-defined copy exclusions:
+  `.radignore` at the project root.
 - Run tests from the copied package root.
 - Mechanics validated by [../plans/spike-shadow-copy.md](../plans/spike-shadow-copy.md).
 
