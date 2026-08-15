@@ -5,9 +5,11 @@ import 'package:path/path.dart' as p;
 
 import '../engine/engine.dart';
 import '../engine/run_aborted.dart';
+import '../log/rad_logger.dart';
 import '../report/console_report_sink.dart';
 import '../report/metrics.dart';
 import '../report/stryker_json_sink.dart';
+import '../version.dart';
 
 /// Default path of the Stryker JSON report, relative to the project root.
 const defaultReportPath = 'mutation-report.json';
@@ -16,7 +18,13 @@ const defaultReportPath = 'mutation-report.json';
 ///
 /// Exit codes: 0 success, 1 MSI below `--threshold`, 64 usage error,
 /// 70 aborted run (red background reading, failed pub get).
-Future<int> radMain(List<String> arguments, {StringSink? out}) async {
+///
+/// [logPath] overrides the log file location, [RadLogger.defaultPath].
+Future<int> radMain(
+  List<String> arguments, {
+  StringSink? out,
+  String? logPath,
+}) async {
   final sink = out ?? stdout;
   final parser = ArgParser()
     ..addOption(
@@ -29,6 +37,12 @@ Future<int> radMain(List<String> arguments, {StringSink? out}) async {
       abbr: 'o',
       defaultsTo: defaultReportPath,
       help: 'Path of the Stryker JSON report.',
+    )
+    ..addFlag(
+      'verbose',
+      abbr: 'v',
+      negatable: false,
+      help: 'Also stream structured log events to the console.',
     )
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this usage.');
 
@@ -55,11 +69,41 @@ Future<int> radMain(List<String> arguments, {StringSink? out}) async {
   final projectRoot = p.normalize(
     p.absolute(options.rest.isEmpty ? '.' : options.rest.single),
   );
+  final watch = Stopwatch()..start();
+  final logger = RadLogger(
+    verbose: options.flag('verbose'),
+    path: logPath,
+    console: sink,
+  );
+  logger.info('run_start', {
+    'tool_version': packageVersion,
+    'dart': Platform.version,
+    'os': Platform.operatingSystem,
+    'project_root': projectRoot,
+    'argv': arguments,
+  });
 
   final engine = Engine(
     projectRoot: projectRoot,
-    onProgress: (done, total, mutant, outcome) =>
-        sink.writeln('[$done/$total] ${mutant.id} -> ${outcome.name}'),
+    onProgress: (done, total, result) {
+      final mutation = result.mutant.mutation;
+      sink.writeln(
+        '[$done/$total] ${result.mutant.id} -> ${result.outcome.name}',
+      );
+      logger.info('mutant', {
+        'id': result.mutant.id,
+        'file': mutation.filePath,
+        'offset': mutation.offset,
+        'operator': mutation.operatorId,
+        'replacement': mutation.replacement,
+        'outcome': result.outcome.name,
+        'exit_code': result.testRun?.exitCode,
+        'timed_out': result.testRun?.timedOut,
+        'duration_ms': result.testRun?.duration.inMilliseconds,
+        'done': done,
+        'total': total,
+      });
+    },
   );
 
   try {
@@ -78,16 +122,32 @@ Future<int> radMain(List<String> arguments, {StringSink? out}) async {
     ).write(result.results);
     sink.writeln('report: $reportPath');
 
-    final msi = Metrics.fromResults(result.results).msi;
-    if (threshold != null && msi < threshold) {
+    final metrics = Metrics.fromResults(result.results);
+    final gated = threshold != null && metrics.msi < threshold;
+    logger.info('run_complete', {
+      'mutants': result.results.length,
+      'counts': metrics.counts.map((k, v) => MapEntry(k.name, v)),
+      'msi': metrics.msi,
+      'covered_msi': metrics.coveredMsi,
+      'background_ms': result.backgroundReading.inMilliseconds,
+      'half_life_ms': result.halfLife.inMilliseconds,
+      'duration_ms': watch.elapsedMilliseconds,
+      'report': reportPath,
+      'exit_code': gated ? 1 : 0,
+    });
+    if (gated) {
       stderr.writeln(
-        'MSI ${msi.toStringAsFixed(2)}% is below the '
+        'MSI ${metrics.msi.toStringAsFixed(2)}% is below the '
         '${threshold.toStringAsFixed(2)}% threshold',
       );
       return 1;
     }
     return 0;
   } on RunAborted catch (abort) {
+    logger.error('run_aborted', {
+      'message': abort.message,
+      'duration_ms': watch.elapsedMilliseconds,
+    });
     stderr.writeln(abort.message);
     return 70;
   }

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'test_run.dart';
+import '../model/test_run.dart';
 import 'test_runner.dart';
 
 /// Runs `dart test` via [Platform.resolvedExecutable] (ADR 0003).

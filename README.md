@@ -14,11 +14,14 @@ ones the tests kill.
 |---|---|
 | `-t, --threshold` | Exit 1 when the MSI is below this percentage |
 | `-o, --output` | Report path, relative to the project root |
+| `-v, --verbose` | Also stream structured log events to the console |
 
 - Exit codes: 0 success, 1 below threshold, 64 usage, 70 aborted run.
 - A red test suite aborts the run; a green suite is a precondition.
 - `.radignore` (gitignore-style globs, project root) excludes paths from the
   isolated project copy tests run in.
+- Each run writes wide-event JSON logs to `rad.log` in the system temp
+  directory, replacing the previous run's file.
 
 ## More
 

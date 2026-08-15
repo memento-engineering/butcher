@@ -1,4 +1,4 @@
-import 'test_run.dart';
+import '../model/test_run.dart';
 
 /// Runs a project's test suite; seam for other runners (`flutter test`).
 abstract interface class TestRunner {

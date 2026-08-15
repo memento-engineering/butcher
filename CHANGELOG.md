@@ -9,3 +9,4 @@
 - Console summary (MSI, covered-code MSI) and Stryker JSON report.
 - `rad` CLI with `--threshold` criticality gate and `--output`.
 - `.radignore` consumer exclusions for the containment copy.
+- Wide-event JSON logging to a temp-dir log file; `--verbose` console stream.

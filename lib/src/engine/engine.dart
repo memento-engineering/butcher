@@ -22,8 +22,7 @@ import 'whole_suite_selector.dart';
 typedef ProgressCallback = void Function(
   int done,
   int total,
-  Mutant mutant,
-  Outcome outcome,
+  MutantResult result,
 );
 
 /// Orchestrates a full run: generate, contain, verify, irradiate, classify.
@@ -82,9 +81,9 @@ final class Engine {
 
       final results = <MutantResult>[];
       for (final mutant in mutants) {
-        final outcome = await _classify(mutant, containment, runner, halfLife);
-        results.add(MutantResult(mutant: mutant, outcome: outcome));
-        onProgress?.call(results.length, mutants.length, mutant, outcome);
+        final result = await _classify(mutant, containment, runner, halfLife);
+        results.add(result);
+        onProgress?.call(results.length, mutants.length, result);
       }
       return RunResult(
         results: results,
@@ -97,23 +96,29 @@ final class Engine {
     }
   }
 
-  Future<Outcome> _classify(
+  Future<MutantResult> _classify(
     Mutant mutant,
     Containment containment,
     TestRunner runner,
     Duration halfLife,
   ) async {
-    if (!coverage.isCovered(mutant)) return Outcome.noCoverage;
+    if (!coverage.isCovered(mutant)) {
+      return MutantResult(mutant: mutant, outcome: Outcome.noCoverage);
+    }
     try {
       await containment.apply(mutant.mutation);
       final run = await runner.run(
         tests: selector.select(mutant),
         timeout: halfLife,
       );
-      return const OutcomeClassifier().classify(run);
+      return MutantResult(
+        mutant: mutant,
+        outcome: const OutcomeClassifier().classify(run),
+        testRun: run,
+      );
     } catch (_) {
       // Mutant-level failures are outcomes, never exceptions (ADR 0006).
-      return Outcome.runError;
+      return MutantResult(mutant: mutant, outcome: Outcome.runError);
     } finally {
       await containment.restore(mutant.mutation.filePath);
     }

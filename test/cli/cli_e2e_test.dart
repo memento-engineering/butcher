@@ -19,10 +19,29 @@ void main() {
   test('produces a Stryker JSON report and kills tested mutants', () async {
     final dir = await createFixturePackage(calc: _partiallyTestedCalc);
     final out = StringBuffer();
+    final logPath = p.join(dir.path, 'rad.log');
 
-    final exit = await radMain(['--output', 'report.json', dir.path], out: out);
+    final exit = await radMain(
+      ['--output', 'report.json', dir.path],
+      out: out,
+      logPath: logPath,
+    );
 
     expect(exit, 0, reason: out.toString());
+
+    final logLines = File(logPath)
+        .readAsLinesSync()
+        .map((line) => jsonDecode(line) as Map<String, dynamic>)
+        .toList();
+    expect(logLines.first['type'], 'run_start');
+    expect(logLines.last['type'], 'run_complete');
+    expect(logLines.last['msi'], closeTo(40, 0.01));
+    expect(logLines.where((e) => e['type'] == 'mutant'), hasLength(5));
+    expect(
+      out.toString(),
+      isNot(contains('"type":"mutant"')),
+      reason: 'non-verbose console stays human-readable',
+    );
     final reportFile = File(p.join(dir.path, 'report.json'));
     expect(reportFile.existsSync(), isTrue);
 
@@ -46,19 +65,32 @@ void main() {
     expect(untouched.readAsStringSync(), _partiallyTestedCalc);
   });
 
-  test('gates on --threshold via exit code 1', () async {
+  test('gates on --threshold and streams events with --verbose', () async {
     final dir = await createFixturePackage(calc: _partiallyTestedCalc);
     final out = StringBuffer();
-    final exit = await radMain(['--threshold', '90', dir.path], out: out);
+    final exit = await radMain(
+      ['--threshold', '90', '--verbose', dir.path],
+      out: out,
+      logPath: p.join(dir.path, 'rad.log'),
+    );
     expect(exit, 1, reason: out.toString());
+    expect(out.toString(), contains('"type":"run_start"'));
+    expect(out.toString(), contains('"type":"mutant"'));
+    expect(out.toString(), contains('"exit_code":1'));
   });
 
   test('aborts with exit code 70 on a red background reading', () async {
     final dir = await createFixturePackage(
       calc: 'int add(int a, int b) => a * b;\n',
     );
-    final exit = await radMain([dir.path], out: StringBuffer());
+    final logPath = p.join(dir.path, 'rad.log');
+    final exit = await radMain(
+      [dir.path],
+      out: StringBuffer(),
+      logPath: logPath,
+    );
     expect(exit, 70);
+    expect(File(logPath).readAsStringSync(), contains('"type":"run_aborted"'));
   });
 
   test('rejects an invalid threshold with exit code 64', () async {

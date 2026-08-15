@@ -55,8 +55,8 @@ void main() {
       final result = await Engine(
         projectRoot: await miniProject(),
         runnerFactory: (_) => runner,
-        onProgress: (done, total, mutant, outcome) =>
-            progress.add('$done/$total ${outcome.name}'),
+        onProgress: (done, total, result) =>
+            progress.add('$done/$total ${result.outcome.name}'),
       ).run();
 
       expect(result.results, hasLength(2));
