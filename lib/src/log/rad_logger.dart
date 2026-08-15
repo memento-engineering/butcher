@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import '../temp.dart';
+
 /// The single logger of a run; emits wide events as JSON lines (ADR 0016).
 ///
 /// Events go to a log file that is flushed per event; with [verbose] they
@@ -18,8 +20,8 @@ final class RadLogger {
     file.parent.createSync(recursive: true);
   }
 
-  /// Default log file location: `rad.log` in the system temp directory.
-  static String get defaultPath => p.join(Directory.systemTemp.path, 'rad.log');
+  /// Default log file location: `rad.log` in the rad temp folder.
+  static String get defaultPath => p.join(radTempPath(), 'rad.log');
 
   /// Whether events also stream to [console].
   final bool verbose;

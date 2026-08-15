@@ -15,7 +15,7 @@
 - One logger (`RadLogger`) per run, created by the CLI; the engine stays
   logger-free and feeds it through its seams.
 - Two levels only: `info` and `error`.
-- JSON-lines log file at `<system temp>/rad.log`; a new run deletes the
+- JSON-lines log file at `<system temp>/rad/rad.log`; a new run deletes the
   previous file. Flushed per event, so a crash loses nothing.
 - Wide events, each carrying `timestamp` and a per-run `run_id`:
 

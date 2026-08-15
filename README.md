@@ -20,8 +20,9 @@ ones the tests kill.
 - A red test suite aborts the run; a green suite is a precondition.
 - `.radignore` (gitignore-style globs, project root) excludes paths from the
   isolated project copy tests run in.
-- Each run writes wide-event JSON logs to `rad.log` in the system temp
-  directory, replacing the previous run's file.
+- All temp data (containment copies, logs) lives under `<system temp>/rad/`.
+- Each run writes wide-event JSON logs to `<system temp>/rad/rad.log`,
+  replacing the previous run's file.
 
 ## More
 

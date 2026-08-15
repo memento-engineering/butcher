@@ -4,6 +4,7 @@ import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
 
 import '../model/mutation.dart';
+import '../temp.dart';
 
 /// Directories never copied into a containment (ADR 0004).
 const defaultContainmentExcludes = ['.git', '.dart_tool', 'build', 'coverage'];
@@ -23,7 +24,7 @@ final class Containment {
   /// Copies [projectRoot] into a fresh temp dir, honoring exclusions.
   static Future<Containment> create(String projectRoot) async {
     final source = p.normalize(p.absolute(projectRoot));
-    final target = await Directory.systemTemp.createTemp('rad_containment_');
+    final target = await radTempRoot().createTemp('containment_');
     final globs = _consumerGlobs(source);
 
     await for (final entity in Directory(

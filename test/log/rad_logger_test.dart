@@ -55,6 +55,10 @@ void main() {
     expect(lines.single['run'], 2);
   });
 
+  test('defaults to the log file inside the single rad temp folder', () {
+    expect(RadLogger.defaultPath, p.join(radTempPath(), 'rad.log'));
+  });
+
   test('streams events to the console only when verbose', () {
     final quiet = StringBuffer();
     RadLogger(

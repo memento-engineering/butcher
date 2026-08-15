@@ -11,6 +11,8 @@
 
 - Copy the project or workspace into a temp dir (the containment) and mutate
   `lib/` there.
+- All rad temp data (containments, logs) lives under one `<system temp>/rad/`
+  folder.
 - Skip well-known metadata and generated output.
 - Support a gitignore-style file for consumer-defined copy exclusions:
   `.radignore` at the project root.

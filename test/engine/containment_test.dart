@@ -35,6 +35,10 @@ void main() {
     addTearDown(containment.dispose);
   });
 
+  test('lives inside the single rad temp folder', () {
+    expect(p.isWithin(radTempPath(), containment.root), isTrue);
+  });
+
   test('copies the project without excluded paths', () {
     bool has(String relative) =>
         File(p.join(containment.root, relative)).existsSync();
