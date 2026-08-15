@@ -15,16 +15,19 @@ final class RadLogger {
   /// Creates the logger, replacing any log file left by a previous run.
   ///
   /// [colors] defaults to auto-detection: on only when writing to a
-  /// terminal that supports ANSI escapes.
+  /// terminal that supports ANSI escapes. Pass [runId] to correlate this
+  /// log with another one (e.g. failed-run logs with the tool log).
   RadLogger({
     required this.verbose,
     String? path,
     StringSink? console,
     bool? colors,
+    String? runId,
   }) : path = path ?? defaultPath,
        console = console ?? stdout,
        colors = colors ?? (console == null && stdout.supportsAnsiEscapes),
-       runId = DateTime.now().microsecondsSinceEpoch.toRadixString(36) {
+       runId =
+           runId ?? DateTime.now().microsecondsSinceEpoch.toRadixString(36) {
     final file = File(this.path);
     if (file.existsSync()) file.deleteSync();
     file.parent.createSync(recursive: true);

@@ -35,8 +35,11 @@
   interpolated properties, ANSI-colored when the terminal supports it.
 - Mutated-run suite output is kept under `<system temp>/rad/failed-runs/`
   only for abnormal outcomes (`Timeout`, `Unviable`, `RunError`,
-  `MemoryError`) for manual analysis; a new run clears the folder. The tool
-  log survives every outcome and reports the results.
+  `MemoryError`) for manual analysis; a new run clears the folder. These
+  logs are CLEF too: a `mutant run failed` error event carrying the full
+  mutation context and suite output, one `nested test error` event per
+  parsed failure, all correlated with the tool log via the shared `RunId`.
+  The tool log survives every outcome and reports the results.
 
 ## Rejected
 

@@ -95,6 +95,21 @@ void main() {
     expect(rendered, contains('\x1B[36mx\x1B[0m'));
   });
 
+  test('adopts a caller-provided run id for correlation', () {
+    logger(); // Claims `path`; the correlated logger writes elsewhere.
+    final correlated = RadLogger(
+      verbose: false,
+      path: '$path.child',
+      console: StringBuffer(),
+      runId: 'parent-run',
+    )..info('child event');
+    expect(correlated.runId, 'parent-run');
+    final line = jsonDecode(
+      File('$path.child').readAsLinesSync().single,
+    ) as Map<String, dynamic>;
+    expect(line['RunId'], 'parent-run');
+  });
+
   test('leaves unknown template holes untouched', () {
     final loud = StringBuffer();
     logger(verbose: true, console: loud).info('missing {Nope}');

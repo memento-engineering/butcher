@@ -244,23 +244,32 @@ final class Engine {
     }
   }
 
+  /// Writes a CLEF log for one failed mutant run, correlated with the tool
+  /// log through the shared `RunId` (ADR 0016).
   String _keepFailedRunLog(MutantResult result) {
     final run = result.testRun!;
+    final mutation = result.mutant.mutation;
     final directory = Directory(failedRunLogDir)..createSync(recursive: true);
     final name = result.mutant.id.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
     final file = File(p.join(directory.path, '$name.log'));
-    file.writeAsStringSync(
-      [
-        'mutant: ${result.mutant.id}',
-        'mutation: ${result.mutant.mutation.description}',
-        'outcome: ${result.outcome.name}',
-        'exit code: ${run.exitCode}',
-        'timed out: ${run.timedOut}',
-        'duration: ${run.duration.inMilliseconds} ms',
-        '',
-        run.output,
-      ].join('\n'),
-    );
+    final runLogger =
+        RadLogger(verbose: false, path: file.path, runId: logger?.runId)
+          ..error('mutant run failed: {MutantId} as {Outcome}', {
+            'MutantId': result.mutant.id,
+            'Outcome': result.outcome.name,
+            'Mutation': mutation.description,
+            'File': mutation.filePath,
+            'Offset': mutation.offset,
+            'Operator': mutation.operatorId,
+            'Replacement': mutation.replacement,
+            'ExitCode': run.exitCode,
+            'TimedOut': run.timedOut,
+            'DurationMs': run.duration.inMilliseconds,
+            'Output': run.output,
+          });
+    for (final error in TestEvents.parse(run.output).errors) {
+      runLogger.error('nested test error: {Error}', {'Error': error});
+    }
     return file.path;
   }
 

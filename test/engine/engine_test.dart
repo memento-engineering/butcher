@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -132,10 +133,15 @@ void main() {
       ..writeAsStringSync('from a previous run');
 
     final runner = FakeRunner(mutantExitCode: 70, mutantOutput: 'venting core');
+    final toolLogger = RadLogger(
+      verbose: false,
+      path: logPath,
+      console: StringBuffer(),
+    );
     await Engine(
       projectRoot: await miniProject(),
       runnerFactory: (_, _) => runner,
-      logger: RadLogger(verbose: false, path: logPath, console: StringBuffer()),
+      logger: toolLogger,
       failedRunLogDir: failedDir,
     ).run();
 
@@ -150,8 +156,17 @@ void main() {
 
     final kept = Directory(failedDir).listSync().whereType<File>().toList();
     expect(kept, hasLength(2), reason: 'one log per failed mutant run');
-    expect(kept.first.readAsStringSync(), contains('outcome: runError'));
-    expect(kept.first.readAsStringSync(), contains('venting core'));
+    final keptEvent =
+        jsonDecode(kept.first.readAsLinesSync().first) as Map<String, dynamic>;
+    expect(keptEvent['@mt'], 'mutant run failed: {MutantId} as {Outcome}');
+    expect(keptEvent['@l'], 'Error');
+    expect(keptEvent['Outcome'], 'runError');
+    expect(keptEvent['Output'], contains('venting core'));
+    expect(
+      keptEvent['RunId'],
+      toolLogger.runId,
+      reason: 'failed-run logs correlate with the tool log',
+    );
     expect(
       kept.map((f) => p.basename(f.path)),
       isNot(contains('stale.log')),
