@@ -1,4 +1,4 @@
 .dart_tool/
 pubspec.lock
-mutation-report.json
-self-run.log
+/mutation-report.json
+/self-run.log
