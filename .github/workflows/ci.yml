@@ -2,11 +2,16 @@ name: CI
 
 on:
   push:
-    branches: ['**']
+    # main and tags run this job through the publish workflow, which calls it.
+    branches-ignore: [main]
   pull_request:
+  workflow_call:
 
+# A newer push on the same ref makes the running check obsolete. The group is
+# a literal: when called, `github.workflow` is the caller's name, and sharing
+# its group would let the caller cancel the job it waits on.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
