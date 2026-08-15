@@ -38,6 +38,13 @@ Future<int> radMain(
       defaultsTo: defaultReportPath,
       help: 'Path of the Stryker JSON report.',
     )
+    ..addOption(
+      'jobs',
+      abbr: 'j',
+      help:
+          'Parallel workers, each with its own containment copy. '
+          'Defaults to half the CPU cores.',
+    )
     ..addFlag(
       'verbose',
       abbr: 'v',
@@ -48,6 +55,7 @@ Future<int> radMain(
 
   final ArgResults options;
   final double? threshold;
+  final int? jobs;
   try {
     options = parser.parse(arguments);
     if (options.rest.length > 1) {
@@ -56,6 +64,7 @@ Future<int> radMain(
       );
     }
     threshold = _threshold(options);
+    jobs = _jobs(options);
   } on FormatException catch (error) {
     stderr.writeln(error.message);
     stderr.writeln(_usage(parser));
@@ -80,11 +89,13 @@ Future<int> radMain(
     'dart': Platform.version,
     'os': Platform.operatingSystem,
     'project_root': projectRoot,
+    'jobs': jobs ?? Engine.defaultJobs,
     'argv': arguments,
   });
 
   final engine = Engine(
     projectRoot: projectRoot,
+    jobs: jobs,
     onProgress: (done, total, result) {
       final mutation = result.mutant.mutation;
       sink.writeln(
@@ -151,6 +162,16 @@ Future<int> radMain(
     stderr.writeln(abort.message);
     return 70;
   }
+}
+
+int? _jobs(ArgResults options) {
+  final raw = options.option('jobs');
+  if (raw == null) return null;
+  final value = int.tryParse(raw);
+  if (value == null || value < 1) {
+    throw FormatException('--jobs must be a positive integer: $raw');
+  }
+  return value;
 }
 
 double? _threshold(ArgResults options) {

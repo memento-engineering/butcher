@@ -14,6 +14,7 @@ ones the tests kill.
 |---|---|
 | `-t, --threshold` | Exit 1 when the MSI is below this percentage |
 | `-o, --output` | Report path, relative to the project root |
+| `-j, --jobs` | Parallel workers; defaults to half the CPU cores |
 | `-v, --verbose` | Also stream structured log events to the console |
 
 - Exit codes: 0 success, 1 below threshold, 64 usage, 70 aborted run.

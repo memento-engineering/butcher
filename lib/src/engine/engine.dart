@@ -35,7 +35,13 @@ final class Engine {
     this.selector = const WholeSuiteSelector(),
     this.runnerFactory = DartTestRunner.new,
     this.onProgress,
-  }) : registry = registry ?? MutagenRegistry.defaults();
+    int? jobs,
+  }) : registry = registry ?? MutagenRegistry.defaults(),
+       jobs = jobs ?? defaultJobs;
+
+  /// Default worker count: half the cores, since each suite process
+  /// parallelizes internally already (ADR 0017).
+  static int get defaultJobs => max(1, Platform.numberOfProcessors ~/ 2);
 
   /// Absolute or relative path of the project under test.
   final String projectRoot;
@@ -52,8 +58,11 @@ final class Engine {
   /// Builds the runner for a containment root; seam for `flutter test`.
   final TestRunner Function(String root) runnerFactory;
 
-  /// Optional per-mutant progress hook.
+  /// Optional per-mutant progress hook, called in completion order.
   final ProgressCallback? onProgress;
+
+  /// Number of parallel workers, each owning a containment (ADR 0017).
+  final int jobs;
 
   /// Runs the whole pipeline and returns every classified result.
   Future<RunResult> run() async {
@@ -62,12 +71,15 @@ final class Engine {
       registry: registry,
     ).generate();
 
-    final containment = await Containment.create(projectRoot);
+    final workers = max(1, min(jobs, mutants.length));
+    final containments = await Future.wait([
+      for (var i = 0; i < workers; i++) Containment.create(projectRoot),
+    ]);
     try {
-      await _resolveDependencies(containment.root);
-      final runner = runnerFactory(containment.root);
+      await Future.wait(containments.map((c) => _resolveDependencies(c.root)));
+      final runners = [for (final c in containments) runnerFactory(c.root)];
 
-      final background = await runner.run();
+      final background = await runners.first.run();
       if (background.exitCode != 0) {
         final summary = TestEvents.parse(background.output).summarize();
         throw RunAborted(
@@ -79,20 +91,36 @@ final class Engine {
       }
       final halfLife = halfLifeFor(background.duration);
 
-      final results = <MutantResult>[];
-      for (final mutant in mutants) {
-        final result = await _classify(mutant, containment, runner, halfLife);
-        results.add(result);
-        onProgress?.call(results.length, mutants.length, result);
+      // One shared queue; results keyed by index so completion order never
+      // changes the report (ADR 0007, ADR 0017).
+      final results = List<MutantResult?>.filled(mutants.length, null);
+      var next = 0;
+      var done = 0;
+      Future<void> worker(int slot) async {
+        while (true) {
+          final index = next++;
+          if (index >= mutants.length) return;
+          final result = await _classify(
+            mutants[index],
+            containments[slot],
+            runners[slot],
+            halfLife,
+          );
+          results[index] = result;
+          done++;
+          onProgress?.call(done, mutants.length, result);
+        }
       }
+
+      await Future.wait([for (var i = 0; i < workers; i++) worker(i)]);
       return RunResult(
-        results: results,
+        results: results.cast<MutantResult>(),
         sources: sources,
         backgroundReading: background.duration,
         halfLife: halfLife,
       );
     } finally {
-      await containment.dispose();
+      await Future.wait(containments.map((c) => c.dispose()));
     }
   }
 

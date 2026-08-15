@@ -10,15 +10,23 @@ const _killedOutput = '''
 ''';
 
 final class FakeRunner implements TestRunner {
-  FakeRunner({this.baselineExitCode = 0});
+  FakeRunner({this.baselineExitCode = 0, this.delays = const []});
 
   final int baselineExitCode;
+
+  /// Per-call delays after the baseline; missing entries mean no delay.
+  final List<Duration> delays;
+
   final List<Duration?> timeouts = [];
 
   @override
   Future<TestRun> run({List<String>? tests, Duration? timeout}) async {
     timeouts.add(timeout);
     final baseline = timeouts.length == 1;
+    final call = timeouts.length - 2;
+    if (!baseline && call < delays.length) {
+      await Future<void>.delayed(delays[call]);
+    }
     return TestRun(
       exitCode: baseline ? baselineExitCode : 1,
       timedOut: false,
@@ -85,5 +93,44 @@ void main() {
       runnerFactory: (_) => FakeRunner(baselineExitCode: 1),
     );
     await expectLater(engine.run(), throwsA(isA<RunAborted>()));
+  });
+
+  test(
+    'gives every worker its own containment, capped by mutant count',
+    () async {
+      final roots = <String>[];
+      final runner = FakeRunner();
+      await Engine(
+        projectRoot: await miniProject(),
+        jobs: 99,
+        runnerFactory: (root) {
+          roots.add(root);
+          return runner;
+        },
+      ).run();
+
+      expect(roots, hasLength(2), reason: '2 mutants cap 99 jobs at 2 workers');
+      expect(roots.toSet(), hasLength(2), reason: 'containments are distinct');
+    },
+  );
+
+  test('keeps report order deterministic under parallel completion', () async {
+    final runner = FakeRunner(
+      delays: const [Duration(milliseconds: 120), Duration(milliseconds: 5)],
+    );
+    final completionOrder = <String>[];
+    final result = await Engine(
+      projectRoot: await miniProject(),
+      jobs: 2,
+      runnerFactory: (_) => runner,
+      onProgress: (done, total, r) => completionOrder.add(r.mutant.id),
+    ).run();
+
+    final reportIds = result.results.map((r) => r.mutant.id).toList();
+    expect(reportIds, [
+      'lib/calc.dart:27:arithmetic:*',
+      'lib/calc.dart:27:arithmetic:-',
+    ], reason: 'results follow mutant order, not completion order');
+    expect(completionOrder.toSet(), reportIds.toSet());
   });
 }

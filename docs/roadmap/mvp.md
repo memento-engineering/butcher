@@ -16,6 +16,8 @@ output. Serial, whole-suite-per-mutant.
 - `--threshold` criticality gate via exit code
 - SDK via `Platform.resolvedExecutable`; generated-file excludes; stable
   mutant IDs
+- Parallel classification via `--jobs` workers (pulled forward from v0.1,
+  [ADR 0017](../decisions/0017-parallel-classification.md))
 
 ## Design guidance for later stages
 

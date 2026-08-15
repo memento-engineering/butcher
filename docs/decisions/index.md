@@ -35,5 +35,6 @@ flowchart TD
 | [0014](0014-naming-and-vocabulary.md) | Naming and vocabulary | accepted |
 | [0015](0015-full-pana-score.md) | Full pana score | accepted |
 | [0016](0016-wide-event-logging.md) | Wide-event logging | accepted |
+| [0017](0017-parallel-classification.md) | Parallel classification | accepted |
 
 Feature staging: [../roadmap/index.md](../roadmap/index.md).

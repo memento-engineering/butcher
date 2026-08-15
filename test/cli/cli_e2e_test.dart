@@ -22,7 +22,7 @@ void main() {
     final logPath = p.join(dir.path, 'rad.log');
 
     final exit = await radMain(
-      ['--output', 'report.json', dir.path],
+      ['--output', 'report.json', '--jobs', '2', dir.path],
       out: out,
       logPath: logPath,
     );
@@ -100,6 +100,11 @@ void main() {
 
   test('rejects multiple project roots with exit code 64', () async {
     expect(await radMain(['a', 'b'], out: StringBuffer()), 64);
+  });
+
+  test('rejects an invalid job count with exit code 64', () async {
+    expect(await radMain(['--jobs', '0'], out: StringBuffer()), 64);
+    expect(await radMain(['--jobs', 'many'], out: StringBuffer()), 64);
   });
 
   test('prints usage with exit code 0 for --help', () async {
