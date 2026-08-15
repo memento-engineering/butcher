@@ -23,5 +23,11 @@ final class ConsoleReportSink implements ReportSink {
     }
     out.writeln('MSI: ${metrics.msi.toStringAsFixed(2)}%');
     out.writeln('Covered-code MSI: ${metrics.coveredMsi.toStringAsFixed(2)}%');
+    if (metrics.timedOut > 0) {
+      out.writeln(
+        'Timeout rate: ${metrics.timeoutRate.toStringAsFixed(2)}% '
+        '(inconclusive, in neither score)',
+      );
+    }
   }
 }

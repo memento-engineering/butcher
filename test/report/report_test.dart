@@ -24,7 +24,7 @@ MutantResult result(Outcome outcome, {int offset = 27, String id = 'm'}) =>
 
 void main() {
   group('Metrics', () {
-    test('computes MSI over detected and escaped mutants', () {
+    test('keeps timeouts out of both MSI terms', () {
       final metrics = Metrics.fromResults([
         result(Outcome.killed),
         result(Outcome.timeout),
@@ -33,15 +33,19 @@ void main() {
         result(Outcome.runError),
         result(Outcome.unviable),
       ]);
-      expect(metrics.detected, 2);
-      expect(metrics.undetected, 2);
-      expect(metrics.msi, 50);
-      expect(metrics.coveredMsi, closeTo(66.67, 0.01));
+      expect(metrics.killed, 1);
+      expect(metrics.survived, 1);
+      expect(metrics.uncovered, 1);
+      expect(metrics.timedOut, 1);
+      expect(metrics.msi, closeTo(33.33, 0.01));
+      expect(metrics.coveredMsi, 50);
+      expect(metrics.timeoutRate, closeTo(33.33, 0.01));
     });
 
     test('scores 100 when nothing is scoreable', () {
       expect(Metrics.fromResults([]).msi, 100);
       expect(Metrics.fromResults([result(Outcome.runError)]).msi, 100);
+      expect(Metrics.fromResults([]).timeoutRate, 0);
     });
   });
 
@@ -55,6 +59,19 @@ void main() {
     expect(text, contains('survived: 1'));
     expect(text, contains('MSI: 50.00%'));
     expect(text, isNot(contains('timeout')));
+  });
+
+  test('ConsoleReportSink reports timeouts as an inconclusive peer', () async {
+    final out = StringBuffer();
+    await ConsoleReportSink(out: out).write([
+      result(Outcome.killed),
+      result(Outcome.survived),
+      result(Outcome.timeout),
+    ]);
+    final text = out.toString();
+    expect(text, contains('timeout: 1'));
+    expect(text, contains('MSI: 50.00%'));
+    expect(text, contains('Timeout rate: 33.33%'));
   });
 
   test(

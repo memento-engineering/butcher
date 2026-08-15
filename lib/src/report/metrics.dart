@@ -15,18 +15,28 @@ final class Metrics {
 
   int _count(Outcome outcome) => counts[outcome] ?? 0;
 
-  /// Mutants the suite detected: killed or timed out.
-  int get detected => _count(Outcome.killed) + _count(Outcome.timeout);
+  /// Mutants a failing test detected.
+  int get killed => _count(Outcome.killed);
 
-  /// Mutants that escaped: survived or uncovered.
-  int get undetected => _count(Outcome.survived) + _count(Outcome.noCoverage);
+  /// Mutants that escaped every test that ran.
+  int get survived => _count(Outcome.survived);
+
+  /// Mutants no test covers; never executed.
+  int get uncovered => _count(Outcome.noCoverage);
+
+  /// Mutants whose run exceeded its half-life: an inconclusive peer of
+  /// killed and survived, in neither MSI term (ADR 0013).
+  int get timedOut => _count(Outcome.timeout);
 
   /// Mutation score indicator in percent; 100 when nothing was scoreable.
-  double get msi => _percent(detected, detected + undetected);
+  double get msi => _percent(killed, killed + survived + uncovered);
 
   /// MSI over covered code only; equals [msi] under full coverage.
-  double get coveredMsi =>
-      _percent(detected, detected + _count(Outcome.survived));
+  double get coveredMsi => _percent(killed, killed + survived);
+
+  /// Share of conclusive-or-timed-out mutants that timed out, in percent.
+  double get timeoutRate =>
+      timedOut == 0 ? 0 : timedOut / (killed + survived + timedOut) * 100;
 
   static double _percent(int part, int whole) =>
       whole == 0 ? 100 : part / whole * 100;

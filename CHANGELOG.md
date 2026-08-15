@@ -13,3 +13,5 @@
   events human-readably with colors. Per-mutant run logs are kept separately.
 - Filesystem paths resolve once in an injectable context.
 - Parallel classification: `--jobs` workers, each with its own containment.
+- Timeouts report as an inconclusive peer of killed and survived: they leave
+  both MSI terms, and a timeout rate is printed when any mutant times out.
