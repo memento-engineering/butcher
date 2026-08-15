@@ -24,3 +24,5 @@
 - Startup cleanup under an exclusive run lock: leftover containments and logs
   are removed at start, and a run aborts (exit 70) while another holds the
   lock.
+- `--coverage` ingests an `lcov.info`: mutants on lines no test hits report as
+  `noCoverage` and never run.

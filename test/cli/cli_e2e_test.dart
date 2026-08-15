@@ -141,6 +141,41 @@ void main() {
     expect(Directory(paths.runLogs).listSync().whereType<File>(), isNotEmpty);
   });
 
+  test('routes from lcov: mutants on unhit lines never run', () async {
+    final dir = await createFixturePackage(calc: _partiallyTestedCalc);
+    final lcov = File(p.join(dir.path, 'coverage', 'lcov.info'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('SF:lib/calc.dart\nDA:1,4\nDA:2,0\nend_of_record\n');
+    final out = StringBuffer();
+
+    final exit = await radMain(
+      ['--coverage', lcov.path, '--jobs', '1', dir.path],
+      out: out,
+      paths: paths,
+    );
+
+    expect(exit, 0, reason: out.toString());
+    expect(out.toString(), contains('killed: 2'));
+    expect(out.toString(), contains('noCoverage: 3'));
+    expect(out.toString(), contains('MSI: 40.00%'));
+    expect(out.toString(), contains('Covered-code MSI: 100.00%'));
+    expect(
+      File(paths.toolLog).readAsStringSync(),
+      contains('"@mt":"ingested coverage for {FileCount} files from {Path}"'),
+    );
+  });
+
+  test('rejects a missing coverage report with exit code 64', () async {
+    expect(
+      await radMain(
+        ['--coverage', p.join(paths.root, 'nope.info')],
+        out: StringBuffer(),
+        paths: paths,
+      ),
+      64,
+    );
+  });
+
   test('gates on --max-timeouts and scores timeouts as neither', () async {
     final dir = await createFixturePackage(
       calc: _hangingCalc,

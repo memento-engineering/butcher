@@ -9,11 +9,15 @@ ones the tests kill.
 - Prints per-outcome counts, MSI, and covered-code MSI.
 - Timed-out mutants are inconclusive: they count as neither killed nor
   survived, and a timeout rate is printed whenever any occur.
+- Pass `--coverage` an `lcov.info` (`dart test --coverage-path=lcov.info`) to
+  skip mutants no test reaches: they report as `noCoverage` without a run,
+  which lowers the MSI but leaves the covered-code MSI intact.
 - Writes a Stryker JSON report (`mutation-report.json`); view it with the
   [Stryker report viewer](https://microsoft.github.io/mutation-testing-elements/).
 
 | Flag | Effect |
 |---|---|
+| `-c, --coverage` | `lcov.info` to route from; unhit lines are not run |
 | `-t, --threshold` | Exit 1 when the MSI is below this percentage |
 | `--max-timeouts` | Exit 1 when more mutants than this time out |
 | `-o, --output` | Report path, relative to the project root |

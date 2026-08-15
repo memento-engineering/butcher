@@ -4,6 +4,8 @@ import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
 import '../engine/engine.dart';
+import '../engine/full_coverage_provider.dart';
+import '../engine/lcov_coverage_provider.dart';
 import '../engine/run_aborted.dart';
 import '../log/rad_logger.dart';
 import '../rad_paths.dart';
@@ -41,6 +43,13 @@ Future<int> radMain(
       help: 'Path of the Stryker JSON report.',
     )
     ..addOption(
+      'coverage',
+      abbr: 'c',
+      help:
+          'lcov.info to route from: mutants on lines no test hits are '
+          'reported as noCoverage without running the suite.',
+    )
+    ..addOption(
       'max-timeouts',
       help:
           'Honesty gate: exit 1 when more mutants than this time out. '
@@ -65,6 +74,7 @@ Future<int> radMain(
   final double? threshold;
   final int? jobs;
   final int? maxTimeouts;
+  final File? coverageFile;
   try {
     options = parser.parse(arguments);
     if (options.rest.length > 1) {
@@ -75,6 +85,7 @@ Future<int> radMain(
     threshold = _threshold(options);
     jobs = _jobs(options);
     maxTimeouts = _maxTimeouts(options);
+    coverageFile = _coverageFile(options);
   } on FormatException catch (error) {
     stderr.writeln(error.message);
     stderr.writeln(_usage(parser));
@@ -114,10 +125,24 @@ Future<int> radMain(
     'Argv': arguments,
   });
 
+  final coverage = coverageFile == null
+      ? const FullCoverageProvider()
+      : LcovCoverageProvider.parse(
+          coverageFile.readAsStringSync(),
+          projectRoot: projectRoot,
+        );
+  if (coverage is LcovCoverageProvider) {
+    logger.info('ingested coverage for {FileCount} files from {Path}', {
+      'FileCount': coverage.hits.length,
+      'Path': coverageFile!.path,
+    });
+  }
+
   final engine = Engine(
     projectRoot: projectRoot,
     paths: resolvedPaths,
     jobs: jobs,
+    coverage: coverage,
     logger: logger,
     onProgress: verbose
         // The rendered `classified` event already covers verbose progress.
@@ -197,6 +222,16 @@ int? _jobs(ArgResults options) {
     throw FormatException('--jobs must be a positive integer: $raw');
   }
   return value;
+}
+
+File? _coverageFile(ArgResults options) {
+  final raw = options.option('coverage');
+  if (raw == null) return null;
+  final file = File(p.normalize(p.absolute(raw)));
+  if (!file.existsSync()) {
+    throw FormatException('--coverage report does not exist: ${file.path}');
+  }
+  return file;
 }
 
 int? _maxTimeouts(ArgResults options) {

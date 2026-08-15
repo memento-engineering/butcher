@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import '../model/line_index.dart';
 import '../model/mutant_result.dart';
 import '../model/outcome.dart';
 import 'report_sink.dart';
@@ -31,6 +32,7 @@ final class StrykerJsonSink implements ReportSink {
   @override
   Future<void> write(List<MutantResult> results) async {
     final files = <String, Map<String, Object>>{};
+    final indexes = <String, LineIndex>{};
     for (final result in results) {
       final mutation = result.mutant.mutation;
       final file = files.putIfAbsent(
@@ -41,15 +43,18 @@ final class StrykerJsonSink implements ReportSink {
           'mutants': <Object>[],
         },
       );
-      final source = file['source']! as String;
+      final index = indexes.putIfAbsent(
+        mutation.filePath,
+        () => LineIndex(file['source']! as String),
+      );
       (file['mutants']! as List<Object>).add({
         'id': result.mutant.id,
         'mutatorName': mutation.operatorId,
         'replacement': mutation.replacement,
         'description': mutation.description,
         'location': {
-          'start': _position(source, mutation.offset),
-          'end': _position(source, mutation.offset + mutation.length),
+          'start': _position(index, mutation.offset),
+          'end': _position(index, mutation.offset + mutation.length),
         },
         'status': statusOf[result.outcome]!,
       });
@@ -66,15 +71,8 @@ final class StrykerJsonSink implements ReportSink {
     );
   }
 
-  static Map<String, int> _position(String source, int offset) {
-    var line = 1;
-    var lineStart = 0;
-    for (var i = 0; i < offset; i++) {
-      if (source.codeUnitAt(i) == 0x0A) {
-        line++;
-        lineStart = i + 1;
-      }
-    }
-    return {'line': line, 'column': offset - lineStart + 1};
-  }
+  static Map<String, int> _position(LineIndex index, int offset) => {
+    'line': index.lineAt(offset),
+    'column': index.columnAt(offset),
+  };
 }
