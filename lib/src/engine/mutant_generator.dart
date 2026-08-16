@@ -68,6 +68,7 @@ final class MutantGenerator {
         MutationVisitor(
           registry: registry,
           filePath: relative,
+          source: result.content,
           mutations: mutations,
         ),
       );

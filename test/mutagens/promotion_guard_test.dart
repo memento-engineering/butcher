@@ -23,6 +23,7 @@ Future<List<Mutation>> mutationsOf(String source) async {
     MutationVisitor(
       registry: MutagenRegistry.defaults(),
       filePath: 'main.dart',
+      source: source,
       mutations: mutations,
     ),
   );

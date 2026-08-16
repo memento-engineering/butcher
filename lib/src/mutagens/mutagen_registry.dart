@@ -3,6 +3,8 @@ import 'boolean_literal_mutagen.dart';
 import 'equality_mutagen.dart';
 import 'logical_mutagen.dart';
 import 'mutagen.dart';
+import 'null_aware_access_mutagen.dart';
+import 'null_coalescing_mutagen.dart';
 import 'relational_mutagen.dart';
 
 /// The active set of mutagens for a run.
@@ -18,6 +20,8 @@ final class MutagenRegistry {
         EqualityMutagen(),
         LogicalMutagen(),
         BooleanLiteralMutagen(),
+        NullCoalescingMutagen(),
+        NullAwareAccessMutagen(),
       ];
 
   /// The registered mutagens.

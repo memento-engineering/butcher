@@ -12,6 +12,8 @@ First release.
   covered-code MSI, and writes a Stryker JSON report (`--output`).
 - AST mutant generation with `package:analyzer`; mutagens for arithmetic,
   relational, equality, and logical operators plus boolean literals.
+- Nullability mutagens: `a ?? b` mutates into always (`b`) and never (`a!`)
+  falling back, and `?.` access mutates into `!.`.
 - Containment isolation of the project copy, with `.radignore` exclusions;
   a red background reading aborts the run.
 - Outcome taxonomy: killed, survived, noCoverage, timeout, unviable, runError.

@@ -25,6 +25,8 @@ export 'src/mutagens/equality_mutagen.dart';
 export 'src/mutagens/logical_mutagen.dart';
 export 'src/mutagens/mutagen.dart';
 export 'src/mutagens/mutagen_registry.dart';
+export 'src/mutagens/null_aware_access_mutagen.dart';
+export 'src/mutagens/null_coalescing_mutagen.dart';
 export 'src/mutagens/relational_mutagen.dart';
 export 'src/rad_paths.dart';
 export 'src/report/console_report_sink.dart';
