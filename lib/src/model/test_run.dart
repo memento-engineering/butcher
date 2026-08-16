@@ -5,6 +5,7 @@ final class TestRun {
     required this.exitCode,
     required this.timedOut,
     required this.output,
+    this.errorOutput = '',
     required this.duration,
   });
 
@@ -14,8 +15,11 @@ final class TestRun {
   /// Whether the process exceeded its half-life and was killed.
   final bool timedOut;
 
-  /// Combined stdout and stderr.
+  /// Suite stdout: the JSON reporter event stream.
   final String output;
+
+  /// Suite stderr, buffered separately so it cannot split an event line.
+  final String errorOutput;
 
   /// Wall-clock duration of the run.
   final Duration duration;

@@ -8,11 +8,25 @@ import '../helpers/fixtures.dart';
 
 void main() {
   test('reports a green suite with exit code 0', () async {
-    final dir = await createFixturePackage();
+    final dir = await createFixturePackage(
+      testSource: '''
+import 'dart:io';
+
+import 'package:fixture/calc.dart';
+import 'package:test/test.dart';
+
+void main() {
+  stderr.writeln('noise on stderr');
+  test('adds', () => expect(add(2, 3), 5));
+}
+''',
+    );
     final run = await DartTestRunner(dir.path).run();
     expect(run.exitCode, 0);
     expect(run.timedOut, isFalse);
     expect(run.output, contains('"type":"done"'));
+    expect(run.output, isNot(contains('noise on stderr')));
+    expect(run.errorOutput, contains('noise on stderr'));
     expect(run.duration, greaterThan(Duration.zero));
   });
 

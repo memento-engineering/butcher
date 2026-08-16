@@ -164,11 +164,14 @@ final class Engine {
     final background = await runners.first.run();
     if (background.exitCode != 0) {
       final summary = TestEvents.parse(background.output).summarize();
+      final evidence = summary.isEmpty
+          ? '${background.output}${background.errorOutput}'
+          : summary;
       throw RunAborted(
         'background reading is red; a green suite is a precondition '
         '(ADR 0005). If a copy exclusion removed a required asset, fix '
         '$containmentIgnoreFile.\n'
-        '${summary.isEmpty ? background.output : summary}',
+        '$evidence',
       );
     }
     final halfLife = halfLifeFor(background.duration);
@@ -312,6 +315,7 @@ final class Engine {
       'TimedOut': run.timedOut,
       'DurationMs': run.duration.inMilliseconds,
       'Output': run.output,
+      'ErrorOutput': run.errorOutput,
     };
     if (failedOutcomes.contains(result.outcome)) {
       runLog.error('mutant run failed: {MutantId} as {Outcome}', properties);

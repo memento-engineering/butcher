@@ -37,9 +37,10 @@ final class DartTestRunner implements TestRunner {
 
     const decoder = Utf8Decoder(allowMalformed: true);
     final output = StringBuffer();
+    final errors = StringBuffer();
     final drained = Future.wait([
       process.stdout.transform(decoder).forEach(output.write),
-      process.stderr.transform(decoder).forEach(output.write),
+      process.stderr.transform(decoder).forEach(errors.write),
     ]);
 
     var exitCode = -1;
@@ -58,6 +59,7 @@ final class DartTestRunner implements TestRunner {
       exitCode: exitCode,
       timedOut: timedOut,
       output: output.toString(),
+      errorOutput: errors.toString(),
       duration: watch.elapsed,
     );
   }
