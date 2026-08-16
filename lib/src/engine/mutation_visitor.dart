@@ -7,6 +7,7 @@ import '../mutagens/boolean_literal_mutagen.dart';
 import '../mutagens/mutagen_registry.dart';
 import '../mutagens/null_aware_access_mutagen.dart';
 import '../mutagens/null_coalescing_mutagen.dart';
+import '../mutagens/null_injection_mutagen.dart';
 
 /// The single AST walk; dispatches nodes to registered mutagens (ADR 0008).
 final class MutationVisitor extends RecursiveAstVisitor<void> {
@@ -64,6 +65,42 @@ final class MutationVisitor extends RecursiveAstVisitor<void> {
   void _nullAware(Expression node) {
     for (final mutagen in registry.ofType<NullAwareAccessMutagen>()) {
       mutations.addAll(mutagen.mutate(node, filePath));
+    }
+  }
+
+  @override
+  void visitReturnStatement(ReturnStatement node) {
+    _nullInjection(node);
+    super.visitReturnStatement(node);
+  }
+
+  @override
+  void visitExpressionFunctionBody(ExpressionFunctionBody node) {
+    _nullInjection(node);
+    super.visitExpressionFunctionBody(node);
+  }
+
+  @override
+  void visitArgumentList(ArgumentList node) {
+    _nullInjection(node);
+    super.visitArgumentList(node);
+  }
+
+  @override
+  void visitAssignmentExpression(AssignmentExpression node) {
+    _nullInjection(node);
+    super.visitAssignmentExpression(node);
+  }
+
+  @override
+  void visitVariableDeclaration(VariableDeclaration node) {
+    _nullInjection(node);
+    super.visitVariableDeclaration(node);
+  }
+
+  void _nullInjection(AstNode node) {
+    for (final mutagen in registry.ofType<NullInjectionMutagen>()) {
+      mutations.addAll(mutagen.mutate(node, filePath, source));
     }
   }
 }

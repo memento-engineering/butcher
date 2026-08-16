@@ -124,13 +124,13 @@ void main() {
     // guards, so the unviable flip reaches the viability filter (ADR 0019).
     final root = await miniProject(
       calc:
-          'int? last(List<int>? xs) {\n'
-          '  if (xs == null) return null;\n'
-          '  int? value;\n'
-          '  for (final x in xs) {\n'
-          '    value = x;\n'
+          'int count(List<int>? xs) {\n'
+          '  if (xs == null) return 0;\n'
+          '  var total = 0;\n'
+          '  for (final _ in xs) {\n'
+          '    total = 1;\n'
           '  }\n'
-          '  return value;\n'
+          '  return total;\n'
           '}\n',
     );
     final runner = FakeRunner();

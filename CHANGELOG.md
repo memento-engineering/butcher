@@ -13,7 +13,8 @@ First release.
 - AST mutant generation with `package:analyzer`; mutagens for arithmetic,
   relational, equality, and logical operators plus boolean literals.
 - Nullability mutagens: `a ?? b` mutates into always (`b`) and never (`a!`)
-  falling back, and `?.` access mutates into `!.`.
+  falling back, `?.` access mutates into `!.`, and `null` is injected into
+  declared-nullable returns, arguments, assignments, and initializers.
 - Containment isolation of the project copy, with `.radignore` exclusions;
   a red background reading aborts the run.
 - Outcome taxonomy: killed, survived, noCoverage, timeout, unviable, runError.

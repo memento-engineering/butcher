@@ -5,6 +5,7 @@ import 'logical_mutagen.dart';
 import 'mutagen.dart';
 import 'null_aware_access_mutagen.dart';
 import 'null_coalescing_mutagen.dart';
+import 'null_injection_mutagen.dart';
 import 'relational_mutagen.dart';
 
 /// The active set of mutagens for a run.
@@ -22,6 +23,7 @@ final class MutagenRegistry {
         BooleanLiteralMutagen(),
         NullCoalescingMutagen(),
         NullAwareAccessMutagen(),
+        NullInjectionMutagen(),
       ];
 
   /// The registered mutagens.
