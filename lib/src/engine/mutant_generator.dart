@@ -8,6 +8,7 @@ import '../model/mutant.dart';
 import '../model/mutation.dart';
 import '../mutagens/mutagen_registry.dart';
 import 'mutation_visitor.dart';
+import 'rad_ignore.dart';
 
 /// Suffixes of generated files never irradiated.
 const generatedFileSuffixes = [
@@ -23,8 +24,13 @@ const generatedFileSuffixes = [
 
 /// Enumerates mutants for a project's `lib/` via one resolved AST walk.
 final class MutantGenerator {
-  /// Creates a generator over [projectRoot] using [registry].
-  MutantGenerator({required this.projectRoot, required this.registry});
+  /// Creates a generator over [projectRoot] using [registry]; a missing
+  /// [ignore] loads the project's `.radignore`.
+  MutantGenerator({
+    required this.projectRoot,
+    required this.registry,
+    RadIgnore? ignore,
+  }) : ignore = ignore ?? RadIgnore.load(projectRoot);
 
   /// Absolute path of the project under test.
   final String projectRoot;
@@ -32,11 +38,15 @@ final class MutantGenerator {
   /// The active mutagen set.
   final MutagenRegistry registry;
 
+  /// Consumer exclusions shared with containment (ADR 0004).
+  final RadIgnore ignore;
+
   /// All mutants, sorted with stable ids (ADR 0007), plus the pristine
   /// source per irradiated file so reports stay aligned even when the
   /// working tree changes mid-run.
   Future<(List<Mutant>, Map<String, String>)> generate() async {
     final sources = <String, String>{};
+    final root = p.normalize(p.absolute(projectRoot));
     final libDir = Directory(p.join(projectRoot, 'lib'));
     if (!libDir.existsSync()) return (const <Mutant>[], sources);
 
@@ -47,6 +57,12 @@ final class MutantGenerator {
             .where((f) => f.path.endsWith('.dart'))
             .where((f) => !generatedFileSuffixes.any((s) => f.path.endsWith(s)))
             .map((f) => p.normalize(f.absolute.path))
+            .where(
+              (f) => !ignore.excludes(
+                p.relative(f, from: root).replaceAll(r'\', '/'),
+                isDirectory: false,
+              ),
+            )
             .toList()
           ..sort();
 
@@ -55,9 +71,7 @@ final class MutantGenerator {
     );
     final mutations = <Mutation>[];
     for (final file in files) {
-      final relative = p
-          .relative(file, from: p.normalize(p.absolute(projectRoot)))
-          .replaceAll(r'\', '/');
+      final relative = p.relative(file, from: root).replaceAll(r'\', '/');
       final result = await collection
           .contextFor(file)
           .currentSession

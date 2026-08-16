@@ -24,15 +24,17 @@ final class Containment {
 
   final Map<String, String> _pristine = {};
 
-  /// Copies [projectRoot] into a fresh temp dir, honoring exclusions.
+  /// Copies [projectRoot] into a fresh temp dir, honoring exclusions; a
+  /// missing [ignore] loads the project's `.radignore`.
   static Future<Containment> create(
     String projectRoot, {
     required RadPaths paths,
+    RadIgnore? ignore,
   }) async {
     final source = p.normalize(p.absolute(projectRoot));
     final tempRoot = Directory(paths.root)..createSync(recursive: true);
     final target = await tempRoot.createTemp(containmentPrefix);
-    final exclusions = RadIgnore.load(source);
+    final exclusions = ignore ?? RadIgnore.load(source);
 
     await for (final entity in Directory(
       source,

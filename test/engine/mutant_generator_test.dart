@@ -47,6 +47,17 @@ void main() {
     },
   );
 
+  test('skips files excluded by .radignore', () async {
+    final dir = await fixtureProject();
+    File(p.join(dir.path, '.radignore')).writeAsStringSync('lib/src/\n');
+    final (mutants, sources) = await MutantGenerator(
+      projectRoot: dir.path,
+      registry: MutagenRegistry.defaults(),
+    ).generate();
+    expect(sources.keys, ['lib/a.dart']);
+    expect(mutants.map((m) => m.mutation.filePath), everyElement('lib/a.dart'));
+  });
+
   test('does not follow symlinks', () async {
     final dir = await fixtureProject();
     final outside = await Directory.systemTemp.createTemp('rad_gen_link_');

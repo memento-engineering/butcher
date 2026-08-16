@@ -110,7 +110,10 @@ final class Engine {
     // oversubscribe; the background reading uses the same concurrency to
     // keep half-lives calibrated (ADR 0017).
     final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ jobs);
-    final containments = [await Containment.create(projectRoot, paths: paths)];
+    final ignore = RadIgnore.load(projectRoot);
+    final containments = [
+      await Containment.create(projectRoot, paths: paths, ignore: ignore),
+    ];
     await _resolveDependencies(containments.first.root);
     final runners = [runnerFactory(containments.first.root, suiteConcurrency)];
     prepareWatch.stop();
@@ -142,6 +145,7 @@ final class Engine {
     final (mutants, sources) = await MutantGenerator(
       projectRoot: projectRoot,
       registry: registry,
+      ignore: ignore,
     ).generate();
     coverage.indexSources(sources);
     final perFile = <String, int>{for (final file in sources.keys) file: 0};
@@ -170,7 +174,7 @@ final class Engine {
     containments.addAll(
       await Future.wait([
         for (var i = 1; i < workers; i++)
-          Containment.create(projectRoot, paths: paths),
+          Containment.create(projectRoot, paths: paths, ignore: ignore),
       ]),
     );
     await Future.wait(
