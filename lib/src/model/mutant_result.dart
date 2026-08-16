@@ -9,6 +9,7 @@ class MutantResult {
     required this.mutant,
     required this.outcome,
     this.testRun,
+    this.error,
   });
 
   /// The mutant that was put under test.
@@ -19,4 +20,7 @@ class MutantResult {
 
   /// The test run that produced [outcome]; `null` when no tests ran.
   final TestRun? testRun;
+
+  /// Exception and stack trace behind a [Outcome.runError] without [testRun].
+  final String? error;
 }

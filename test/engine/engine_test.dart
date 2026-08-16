@@ -55,6 +55,30 @@ final class FakeRunner implements TestRunner {
   }
 }
 
+final class CrashingRunner implements TestRunner {
+  CrashingRunner(this.error);
+
+  final Object error;
+  var _calls = 0;
+
+  @override
+  Future<TestRun> run({
+    List<String>? tests,
+    Duration? timeout,
+    bool failFast = false,
+  }) async {
+    if (_calls++ == 0) {
+      return TestRun(
+        exitCode: 0,
+        timedOut: false,
+        output: '',
+        duration: const Duration(seconds: 1),
+      );
+    }
+    throw error;
+  }
+}
+
 final class NothingCovered implements CoverageProvider {
   const NothingCovered();
 
@@ -142,6 +166,47 @@ void main() {
 
     expect(result.results.map((r) => r.outcome).toSet(), {Outcome.unviable});
     expect(runner.timeouts, hasLength(1), reason: 'only the baseline ran');
+  });
+
+  test('retains evidence when a mutant run throws', () async {
+    final paths = await isolatedRadPaths('rad_engine_state_');
+    final runner = CrashingRunner(
+      const ProcessException('dart', ['test'], 'venting core'),
+    );
+    final result = await Engine(
+      projectRoot: await miniProject(),
+      paths: paths,
+      runnerFactory: (_, _) => runner,
+    ).run();
+
+    expect(result.results.map((r) => r.outcome).toSet(), {Outcome.runError});
+    for (final mutantResult in result.results) {
+      expect(mutantResult.testRun, isNull);
+      expect(mutantResult.error, contains('venting core'));
+      expect(mutantResult.error, contains('#0'), reason: 'stack trace kept');
+    }
+    final events = [
+      for (final file in Directory(paths.runLogs).listSync().whereType<File>())
+        for (final line in file.readAsLinesSync())
+          jsonDecode(line) as Map<String, dynamic>,
+    ];
+    expect(events, hasLength(2));
+    for (final event in events) {
+      expect(event['@mt'], 'mutant run failed: {MutantId} as {Outcome}');
+      expect(event['Outcome'], 'runError');
+      expect(event['Error'], contains('venting core'));
+      expect(event, isNot(contains('ExitCode')));
+    }
+  });
+
+  test('propagates unexpected engine exceptions', () async {
+    final runner = CrashingRunner(ArgumentError('engine bug'));
+    final engine = Engine(
+      projectRoot: await miniProject(),
+      paths: await isolatedRadPaths('rad_engine_state_'),
+      runnerFactory: (_, _) => runner,
+    );
+    await expectLater(engine.run(), throwsArgumentError);
   });
 
   test('aborts on a red background reading', () async {

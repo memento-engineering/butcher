@@ -213,7 +213,7 @@ final class Engine {
           'TimedOut': result.testRun?.timedOut,
           'DurationMs': result.testRun?.duration.inMilliseconds,
         });
-        if (result.testRun != null) {
+        if (result.testRun != null || result.error != null) {
           _logMutantRun(runLogs[slot], containments[slot].name, result);
         }
         onProgress?.call(done, mutants.length, result);
@@ -285,13 +285,26 @@ final class Engine {
         outcome: const OutcomeClassifier().classify(run),
         testRun: run,
       );
-    } catch (_) {
-      // Mutant-level failures are outcomes, never exceptions (ADR 0006).
-      return MutantResult(mutant: mutant, outcome: Outcome.runError);
+      // Expected mutant-level failures are outcomes, never exceptions
+      // (ADR 0006); their evidence lands in the run log (ADR 0016).
+    } on IOException catch (error, stackTrace) {
+      return _runError(mutant, error, stackTrace);
+    } on StateError catch (error, stackTrace) {
+      return _runError(mutant, error, stackTrace);
     } finally {
       await containment.restore(mutant.mutation.filePath);
     }
   }
+
+  static MutantResult _runError(
+    Mutant mutant,
+    Object error,
+    StackTrace stackTrace,
+  ) => MutantResult(
+    mutant: mutant,
+    outcome: Outcome.runError,
+    error: '$error\n$stackTrace',
+  );
 
   /// Appends one wide event for [result] to its worker's [runLog],
   /// correlated with the tool log through the shared `RunId` (ADR 0016).
@@ -300,7 +313,7 @@ final class Engine {
     String containment,
     MutantResult result,
   ) {
-    final run = result.testRun!;
+    final run = result.testRun;
     final mutation = result.mutant.mutation;
     final properties = {
       'MutantId': result.mutant.id,
@@ -311,17 +324,21 @@ final class Engine {
       'Offset': mutation.offset,
       'Operator': mutation.operatorId,
       'Replacement': mutation.replacement,
-      'ExitCode': run.exitCode,
-      'TimedOut': run.timedOut,
-      'DurationMs': run.duration.inMilliseconds,
-      'Output': run.output,
-      'ErrorOutput': run.errorOutput,
+      if (result.error != null) 'Error': result.error,
+      if (run != null) ...{
+        'ExitCode': run.exitCode,
+        'TimedOut': run.timedOut,
+        'DurationMs': run.duration.inMilliseconds,
+        'Output': run.output,
+        'ErrorOutput': run.errorOutput,
+      },
     };
     if (failedOutcomes.contains(result.outcome)) {
       runLog.error('mutant run failed: {MutantId} as {Outcome}', properties);
     } else {
       runLog.info('mutant run completed: {MutantId} as {Outcome}', properties);
     }
+    if (run == null) return;
     for (final error in TestEvents.parse(run.output).errors) {
       runLog.error('nested test error: {Error}', {'Error': error});
     }
