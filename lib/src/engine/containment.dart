@@ -1,16 +1,13 @@
 import 'dart:io';
 
-import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
 
 import '../model/mutation.dart';
 import '../rad_paths.dart';
+import 'rad_ignore.dart';
 
 /// Directories never copied into a containment (ADR 0004).
 const defaultContainmentExcludes = ['.git', '.dart_tool', 'build', 'coverage'];
-
-/// Name of the consumer exclusion file, gitignore-style, at the project root.
-const containmentIgnoreFile = '.radignore';
 
 /// Prefix of every containment directory; startup cleanup matches on it.
 const containmentPrefix = 'containment_';
@@ -35,7 +32,7 @@ final class Containment {
     final source = p.normalize(p.absolute(projectRoot));
     final tempRoot = Directory(paths.root)..createSync(recursive: true);
     final target = await tempRoot.createTemp(containmentPrefix);
-    final globs = _consumerGlobs(source);
+    final exclusions = RadIgnore.load(source);
 
     await for (final entity in Directory(
       source,
@@ -43,7 +40,7 @@ final class Containment {
       final relative = p
           .relative(entity.path, from: source)
           .replaceAll(r'\', '/');
-      if (_excluded(relative, globs)) continue;
+      if (_excluded(relative, entity is Directory, exclusions)) continue;
       final destination = p.join(target.path, relative);
       if (entity is Directory) {
         Directory(destination).createSync(recursive: true);
@@ -55,21 +52,11 @@ final class Containment {
     return Containment._(target.path);
   }
 
-  static List<Glob> _consumerGlobs(String source) {
-    final file = File(p.join(source, containmentIgnoreFile));
-    if (!file.existsSync()) return const [];
-    return file
-        .readAsLinesSync()
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty && !line.startsWith('#'))
-        .map(Glob.new)
-        .toList();
-  }
-
-  static bool _excluded(String relative, List<Glob> globs) {
-    final segments = p.posix.split(relative);
-    if (defaultContainmentExcludes.contains(segments.first)) return true;
-    return globs.any((glob) => glob.matches(relative));
+  static bool _excluded(String relative, bool isDirectory, RadIgnore ignore) {
+    if (defaultContainmentExcludes.contains(p.posix.split(relative).first)) {
+      return true;
+    }
+    return ignore.excludes(relative, isDirectory: isDirectory);
   }
 
   /// Applies [mutation] to its file; [restore] undoes it.

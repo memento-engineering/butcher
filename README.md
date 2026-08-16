@@ -30,8 +30,8 @@ ones the tests kill.
 - A red test suite aborts the run; a green suite is a precondition.
 - The project must resolve `package:test` 1.24.6 or newer; older versions
   abort the run.
-- `.radignore` (gitignore-style globs, project root) excludes paths from the
-  isolated project copy tests run in.
+- `.radignore` (gitignore-style rules incl. negation and directory patterns,
+  project root) excludes paths from the isolated project copy tests run in.
 - All temp data (containment copies, logs) lives under one rad temp root.
 - The default root is `<system temp>/rad/`; `RAD_TEMP` redirects it to an exact
   path.

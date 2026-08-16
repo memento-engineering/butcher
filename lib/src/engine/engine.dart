@@ -15,6 +15,7 @@ import 'dart_test_runner.dart';
 import 'full_coverage_provider.dart';
 import 'mutant_generator.dart';
 import 'outcome_classifier.dart';
+import 'rad_ignore.dart';
 import 'run_aborted.dart';
 import 'run_result.dart';
 import 'test_events.dart';

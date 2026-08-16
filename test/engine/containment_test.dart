@@ -22,8 +22,13 @@ Future<Directory> fixtureProject() async {
   write('.dart_tool/package_config.json', '{}');
   write('build/out.txt', 'x');
   write('assets/big/blob.bin', 'x');
+  write('assets/big/keep.txt', 'keep');
   write('assets/small.txt', 'keep');
-  write('.radignore', '# comment\n\nassets/big/**\n');
+  write('deep/nested/trace.log', 'x');
+  write(
+    '.radignore',
+    '# comment\n\n*.log\nassets/big/**\n!assets/big/keep.txt\n',
+  );
   return dir;
 }
 
@@ -52,6 +57,8 @@ void main() {
     expect(has('.dart_tool/package_config.json'), isFalse);
     expect(has('build/out.txt'), isFalse);
     expect(has('assets/big/blob.bin'), isFalse);
+    expect(has('assets/big/keep.txt'), isTrue);
+    expect(has('deep/nested/trace.log'), isFalse);
   });
 
   test(
