@@ -28,8 +28,9 @@
 
 ## Consequences
 
-- Mutagen guards stay permissive: viable null-check flips keep running while
-  hopeless ones die in milliseconds.
+- Division of labor: mutagen guards minimize unviable mutants by reading
+  promotion facts off the resolved AST (`PromotionDependence`); this filter
+  eliminates the remainder. Guards err toward keeping a mutant.
 - Schemata ([0010](0010-mutant-schemata.md)) requires every injected mutant
   to compile; this filter is its prerequisite.
 - The TCE pass ([0012](0012-tce-equivalent-detection.md)) becomes a peer
@@ -37,7 +38,7 @@
 
 ## Rejected
 
-- Gating null comparisons in mutagens: drops viable mutants and stays
+- Blanket null-comparison gates in mutagens: drop viable mutants and stay
   unsound (`is` checks, definite assignment).
 - Reimplementing flow analysis at generation time: fragile duplication of
   the compiler.

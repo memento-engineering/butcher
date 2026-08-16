@@ -23,6 +23,8 @@ First release.
 - Mutant runs stop at the first failing test (`dart test --fail-fast`).
 - Static viability check: mutants that fail analysis (e.g. a flipped null
   check breaking type promotion) report as unviable without a test run.
+- Promotion-aware guards: equality and logical mutagens skip flips whose
+  stranded promotions could never compile, instead of reporting them.
 - Parallel classification: `--jobs` workers, each with its own containment.
 - Wide-event CLEF logging: one tool log, one run log per containment,
   `--verbose` renders events to the console.

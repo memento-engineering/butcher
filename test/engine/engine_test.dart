@@ -120,11 +120,17 @@ void main() {
   });
 
   test('classifies non-compiling mutants without running tests', () async {
+    // A for-each over the checked variable is invisible to the mutagen
+    // guards, so the unviable flip reaches the viability filter (ADR 0019).
     final root = await miniProject(
       calc:
-          'String? tag(String? raw) {\n'
-          '  if (raw == null) return null;\n'
-          '  return raw.trim();\n'
+          'int? last(List<int>? xs) {\n'
+          '  if (xs == null) return null;\n'
+          '  int? value;\n'
+          '  for (final x in xs) {\n'
+          '    value = x;\n'
+          '  }\n'
+          '  return value;\n'
           '}\n',
     );
     final runner = FakeRunner();
