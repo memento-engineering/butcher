@@ -26,14 +26,21 @@ final class DartTestRunner implements TestRunner {
     bool failFast = false,
   }) async {
     final watch = Stopwatch()..start();
-    final process = await Process.start(Platform.resolvedExecutable, [
-      'test',
-      '--reporter',
-      'json',
-      if (failFast) '--fail-fast',
-      if (concurrency != null) '--concurrency=$concurrency',
-      for (final name in tests ?? const <String>[]) ...['--plain-name', name],
-    ], workingDirectory: root);
+    // On POSIX, setsid puts the suite in its own process group so a timeout
+    // can kill the whole tree, matching taskkill /T on Windows.
+    final process = await Process.start(
+      Platform.isWindows ? Platform.resolvedExecutable : 'setsid',
+      [
+        if (!Platform.isWindows) Platform.resolvedExecutable,
+        'test',
+        '--reporter',
+        'json',
+        if (failFast) '--fail-fast',
+        if (concurrency != null) '--concurrency=$concurrency',
+        for (final name in tests ?? const <String>[]) ...['--plain-name', name],
+      ],
+      workingDirectory: root,
+    );
 
     const decoder = Utf8Decoder(allowMalformed: true);
     final output = StringBuffer();
@@ -68,7 +75,8 @@ final class DartTestRunner implements TestRunner {
     if (Platform.isWindows) {
       await Process.run('taskkill', ['/PID', '${process.pid}', '/T', '/F']);
     } else {
-      process.kill(ProcessSignal.sigkill);
+      final kill = await Process.run('kill', ['-9', '--', '-${process.pid}']);
+      if (kill.exitCode != 0) process.kill(ProcessSignal.sigkill);
     }
     await process.exitCode;
   }
