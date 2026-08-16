@@ -2,12 +2,6 @@
 
 ## Unreleased
 
-- Keep containments and logs until the next run's startup cleanup.
-
-## 0.1.0
-
-First release.
-
 - `rad` CLI: irradiates `lib/`, prints per-outcome counts, MSI, and
   covered-code MSI, and writes a Stryker JSON report (`--output`).
 - AST mutant generation with `package:analyzer`; mutagens for arithmetic,
@@ -32,3 +26,4 @@ First release.
 - Wide-event CLEF logging: one tool log, one run log per containment,
   `--verbose` renders events to the console.
 - Startup cleanup under an exclusive run lock; a held lock aborts the run.
+- Keep containments and logs until the next run's startup cleanup.
