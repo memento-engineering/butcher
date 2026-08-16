@@ -47,6 +47,29 @@ void main() {
     },
   );
 
+  test('does not follow symlinks', () async {
+    final dir = await fixtureProject();
+    final outside = await Directory.systemTemp.createTemp('rad_gen_link_');
+    addTearDown(() => outside.delete(recursive: true));
+    final target = File(p.join(outside.path, 'linked.dart'))
+      ..writeAsStringSync('int mul(int a, int b) => a * b;\n');
+    try {
+      Link(p.join(dir.path, 'lib', 'linked.dart')).createSync(target.path);
+    } on FileSystemException {
+      markTestSkipped('symlinks are unavailable on this system');
+      return;
+    }
+    final (mutants, sources) = await MutantGenerator(
+      projectRoot: dir.path,
+      registry: MutagenRegistry.defaults(),
+    ).generate();
+    expect(sources.keys, isNot(contains('lib/linked.dart')));
+    expect(
+      mutants.map((m) => m.mutation.filePath),
+      everyElement(isNot('lib/linked.dart')),
+    );
+  });
+
   test('returns no mutants without a lib directory', () async {
     final dir = await Directory.systemTemp.createTemp('rad_gen_empty_');
     addTearDown(() => dir.delete(recursive: true));
