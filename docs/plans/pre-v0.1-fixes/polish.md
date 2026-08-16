@@ -1,60 +1,39 @@
 # Polish fixes
 
-Small deviations and robustness gaps. Part of [index.md](index.md).
+Release, lifecycle, and logging gaps. Part of [index.md](index.md).
 
-## 1. `--verbose` is never colored
+## 1. Pana verification currently fails
 
-- Files: `lib/src/log/rad_logger.dart` (auto-detect requires
-  `console == null`), `lib/src/cli/cli.dart` (always passes `console:`).
-- ADR: [0016](../../decisions/0016-wide-event-logging.md) requires ANSI
-  color when the terminal supports it.
-- Fix: detect on `identical(console, stdout)`, or pass `colors` from the CLI.
+- Files: `CHANGELOG.md`, `.github/workflows/publish.yml`.
+- ADR: [0015](../../decisions/0015-full-pana-score.md) requires full points at
+  all times.
+- Problem: pana gives 155/160 because the changelog has no `0.1.0` heading.
+  The workflow uses `--exit-code-threshold 0`, so verification exits 1.
+- Fix: reconcile the unreleased-version workflow with ADR 0015 before release.
 
-## 2. `classified` event misses ADR-mandated properties
+## 2. Failed startup cleanup strands the lock
 
-- File: `lib/src/engine/engine.dart` (worker loop logging).
-- ADR 0016 lists file, offset, operator, replacement on the event; the code
-  logs them only inside the mutant id string.
+- Files: `lib/src/cli/cli.dart`, `lib/src/run_workspace.dart`.
+- Problem: `clean()` can throw after acquisition, but the abort path does not
+  release the new lock.
+- Related: coverage reading and parsing happen after acquisition and outside
+  the engine's protected run block.
+- Effect: later runs report a misleading active-run conflict.
+- Fix: parse coverage before acquisition and release after failed startup.
 
-## 3. Failed startup cleanup strands the lock
+## 3. `classified` events omit required properties
 
-- Files: `lib/src/cli/cli.dart` (`acquire(...)..clean()`),
-  `lib/src/run_workspace.dart`.
-- Problem: `clean()` throwing after acquisition exits 70 without release;
-  later runs abort with a misleading "another run holds the lock" message.
-- Related: the lcov read/parse runs after acquisition and outside the try;
-  parse coverage before taking the lock.
+- File: `lib/src/engine/engine.dart` (worker-loop logging).
+- ADR: [0016](../../decisions/0016-wide-event-logging.md) lists file, offset,
+  operator, and replacement on the event.
+- Problem: the tool event carries those values only inside the mutant id.
+- Fix: add the four structured properties to the event.
 
-## 4. Generator follows symlinks
+## 4. `--verbose` is never colored
 
-- File: `lib/src/engine/mutant_generator.dart` (`listSync(recursive: true)`).
-- A symlink cycle in `lib/` hangs generation; containment copying already
-  passes `followLinks: false`.
-
-## 5. `.radignore` is ignored by the generator
-
-- Files: `lib/src/engine/mutant_generator.dart`,
-  `lib/src/engine/containment.dart` (`_consumerGlobs`).
-- Excluding a `lib/` subtree still generates mutants there; they fail
-  `Containment.apply` and pollute results as `runError`.
-
-## 6. Lcov line index reads the current working tree
-
-- File: `lib/src/engine/lcov_coverage_provider.dart` (`_indexOf`).
-- Offsets refer to generation-time `sources`, but the index is built from
-  the file on disk; mid-run edits skew coverage decisions the rest of the
-  pipeline defends against.
-
-## 7. Unbounded suite output buffering
-
-- Files: `lib/src/engine/dart_test_runner.dart` (one `StringBuffer`),
-  `lib/src/engine/engine.dart` (`_logMutantRun` embeds full output).
-- A mutant that turns a test into a print loop can OOM rad within its
-  half-life. Cap captured output.
-
-## 8. `--fail-fast` breaks on older `package:test`
-
-- File: `lib/src/engine/dart_test_runner.dart`.
-- The background reading passes (no flag), then every mutant run fails on
-  the unknown option and reports `runError`. Detect support once, or
-  document the minimum `package:test` version.
+- Files: `lib/src/log/rad_logger.dart`, `lib/src/cli/cli.dart`.
+- ADR: [0016](../../decisions/0016-wide-event-logging.md) requires ANSI color
+  when the terminal supports it.
+- Problem: auto-detection requires `console == null`, but the CLI always passes
+  a non-null sink.
+- Fix: detect `identical(console, stdout)` or pass the color decision explicitly.
