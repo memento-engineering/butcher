@@ -262,7 +262,7 @@ double? _threshold(ArgResults options) {
   final raw = options.option('threshold');
   if (raw == null) return null;
   final value = double.tryParse(raw);
-  if (value == null || value < 0 || value > 100) {
+  if (value == null || !value.isFinite || value < 0 || value > 100) {
     throw FormatException('--threshold must be a number from 0 to 100: $raw');
   }
   return value;

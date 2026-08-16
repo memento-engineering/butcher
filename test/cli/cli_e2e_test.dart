@@ -262,6 +262,10 @@ void main() {
       await radMain(['--threshold', '101'], out: StringBuffer(), paths: paths),
       64,
     );
+    expect(
+      await radMain(['--threshold', 'NaN'], out: StringBuffer(), paths: paths),
+      64,
+    );
   });
 
   test('rejects multiple project roots with exit code 64', () async {
