@@ -62,14 +62,16 @@ final class NothingCovered implements CoverageProvider {
   bool isCovered(Mutant mutant) => false;
 }
 
-Future<String> miniProject() async {
+Future<String> miniProject({
+  String calc = 'int add(int a, int b) => a + b;\n',
+}) async {
   final dir = await Directory.systemTemp.createTemp('rad_engine_');
   addTearDown(() => dir.delete(recursive: true));
   File(p.join(dir.path, 'pubspec.yaml'))
       .writeAsStringSync('name: fixture\nenvironment:\n  sdk: ^3.0.0\n');
   File(p.join(dir.path, 'lib', 'calc.dart'))
     ..parent.createSync(recursive: true)
-    ..writeAsStringSync('int add(int a, int b) => a + b;\n');
+    ..writeAsStringSync(calc);
   return dir.path;
 }
 
@@ -115,6 +117,25 @@ void main() {
     expect(runner.timeouts, hasLength(1), reason: 'only the baseline ran');
     expect(Directory(paths.runLogs).existsSync(), isTrue);
     expect(Directory(paths.runLogs).listSync(), isEmpty);
+  });
+
+  test('classifies non-compiling mutants without running tests', () async {
+    final root = await miniProject(
+      calc:
+          'String? tag(String? raw) {\n'
+          '  if (raw == null) return null;\n'
+          '  return raw.trim();\n'
+          '}\n',
+    );
+    final runner = FakeRunner();
+    final result = await Engine(
+      projectRoot: root,
+      paths: await isolatedRadPaths('rad_engine_state_'),
+      runnerFactory: (_, _) => runner,
+    ).run();
+
+    expect(result.results.map((r) => r.outcome).toSet(), {Outcome.unviable});
+    expect(runner.timeouts, hasLength(1), reason: 'only the baseline ran');
   });
 
   test('aborts on a red background reading', () async {
@@ -171,6 +192,7 @@ void main() {
     final log = File(paths.toolLog).readAsStringSync();
     expect(log, contains('"@mt":"found {MutantCount} mutants in {File}"'));
     expect(log, contains('"@mt":"generated {MutantCount} mutants'));
+    expect(log, contains('"@mt":"checked viability of {MutantCount} mutants'));
     expect(log, contains('"@mt":"prepared {Workers} containments'));
     expect(log, contains('"@mt":"background reading green'));
     expect(log, contains('"@mt":"classified {MutantId} as {Outcome}'));

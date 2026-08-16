@@ -5,7 +5,8 @@ import 'binary_expression_mutagen.dart';
 /// Swaps `==` with `!=` and back on any operands.
 ///
 /// The counterpart is the only equality operator, so each site has one swap.
-/// Widened guard: equality always yields `bool`, so every site compiles.
+/// Widened guard: sites whose flip breaks null promotion downstream are
+/// filtered by the viability check (ADR 0019), not here.
 final class EqualityMutagen extends BinaryExpressionMutagen {
   /// Creates the mutagen; it holds no state.
   const EqualityMutagen();

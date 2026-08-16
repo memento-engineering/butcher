@@ -20,6 +20,7 @@ import 'run_result.dart';
 import 'test_events.dart';
 import 'test_runner.dart';
 import 'test_selector.dart';
+import 'viability_checker.dart';
 import 'whole_suite_selector.dart';
 
 /// Called after each classified mutant with progress counters.
@@ -125,6 +126,8 @@ final class Engine {
       },
     );
 
+    final unviable = await _checkViability(mutants, sources);
+
     final prepareWatch = Stopwatch()..start();
     final workers = max(1, min(jobs, mutants.length));
     final containments = await Future.wait([
@@ -193,6 +196,7 @@ final class Engine {
             containments[slot],
             runners[slot],
             halfLife,
+            unviable,
           );
           results[index] = result;
           done++;
@@ -226,14 +230,48 @@ final class Engine {
     }
   }
 
+  /// Marks covered mutants that fail static analysis unviable before any
+  /// test run; a non-compiling mutant needs no evidence from the suite
+  /// (ADR 0019).
+  Future<Set<String>> _checkViability(
+    List<Mutant> mutants,
+    Map<String, String> sources,
+  ) async {
+    final watch = Stopwatch()..start();
+    final checker = ViabilityChecker(projectRoot: projectRoot);
+    final unviable = <String>{};
+    for (final mutant in mutants) {
+      if (!coverage.isCovered(mutant)) continue;
+      final pristine = sources[mutant.mutation.filePath];
+      if (pristine == null) continue;
+      if (!await checker.compiles(mutant.mutation, pristine)) {
+        unviable.add(mutant.id);
+      }
+    }
+    logger?.info(
+      'checked viability of {MutantCount} mutants in {DurationMs} ms; '
+      '{UnviableCount} unviable',
+      {
+        'MutantCount': mutants.length,
+        'UnviableCount': unviable.length,
+        'DurationMs': watch.elapsedMilliseconds,
+      },
+    );
+    return unviable;
+  }
+
   Future<MutantResult> _classify(
     Mutant mutant,
     Containment containment,
     TestRunner runner,
     Duration halfLife,
+    Set<String> unviable,
   ) async {
     if (!coverage.isCovered(mutant)) {
       return MutantResult(mutant: mutant, outcome: Outcome.noCoverage);
+    }
+    if (unviable.contains(mutant.id)) {
+      return MutantResult(mutant: mutant, outcome: Outcome.unviable);
     }
     try {
       await containment.apply(mutant.mutation);

@@ -5,7 +5,8 @@ import 'binary_expression_mutagen.dart';
 /// Swaps `&&` with `||` and back.
 ///
 /// The counterpart is the only short-circuit peer, so each site has one swap.
-/// Widened guard: logical operands are `bool` by language rules.
+/// Widened guard: sites whose flip breaks null promotion downstream are
+/// filtered by the viability check (ADR 0019), not here.
 final class LogicalMutagen extends BinaryExpressionMutagen {
   /// Creates the mutagen; it holds no state.
   const LogicalMutagen();

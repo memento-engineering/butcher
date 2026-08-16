@@ -17,6 +17,8 @@ First release.
 - `--coverage` ingests an `lcov.info`: mutants on lines no test hits report as
   `noCoverage` and never run.
 - Mutant runs stop at the first failing test (`dart test --fail-fast`).
+- Static viability check: mutants that fail analysis (e.g. a flipped null
+  check breaking type promotion) report as unviable without a test run.
 - Parallel classification: `--jobs` workers, each with its own containment.
 - Wide-event CLEF logging: one tool log, one run log per containment,
   `--verbose` renders events to the console.
