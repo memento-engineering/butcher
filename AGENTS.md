@@ -1,9 +1,10 @@
 - never edit AGENTS.md or CLAUDE.md
 - make commits in logical steps and use conventional commit messages
-- always make commits yourself; pushes may be done if they don't require `--force`/`--force-with-lease`
+- always make commits yourself; pushes may only be done on non-`main` branches and if they don't require `--force`/`--force-with-lease`
 - don't add long descriptions in git messages; only summarize the reason for the change in the commit title
 - if something is unspecified, abort and ask the user
-- less code is better code, never overengineer
+- less code is better code; if you can remove code or simplify, do so
+- never overengineer; tech debt should be avoided, but not at the cost of a significantly more complex solution
 - always try to find the minimal amount of changes necessary to complete a task; avoid rewriting whole files
 - keep existing documentation updated when making changes
 - documentation should consist of short sentences, lists, mermaid diagrams and tables; never long paragraphs
