@@ -61,6 +61,14 @@ void main() {
     expect(has('deep/nested/trace.log'), isFalse);
   });
 
+  test('does not copy an in-project rad root', () async {
+    final project = await fixtureProject();
+    final inProject = RadPaths(root: p.join(project.path, '.rad_temp'));
+    final copy = await Containment.create(project.path, paths: inProject);
+    expect(Directory(p.join(copy.root, '.rad_temp')).existsSync(), isFalse);
+    expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
+  });
+
   test(
     'applies and restores a mutation without touching the source tree',
     () async {

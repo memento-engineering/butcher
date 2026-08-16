@@ -39,6 +39,11 @@ final class Containment {
     await for (final entity in Directory(
       source,
     ).list(recursive: true, followLinks: false)) {
+      // An in-project rad root must never copy itself (recursive growth).
+      if (p.equals(paths.root, entity.path) ||
+          p.isWithin(paths.root, entity.path)) {
+        continue;
+      }
       final relative = p
           .relative(entity.path, from: source)
           .replaceAll(r'\', '/');
