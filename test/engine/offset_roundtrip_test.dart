@@ -24,7 +24,6 @@ Future<void> roundtrip(String source) async {
 
   final paths = await isolatedRadPaths('rad_roundtrip_state_');
   final containment = await Containment.create(dir.path, paths: paths);
-  addTearDown(containment.dispose);
   final copy = File(p.join(containment.root, 'lib', 'a.dart'));
   for (final mutant in mutants) {
     await containment.apply(mutant.mutation);

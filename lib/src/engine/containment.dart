@@ -102,9 +102,4 @@ final class Containment {
     if (pristine == null) return;
     await File(p.join(root, filePath)).writeAsString(pristine);
   }
-
-  /// Deletes the containment directory.
-  Future<void> dispose() async {
-    await Directory(root).delete(recursive: true);
-  }
 }

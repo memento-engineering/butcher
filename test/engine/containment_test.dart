@@ -36,7 +36,6 @@ void main() {
     source = await fixtureProject();
     paths = await isolatedRadPaths('rad_containment_state_');
     containment = await Containment.create(source.path, paths: paths);
-    addTearDown(containment.dispose);
   });
 
   test('lives inside the configured temp folder', () {

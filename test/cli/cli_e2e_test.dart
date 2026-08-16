@@ -76,6 +76,13 @@ void main() {
     expect(runLogs, hasLength(2), reason: 'one per --jobs worker');
     expect(File(p.join(paths.runLogs, 'stale.log')).existsSync(), isFalse);
     expect(
+      Directory(paths.root).listSync().whereType<Directory>().where(
+        (directory) => p.basename(directory.path).startsWith('containment_'),
+      ),
+      hasLength(2),
+      reason: 'containments remain until the next run starts',
+    );
+    expect(
       out.toString(),
       isNot(contains('@mt')),
       reason: 'non-verbose console stays human-readable',
@@ -225,6 +232,13 @@ void main() {
     expect(logText, contains('"@l":"Error"'));
     expect(Directory(paths.runLogs).existsSync(), isTrue);
     expect(Directory(paths.runLogs).listSync(), isEmpty);
+    expect(
+      Directory(paths.root).listSync().whereType<Directory>().any(
+        (directory) => p.basename(directory.path).startsWith('containment_'),
+      ),
+      isTrue,
+      reason: 'aborted-run containment remains until the next run starts',
+    );
   });
 
   test('rejects an invalid threshold with exit code 64', () async {
