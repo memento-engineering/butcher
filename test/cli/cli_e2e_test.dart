@@ -241,6 +241,18 @@ void main() {
     );
   });
 
+  test('aborts with exit code 70 on a too-old package:test', () async {
+    final dir = await createFixturePackage();
+    final lock = File(p.join(dir.path, 'pubspec.lock'));
+    lock.writeAsStringSync(
+      lock.readAsStringSync().replaceFirstMapped(
+        RegExp(r'(  test:[\s\S]*?    version: )"[^"]+"'),
+        (match) => '${match[1]}"1.24.5"',
+      ),
+    );
+    expect(await radMain([dir.path], out: StringBuffer(), paths: paths), 70);
+  });
+
   test('rejects an invalid threshold with exit code 64', () async {
     expect(
       await radMain(['--threshold', 'nope'], out: StringBuffer(), paths: paths),

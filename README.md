@@ -26,6 +26,8 @@ ones the tests kill.
 
 - Exit codes: 0 success, 1 gate failed, 64 usage, 70 aborted run.
 - A red test suite aborts the run; a green suite is a precondition.
+- The project must resolve `package:test` 1.24.6 or newer; older versions
+  abort the run.
 - `.radignore` (gitignore-style globs, project root) excludes paths from the
   isolated project copy tests run in.
 - All temp data (containment copies, logs) lives under one rad temp root.
