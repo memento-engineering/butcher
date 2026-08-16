@@ -11,7 +11,8 @@ flowchart TD
     A[lock + startup cleanup] --> B[containment: filtered project or workspace copy]
     B --> C[background reading: verify suite green]
     C --> D[analyzer: resolved AST → mutants]
-    D --> E[tracer: collect or ingest per-test lcov]
+    D --> V[viability check: non-compiling mutants filtered]
+    V --> E[tracer: collect or ingest per-test lcov]
     E --> F[compile schemata once]
     F --> G[per mutant: covering tests, fastest first, first kill wins]
     G --> H[TCE pass over survivors]
@@ -38,5 +39,6 @@ flowchart TD
 | [0016](0016-wide-event-logging.md) | Wide-event logging | accepted |
 | [0017](0017-parallel-classification.md) | Parallel classification | accepted |
 | [0018](0018-run-workspace-lifecycle.md) | Run workspace lifecycle | accepted, staged v0.1–v0.2 |
+| [0019](0019-static-viability-filtering.md) | Static viability filtering | accepted |
 
 Feature staging: [../roadmap/index.md](../roadmap/index.md).
