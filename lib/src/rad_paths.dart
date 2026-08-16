@@ -15,6 +15,14 @@ final class RadPaths {
   factory RadPaths.systemTemp() =>
       RadPaths(root: p.join(Directory.systemTemp.path, 'rad'));
 
+  /// Production paths, redirected to `RAD_TEMP` when it is non-empty.
+  factory RadPaths.production({Map<String, String>? environment}) {
+    final override = (environment ?? Platform.environment)['RAD_TEMP'];
+    return override == null || override.isEmpty
+        ? RadPaths.systemTemp()
+        : RadPaths(root: override);
+  }
+
   /// Root for containments and logs.
   final String root;
 

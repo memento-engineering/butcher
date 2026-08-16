@@ -11,8 +11,9 @@
 
 - Copy the project or workspace into a temp dir (the containment) and mutate
   `lib/` there.
-- By default, all rad temp data (containments, logs) lives under one
-  `<system temp>/rad/` folder.
+- All rad temp data (containments, logs) lives under one root.
+- A non-empty `RAD_TEMP` sets the exact production root.
+- The fallback root is `<system temp>/rad/`.
 - The run workspace is locked and cleaned only at the start of the next run
   ([0018](0018-run-workspace-lifecycle.md)).
 - Resolve the root, tool log, and run-log folder once in `RadPaths`; pass that

@@ -4,7 +4,7 @@
 
 ## Context
 
-- Crashed runs leave containments and logs under `<system temp>/rad/`.
+- Crashed runs leave containments and logs under the resolved rad temp root.
 - Old state consumes disk and obscures evidence from the current run.
 - Exit cleanup can destroy evidence needed to investigate a failed run.
 - Concurrent cleanup must not remove another active run's containment.
@@ -12,7 +12,7 @@
 ## Decision
 
 - Startup cleanup is the first run stage.
-- The CLI acquires an exclusive `<system temp>/rad/.lock` before cleanup.
+- The CLI acquires an exclusive `<rad temp root>/.lock` before cleanup.
 - An actively held lock is never stolen.
 - A pre-existing lock prompts interactive users before stale-state takeover.
 - `--non-interactive` disables prompts and aborts on a pre-existing lock.

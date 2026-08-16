@@ -99,7 +99,7 @@ Future<int> radMain(
   final projectRoot = p.normalize(
     p.absolute(options.rest.isEmpty ? '.' : options.rest.single),
   );
-  final resolvedPaths = paths ?? RadPaths.systemTemp();
+  final resolvedPaths = paths ?? RadPaths.production();
   // Startup cleanup is the first run stage and needs the lock first: it must
   // never remove another active run's state (ADR 0018).
   final RunWorkspace workspace;
@@ -257,4 +257,6 @@ double? _threshold(ArgResults options) {
 }
 
 String _usage(ArgParser parser) =>
-    'Usage: rad [options] [project root]\n\n${parser.usage}';
+    'Usage: rad [options] [project root]\n\n${parser.usage}'
+    '\n\nEnvironment:\n'
+    'RAD_TEMP  Exact root for containments and logs.';

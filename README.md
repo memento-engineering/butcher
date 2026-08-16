@@ -28,16 +28,26 @@ ones the tests kill.
 - A red test suite aborts the run; a green suite is a precondition.
 - `.radignore` (gitignore-style globs, project root) excludes paths from the
   isolated project copy tests run in.
-- All temp data (containment copies, logs) lives under `<system temp>/rad/`.
-- A run takes an exclusive `<system temp>/rad/.lock`, then clears what earlier
+- All temp data (containment copies, logs) lives under one rad temp root.
+- The default root is `<system temp>/rad/`; `RAD_TEMP` redirects it to an exact
+  path.
+- A run takes an exclusive `<rad temp root>/.lock`, then clears what earlier
   runs left there. A run that finds the lock held aborts with exit 70 instead
   of touching the other run's state; a crashed run leaves the lock behind.
-- Each run writes wide-event CLEF logs to `<system temp>/rad/rad.log`,
+- Each run writes wide-event CLEF logs to `<rad temp root>/rad.log`,
   replacing the previous run's file. Suite output of every executed mutant is
-  kept in `<system temp>/rad/runs/`, one log per worker named after its
+  kept in `<rad temp root>/runs/`, one log per worker named after its
   containment. The folder remains present; a new run clears only its previous
   contents. Nested engine runs cannot clear or overwrite the active tool run's
   files.
+
+## Windows performance
+
+- Antivirus scanning of containment copies can significantly slow testing.
+- Set a dedicated root before running rad:
+  `$env:RAD_TEMP = 'D:\temp\rad'`.
+- If policy permits, exclude only that dedicated directory from antivirus
+  scanning. Do not exclude the whole system temp directory.
 
 ## More
 

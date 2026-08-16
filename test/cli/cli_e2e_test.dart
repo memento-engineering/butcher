@@ -271,5 +271,6 @@ void main() {
     final out = StringBuffer();
     expect(await radMain(['--help'], out: out, paths: paths), 0);
     expect(out.toString(), contains('Usage: rad'));
+    expect(out.toString(), contains('RAD_TEMP'));
   });
 }

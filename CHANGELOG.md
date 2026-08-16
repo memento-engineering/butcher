@@ -27,3 +27,4 @@
   `--verbose` renders events to the console.
 - Startup cleanup under an exclusive run lock; a held lock aborts the run.
 - Keep containments and logs until the next run's startup cleanup.
+- Allow `RAD_TEMP` to redirect the containment and log root.
