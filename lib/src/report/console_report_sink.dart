@@ -21,8 +21,8 @@ final class ConsoleReportSink implements ReportSink {
       final count = metrics.counts[outcome];
       if (count != null) out.writeln('  ${outcome.name}: $count');
     }
-    out.writeln('MSI: ${metrics.msi.toStringAsFixed(2)}%');
-    out.writeln('Covered-code MSI: ${metrics.coveredMsi.toStringAsFixed(2)}%');
+    out.writeln(_score('MSI', metrics.msi));
+    out.writeln(_score('Covered-code MSI', metrics.coveredMsi));
     if (metrics.timedOut > 0) {
       out.writeln(
         'Timeout rate: ${metrics.timeoutRate.toStringAsFixed(2)}% '
@@ -30,4 +30,8 @@ final class ConsoleReportSink implements ReportSink {
       );
     }
   }
+
+  static String _score(String label, double? value) => value == null
+      ? '$label: none (no scoreable mutants)'
+      : '$label: ${value.toStringAsFixed(2)}%';
 }

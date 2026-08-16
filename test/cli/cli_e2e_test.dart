@@ -191,14 +191,14 @@ void main() {
     final out = StringBuffer();
 
     final exit = await radMain(
-      ['--max-timeouts', '0', dir.path],
+      ['--max-timeouts', '0', '--threshold', '0', dir.path],
       out: out,
       paths: paths,
     );
 
     expect(exit, 1, reason: out.toString());
     expect(out.toString(), contains('timeout: 1'));
-    expect(out.toString(), contains('MSI: 100.00%'));
+    expect(out.toString(), contains('MSI: none (no scoreable mutants)'));
     expect(out.toString(), contains('Timeout rate: 100.00%'));
   });
 

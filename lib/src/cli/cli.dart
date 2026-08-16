@@ -173,18 +173,22 @@ Future<int> radMain(
     sink.writeln('report: $reportPath');
 
     final metrics = Metrics.fromResults(result.results);
-    final belowThreshold = threshold != null && metrics.msi < threshold;
+    final msi = metrics.msi;
+    final coveredMsi = metrics.coveredMsi;
+    // No scoreable mutants means no score: the gate fails closed (ADR 0013).
+    final belowThreshold =
+        threshold != null && (msi == null || msi < threshold);
     final tooManyTimeouts =
         maxTimeouts != null && metrics.timedOut > maxTimeouts;
     final gated = belowThreshold || tooManyTimeouts;
     logger.info(
       'run complete: MSI {Msi}% over {MutantCount} mutants, exit {ExitCode}',
       {
-        'Msi': double.parse(metrics.msi.toStringAsFixed(2)),
+        'Msi': _rounded(msi),
         'MutantCount': result.results.length,
         'ExitCode': gated ? 1 : 0,
         'Counts': metrics.counts.map((k, v) => MapEntry(k.name, v)),
-        'CoveredMsi': double.parse(metrics.coveredMsi.toStringAsFixed(2)),
+        'CoveredMsi': _rounded(coveredMsi),
         'BackgroundMs': result.backgroundReading.inMilliseconds,
         'HalfLifeMs': result.halfLife.inMilliseconds,
         'DurationMs': watch.elapsedMilliseconds,
@@ -193,8 +197,11 @@ Future<int> radMain(
     );
     if (belowThreshold) {
       stderr.writeln(
-        'MSI ${metrics.msi.toStringAsFixed(2)}% is below the '
-        '${threshold.toStringAsFixed(2)}% threshold',
+        msi == null
+            ? 'no scoreable mutants, so no MSI: the '
+                  '${threshold.toStringAsFixed(2)}% threshold cannot be met'
+            : 'MSI ${msi.toStringAsFixed(2)}% is below the '
+                  '${threshold.toStringAsFixed(2)}% threshold',
       );
     }
     if (tooManyTimeouts) {
@@ -215,6 +222,9 @@ Future<int> radMain(
   workspace.release();
   return exitCode;
 }
+
+double? _rounded(double? value) =>
+    value == null ? null : double.parse(value.toStringAsFixed(2));
 
 int? _jobs(ArgResults options) {
   final raw = options.option('jobs');

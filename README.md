@@ -9,6 +9,8 @@ ones the tests kill.
 - Prints per-outcome counts, MSI, and covered-code MSI.
 - Timed-out mutants are inconclusive: they count as neither killed nor
   survived, and a timeout rate is printed whenever any occur.
+- With no scoreable mutants there is no MSI: scores print as `none` and
+  `--threshold` fails.
 - Pass `--coverage` an `lcov.info` (`dart test --coverage-path=lcov.info`) to
   skip mutants no test reaches: they report as `noCoverage` without a run,
   which lowers the MSI but leaves the covered-code MSI intact.

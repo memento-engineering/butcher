@@ -42,9 +42,11 @@ void main() {
       expect(metrics.timeoutRate, closeTo(33.33, 0.01));
     });
 
-    test('scores 100 when nothing is scoreable', () {
-      expect(Metrics.fromResults([]).msi, 100);
-      expect(Metrics.fromResults([result(Outcome.runError)]).msi, 100);
+    test('has no score when nothing is scoreable', () {
+      expect(Metrics.fromResults([]).msi, isNull);
+      expect(Metrics.fromResults([result(Outcome.runError)]).msi, isNull);
+      expect(Metrics.fromResults([result(Outcome.timeout)]).msi, isNull);
+      expect(Metrics.fromResults([]).coveredMsi, isNull);
       expect(Metrics.fromResults([]).timeoutRate, 0);
     });
   });
@@ -72,6 +74,14 @@ void main() {
     expect(text, contains('timeout: 1'));
     expect(text, contains('MSI: 50.00%'));
     expect(text, contains('Timeout rate: 33.33%'));
+  });
+
+  test('ConsoleReportSink reports a no-score run explicitly', () async {
+    final out = StringBuffer();
+    await ConsoleReportSink(out: out).write([result(Outcome.timeout)]);
+    final text = out.toString();
+    expect(text, contains('MSI: none (no scoreable mutants)'));
+    expect(text, contains('Covered-code MSI: none (no scoreable mutants)'));
   });
 
   test(
