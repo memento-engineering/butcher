@@ -107,6 +107,7 @@ final class Engine {
       projectRoot: projectRoot,
       registry: registry,
     ).generate();
+    coverage.indexSources(sources);
     final perFile = <String, int>{for (final file in sources.keys) file: 0};
     for (final mutant in mutants) {
       perFile.update(mutant.mutation.filePath, (count) => count + 1);

@@ -84,6 +84,9 @@ final class NothingCovered implements CoverageProvider {
 
   @override
   bool isCovered(Mutant mutant) => false;
+
+  @override
+  void indexSources(Map<String, String> sources) {}
 }
 
 Future<String> miniProject({

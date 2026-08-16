@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
@@ -15,7 +14,7 @@ import 'coverage_provider.dart';
 final class LcovCoverageProvider implements CoverageProvider {
   /// Creates a provider over [hits]: project-relative posix file path, to
   /// 1-based line, to execution count.
-  LcovCoverageProvider({required this.projectRoot, required this.hits});
+  LcovCoverageProvider({required this.hits});
 
   /// Reads the lcov report [text]; `SF:` paths resolve against [projectRoot].
   factory LcovCoverageProvider.parse(
@@ -39,11 +38,8 @@ final class LcovCoverageProvider implements CoverageProvider {
         current[number] = (current[number] ?? 0) + count;
       }
     }
-    return LcovCoverageProvider(projectRoot: root, hits: hits);
+    return LcovCoverageProvider(hits: hits);
   }
-
-  /// Absolute path of the project the report describes.
-  final String projectRoot;
 
   /// Execution counts, per file, per 1-based line.
   final Map<String, Map<int, int>> hits;
@@ -51,19 +47,18 @@ final class LcovCoverageProvider implements CoverageProvider {
   final Map<String, LineIndex> _indexes = {};
 
   @override
+  void indexSources(Map<String, String> sources) {
+    sources.forEach((path, text) => _indexes[path] = LineIndex(text));
+  }
+
+  @override
   bool isCovered(Mutant mutant) {
     final file = hits[mutant.mutation.filePath];
     if (file == null) return false;
-    final line = _indexOf(mutant.mutation.filePath)
-        .lineAt(mutant.mutation.offset);
-    final count = file[line];
+    final index = _indexes[mutant.mutation.filePath] ?? LineIndex('');
+    final count = file[index.lineAt(mutant.mutation.offset)];
     return count == null || count > 0;
   }
-
-  LineIndex _indexOf(String filePath) => _indexes.putIfAbsent(filePath, () {
-    final file = File(p.join(projectRoot, filePath));
-    return LineIndex(file.existsSync() ? file.readAsStringSync() : '');
-  });
 
   /// Project-relative posix path of an `SF:` entry, absolute or relative.
   static String _relative(String source, String root) {

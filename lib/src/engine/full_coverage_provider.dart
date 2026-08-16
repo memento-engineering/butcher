@@ -8,4 +8,7 @@ final class FullCoverageProvider implements CoverageProvider {
 
   @override
   bool isCovered(Mutant mutant) => true;
+
+  @override
+  void indexSources(Map<String, String> sources) {}
 }

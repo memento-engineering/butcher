@@ -25,16 +25,8 @@ Mutant mutantAt(int line, {String file = 'lib/calc.dart'}) => Mutant(
 );
 
 void main() {
-  late String root;
-
-  setUp(() async {
-    final dir = await Directory.systemTemp.createTemp('rad_lcov_');
-    addTearDown(() => dir.delete(recursive: true));
-    File(p.join(dir.path, 'lib', 'calc.dart'))
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(_source);
-    root = dir.path;
-  });
+  final root = p.join(Directory.systemTemp.path, 'rad_lcov_fake');
+  final sources = {'lib/calc.dart': _source};
 
   test('reads hits per line from absolute and relative SF records', () {
     final provider = LcovCoverageProvider.parse('''
@@ -45,7 +37,7 @@ end_of_record
 SF:lib/other.dart
 DA:1,1
 end_of_record
-''', projectRoot: root);
+''', projectRoot: root)..indexSources(sources);
 
     expect(provider.hits.keys, ['lib/calc.dart', 'lib/other.dart']);
     expect(provider.hits['lib/calc.dart'], {1: 3, 2: 0});
@@ -62,7 +54,7 @@ end_of_record
     final provider = LcovCoverageProvider.parse(
       'SF:lib/other.dart\nDA:1,1\nend_of_record\n',
       projectRoot: root,
-    );
+    )..indexSources(sources);
 
     expect(provider.isCovered(mutantAt(1)), isFalse);
   });
@@ -76,9 +68,24 @@ DA:1,0
 DA:1,2
 LH:1
 end_of_record
-''', projectRoot: root);
+''', projectRoot: root)..indexSources(sources);
 
     expect(provider.hits['lib/calc.dart'], {1: 2});
     expect(provider.isCovered(mutantAt(1)), isTrue);
+  });
+
+  test('maps offsets with the captured sources, not the working tree', () async {
+    final dir = await Directory.systemTemp.createTemp('rad_lcov_');
+    addTearDown(() => dir.delete(recursive: true));
+    File(p.join(dir.path, 'lib', 'calc.dart'))
+      ..parent.createSync(recursive: true)
+      // A mid-run edit prepends a line, shifting every offset one line down.
+      ..writeAsStringSync('// edited\n$_source');
+    final provider = LcovCoverageProvider.parse(
+      'SF:lib/calc.dart\nDA:1,1\nDA:2,0\nend_of_record\n',
+      projectRoot: dir.path,
+    )..indexSources(sources);
+
+    expect(provider.isCovered(mutantAt(2)), isFalse);
   });
 }
