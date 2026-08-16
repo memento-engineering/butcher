@@ -23,32 +23,106 @@ final class PromotionDependence {
   };
 
   /// Whether flipping [node] — a null test, or a logical operator around
-  /// null/is tests — strands a use needing the promoted type in the
-  /// enclosing scope.
+  /// null/is tests — strands a use needing the promoted type inside the
+  /// flipped test's promotion scope.
   static bool flipStrands(BinaryExpression node) {
-    final tested = _testedVariables(node);
-    if (tested.isEmpty) return false;
-    final scope =
-        node.thisOrAncestorOfType<FunctionBody>() ??
-        node.thisOrAncestorOfType<Declaration>() as AstNode?;
-    if (scope == null) return false;
-    final finder = _DependingUseFinder(tested);
-    scope.accept(finder);
-    return finder.found;
-  }
-
-  /// The promotable variables whose tests the flip of [node] disturbs.
-  static Set<Element> _testedVariables(BinaryExpression node) {
     switch (node.operator.lexeme) {
       case '==' || '!=':
-        return {?_nullTestedVariable(node)};
+        final variable = _nullTestedVariable(node);
+        if (variable == null) return false;
+        return _strands({
+          variable,
+        }, _promotionScope(node, node.operator.lexeme == '!='));
       case '&&' || '||':
-        final collector = _TestCollector();
-        node.accept(collector);
-        return collector.tested;
+        if (_strands(_testsIn(node.leftOperand), [node.rightOperand])) {
+          return true;
+        }
+        return _strands(
+          _testsIn(node),
+          _promotionScope(node, node.operator.lexeme == '&&'),
+        );
       default:
-        return const {};
+        return false;
     }
+  }
+
+  static bool _strands(Set<Element> tested, List<AstNode> regions) {
+    if (tested.isEmpty) return false;
+    final finder = _DependingUseFinder(tested);
+    for (final region in regions) {
+      region.accept(finder);
+      if (finder.found) return true;
+    }
+    return false;
+  }
+
+  /// The regions where the promotion from [test] holds, given it promotes
+  /// when the test evaluates to [promoted]. Unclear contexts end the walk:
+  /// missed regions keep the mutant for the viability filter.
+  static List<AstNode> _promotionScope(Expression test, bool promoted) {
+    final regions = <AstNode>[];
+    var expression = test;
+    while (true) {
+      final parent = expression.parent;
+      switch (parent) {
+        case ParenthesizedExpression():
+          expression = parent;
+        case PrefixExpression() when parent.operator.type == TokenType.BANG:
+          promoted = !promoted;
+          expression = parent;
+        case BinaryExpression(:final operator)
+            when operator.lexeme == '&&' || operator.lexeme == '||':
+          if (promoted != (operator.lexeme == '&&')) return regions;
+          if (identical(parent.leftOperand, expression)) {
+            regions.add(parent.rightOperand);
+          }
+          expression = parent;
+        case ConditionalExpression()
+            when identical(parent.condition, expression):
+          regions.add(promoted ? parent.thenExpression : parent.elseExpression);
+          return regions;
+        case IfStatement() when identical(parent.expression, expression):
+          final branch = promoted ? parent.thenStatement : parent.elseStatement;
+          if (branch != null) regions.add(branch);
+          final exiting = promoted
+              ? parent.elseStatement
+              : parent.thenStatement;
+          if (exiting != null && _exits(exiting)) {
+            regions.addAll(_followingStatements(parent));
+          }
+          return regions;
+        case WhileStatement() when identical(parent.condition, expression):
+          if (promoted) regions.add(parent.body);
+          return regions;
+        default:
+          return regions;
+      }
+    }
+  }
+
+  static bool _exits(Statement statement) => switch (statement) {
+    Block(:final statements) =>
+      statements.isNotEmpty && _exits(statements.last),
+    ReturnStatement() => true,
+    BreakStatement() => true,
+    ContinueStatement() => true,
+    ExpressionStatement(:final expression) =>
+      expression is ThrowExpression || expression is RethrowExpression,
+    _ => false,
+  };
+
+  static Iterable<Statement> _followingStatements(Statement statement) {
+    final block = statement.parent;
+    if (block is! Block) return const [];
+    final statements = block.statements;
+    return statements.skip(statements.indexOf(statement) + 1);
+  }
+
+  /// Promotable variables null- or is-tested within [expression].
+  static Set<Element> _testsIn(Expression expression) {
+    final collector = _TestCollector();
+    expression.accept(collector);
+    return collector.tested;
   }
 
   static Element? _nullTestedVariable(BinaryExpression node) {

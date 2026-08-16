@@ -98,6 +98,45 @@ bool f(int? x, bool ansi) => x == null && ansi;
     expect(ofOperator(mutations, 'logical'), hasLength(1));
   });
 
+  test('keeps null-test flips outside the depending use\'s guard', () async {
+    final mutations = await mutationsOf('''
+int f(String? s) {
+  final missing = s == null;
+  if (s == null) return 0;
+  return missing ? 1 : s.length;
+}
+''');
+    expect(
+      ofOperator(mutations, 'equality'),
+      hasLength(1),
+      reason: 'the initializer test promotes nothing the second test guards',
+    );
+  });
+
+  test('skips null-test flips stranding a branch use', () async {
+    final mutations = await mutationsOf('''
+int f(String? s) {
+  if (s != null) return s.length;
+  return 0;
+}
+''');
+    expect(ofOperator(mutations, 'equality'), isEmpty);
+  });
+
+  test(
+    'keeps logical flips whose promotion stays in the left operand',
+    () async {
+      final mutations = await mutationsOf('''
+bool f(String? s, bool t) => (s != null && s.isNotEmpty) || t;
+''');
+      expect(
+        ofOperator(mutations, 'logical'),
+        hasLength(1),
+        reason: 'flipping the || leaves the inner && promotion intact',
+      );
+    },
+  );
+
   test('keeps equality flips on non-null operands', () async {
     final mutations = await mutationsOf('''
 bool f(String s) => s == 'x' && s.isNotEmpty;
