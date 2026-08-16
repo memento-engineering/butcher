@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Keep containments and logs until the next run's startup cleanup.
+
 ## 0.1.0
 
 First release.

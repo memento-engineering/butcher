@@ -134,100 +134,96 @@ final class Engine {
       for (var i = 0; i < workers; i++)
         Containment.create(projectRoot, paths: paths),
     ]);
-    try {
-      await Future.wait(containments.map((c) => _resolveDependencies(c.root)));
-      // Divide the cores among workers so parallel suites do not
-      // oversubscribe; the background reading uses the same concurrency to
-      // keep half-lives calibrated (ADR 0017).
-      final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ workers);
-      final runners = [
-        for (final c in containments) runnerFactory(c.root, suiteConcurrency),
-      ];
-      // One run log per containment, named after it (ADR 0016).
-      final runLogs = [
-        for (final c in containments)
-          RadLogger(
-            verbose: false,
-            path: p.join(paths.runLogs, '${c.name}.log'),
-            runId: runId,
-          ),
-      ];
-      logger?.info(
-        'prepared {Workers} containments in {DurationMs} ms, '
-        '{SuiteConcurrency} test threads each',
-        {
-          'Workers': workers,
-          'SuiteConcurrency': suiteConcurrency,
-          'DurationMs': prepareWatch.elapsedMilliseconds,
-        },
-      );
+    await Future.wait(containments.map((c) => _resolveDependencies(c.root)));
+    // Divide the cores among workers so parallel suites do not
+    // oversubscribe; the background reading uses the same concurrency to
+    // keep half-lives calibrated (ADR 0017).
+    final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ workers);
+    final runners = [
+      for (final c in containments) runnerFactory(c.root, suiteConcurrency),
+    ];
+    // One run log per containment, named after it (ADR 0016).
+    final runLogs = [
+      for (final c in containments)
+        RadLogger(
+          verbose: false,
+          path: p.join(paths.runLogs, '${c.name}.log'),
+          runId: runId,
+        ),
+    ];
+    logger?.info(
+      'prepared {Workers} containments in {DurationMs} ms, '
+      '{SuiteConcurrency} test threads each',
+      {
+        'Workers': workers,
+        'SuiteConcurrency': suiteConcurrency,
+        'DurationMs': prepareWatch.elapsedMilliseconds,
+      },
+    );
 
-      final background = await runners.first.run();
-      if (background.exitCode != 0) {
-        final summary = TestEvents.parse(background.output).summarize();
-        throw RunAborted(
-          'background reading is red; a green suite is a precondition '
-          '(ADR 0005). If a copy exclusion removed a required asset, fix '
-          '$containmentIgnoreFile.\n'
-          '${summary.isEmpty ? background.output : summary}',
-        );
-      }
-      final halfLife = halfLifeFor(background.duration);
-      logger?.info(
-        'background reading green in {DurationMs} ms, '
-        'half-life {HalfLifeMs} ms',
-        {
-          'DurationMs': background.duration.inMilliseconds,
-          'HalfLifeMs': halfLife.inMilliseconds,
-        },
+    final background = await runners.first.run();
+    if (background.exitCode != 0) {
+      final summary = TestEvents.parse(background.output).summarize();
+      throw RunAborted(
+        'background reading is red; a green suite is a precondition '
+        '(ADR 0005). If a copy exclusion removed a required asset, fix '
+        '$containmentIgnoreFile.\n'
+        '${summary.isEmpty ? background.output : summary}',
       );
-
-      // One shared queue; results keyed by index so completion order never
-      // changes the report (ADR 0007, ADR 0017).
-      final results = List<MutantResult?>.filled(mutants.length, null);
-      var next = 0;
-      var done = 0;
-      Future<void> worker(int slot) async {
-        while (true) {
-          final index = next++;
-          if (index >= mutants.length) return;
-          final result = await _classify(
-            mutants[index],
-            containments[slot],
-            runners[slot],
-            halfLife,
-            unviable,
-          );
-          results[index] = result;
-          done++;
-          logger?.info('classified {MutantId} as {Outcome} ({Done}/{Total})', {
-            'MutantId': result.mutant.id,
-            'Outcome': result.outcome.name,
-            'Done': done,
-            'Total': mutants.length,
-            'Worker': slot,
-            'Containment': containments[slot].name,
-            'ExitCode': result.testRun?.exitCode,
-            'TimedOut': result.testRun?.timedOut,
-            'DurationMs': result.testRun?.duration.inMilliseconds,
-          });
-          if (result.testRun != null) {
-            _logMutantRun(runLogs[slot], containments[slot].name, result);
-          }
-          onProgress?.call(done, mutants.length, result);
-        }
-      }
-
-      await Future.wait([for (var i = 0; i < workers; i++) worker(i)]);
-      return RunResult(
-        results: results.cast<MutantResult>(),
-        sources: sources,
-        backgroundReading: background.duration,
-        halfLife: halfLife,
-      );
-    } finally {
-      await Future.wait(containments.map((c) => c.dispose()));
     }
+    final halfLife = halfLifeFor(background.duration);
+    logger?.info(
+      'background reading green in {DurationMs} ms, '
+      'half-life {HalfLifeMs} ms',
+      {
+        'DurationMs': background.duration.inMilliseconds,
+        'HalfLifeMs': halfLife.inMilliseconds,
+      },
+    );
+
+    // One shared queue; results keyed by index so completion order never
+    // changes the report (ADR 0007, ADR 0017).
+    final results = List<MutantResult?>.filled(mutants.length, null);
+    var next = 0;
+    var done = 0;
+    Future<void> worker(int slot) async {
+      while (true) {
+        final index = next++;
+        if (index >= mutants.length) return;
+        final result = await _classify(
+          mutants[index],
+          containments[slot],
+          runners[slot],
+          halfLife,
+          unviable,
+        );
+        results[index] = result;
+        done++;
+        logger?.info('classified {MutantId} as {Outcome} ({Done}/{Total})', {
+          'MutantId': result.mutant.id,
+          'Outcome': result.outcome.name,
+          'Done': done,
+          'Total': mutants.length,
+          'Worker': slot,
+          'Containment': containments[slot].name,
+          'ExitCode': result.testRun?.exitCode,
+          'TimedOut': result.testRun?.timedOut,
+          'DurationMs': result.testRun?.duration.inMilliseconds,
+        });
+        if (result.testRun != null) {
+          _logMutantRun(runLogs[slot], containments[slot].name, result);
+        }
+        onProgress?.call(done, mutants.length, result);
+      }
+    }
+
+    await Future.wait([for (var i = 0; i < workers; i++) worker(i)]);
+    return RunResult(
+      results: results.cast<MutantResult>(),
+      sources: sources,
+      backgroundReading: background.duration,
+      halfLife: halfLife,
+    );
   }
 
   /// Marks covered mutants that fail static analysis unviable before any
