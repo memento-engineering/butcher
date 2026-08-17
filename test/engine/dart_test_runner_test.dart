@@ -77,4 +77,21 @@ void main() {
     expect(run.timedOut, isTrue);
     expect(run.exitCode, -1);
   });
+
+  test('collects transitive descendants from ps output', () {
+    const ps = '''
+    1     0
+  100     1
+  200   100
+  201   100
+  300   200
+  400     1
+garbage line
+''';
+    expect(
+      DartTestRunner.descendantPids(ps, 100),
+      unorderedEquals([200, 201, 300]),
+    );
+    expect(DartTestRunner.descendantPids(ps, 999), isEmpty);
+  });
 }

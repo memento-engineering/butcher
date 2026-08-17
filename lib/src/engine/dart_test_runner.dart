@@ -28,7 +28,7 @@ final class DartTestRunner implements TestRunner {
     final watch = Stopwatch()..start();
     // On Linux, setsid puts the suite in its own process group so a timeout
     // can kill the whole tree, matching taskkill /T on Windows. macOS ships
-    // no setsid binary, so it keeps the single-process kill.
+    // no setsid binary; there _killTree snapshots the tree via ps instead.
     final process = await Process.start(
       Platform.isLinux ? 'setsid' : Platform.resolvedExecutable,
       [
@@ -79,8 +79,37 @@ final class DartTestRunner implements TestRunner {
       final kill = await Process.run('kill', ['-9', '--', '-${process.pid}']);
       if (kill.exitCode != 0) process.kill(ProcessSignal.sigkill);
     } else {
+      final ps = await Process.run('ps', ['-A', '-o', 'pid=,ppid=']);
+      final pids = descendantPids('${ps.stdout}', process.pid);
       process.kill(ProcessSignal.sigkill);
+      for (final pid in pids) {
+        Process.killPid(pid, ProcessSignal.sigkill);
+      }
     }
     await process.exitCode;
+  }
+
+  /// Transitive child pids of [rootPid] in `ps -A -o pid=,ppid=` output.
+  ///
+  /// Best effort: children spawned after the snapshot are missed. Public so
+  /// tests can cover it on any platform.
+  static List<int> descendantPids(String psOutput, int rootPid) {
+    final childrenOf = <int, List<int>>{};
+    for (final line in const LineSplitter().convert(psOutput)) {
+      final fields = line.trim().split(RegExp(r'\s+'));
+      if (fields.length < 2) continue;
+      final pid = int.tryParse(fields[0]);
+      final ppid = int.tryParse(fields[1]);
+      if (pid == null || ppid == null) continue;
+      childrenOf.putIfAbsent(ppid, () => []).add(pid);
+    }
+    final seen = <int>{};
+    final queue = [rootPid];
+    while (queue.isNotEmpty) {
+      for (final child in childrenOf[queue.removeLast()] ?? const <int>[]) {
+        if (seen.add(child)) queue.add(child);
+      }
+    }
+    return seen.toList();
   }
 }
