@@ -30,15 +30,19 @@ final class PromotionDependence {
       case '==' || '!=':
         final variable = _nullTestedVariable(node);
         if (variable == null) return false;
-        return _strands({
-          variable,
-        }, _promotionScope(node, node.operator.lexeme == '!='));
+        return _strands(
+          _solelySourcedBy({variable}, node),
+          _promotionScope(node, node.operator.lexeme == '!='),
+        );
       case '&&' || '||':
-        if (_strands(_testsIn(node.leftOperand), [node.rightOperand])) {
+        final tested = _solelySourcedBy(_testsIn(node), node);
+        if (_strands(tested.intersection(_testsIn(node.leftOperand)), [
+          node.rightOperand,
+        ])) {
           return true;
         }
         return _strands(
-          _testsIn(node),
+          tested,
           _promotionScope(node, node.operator.lexeme == '&&'),
         );
       default:
@@ -118,6 +122,19 @@ final class PromotionDependence {
     return statements.skip(statements.indexOf(statement) + 1);
   }
 
+  /// The subset of [tested] whose promotion can only come from the flipped
+  /// [node]. Another test of the variable, or an assignment to it, elsewhere
+  /// in the function can keep the flipped code compiling, so such variables
+  /// keep their mutant for the viability filter (ADR 0019).
+  static Set<Element> _solelySourcedBy(Set<Element> tested, AstNode node) {
+    if (tested.isEmpty) return tested;
+    final body = node.thisOrAncestorOfType<FunctionBody>();
+    if (body == null) return tested;
+    final finder = _OtherSourceFinder(tested, node);
+    body.accept(finder);
+    return tested.difference(finder.found);
+  }
+
   /// Promotable variables null- or is-tested within [expression].
   static Set<Element> _testsIn(Expression expression) {
     final collector = _TestCollector();
@@ -190,6 +207,46 @@ final class _TestCollector extends RecursiveAstVisitor<void> {
     final variable = PromotionDependence._promotable(node.expression);
     if (variable != null) tested.add(variable);
     super.visitIsExpression(node);
+  }
+}
+
+/// Collects [targets] variables with a promotion source outside [flipped]:
+/// another null/is test or an assignment.
+final class _OtherSourceFinder extends RecursiveAstVisitor<void> {
+  _OtherSourceFinder(this.targets, this.flipped);
+
+  final Set<Element> targets;
+  final AstNode flipped;
+  final found = <Element>{};
+
+  bool _outside(AstNode node) =>
+      node.end <= flipped.offset || node.offset >= flipped.end;
+
+  void _record(Element? variable) {
+    if (variable != null && targets.contains(variable)) found.add(variable);
+  }
+
+  @override
+  void visitBinaryExpression(BinaryExpression node) {
+    final operator = node.operator.lexeme;
+    if ((operator == '==' || operator == '!=') && _outside(node)) {
+      _record(PromotionDependence._nullTestedVariable(node));
+    }
+    super.visitBinaryExpression(node);
+  }
+
+  @override
+  void visitIsExpression(IsExpression node) {
+    if (_outside(node)) {
+      _record(PromotionDependence._promotable(node.expression));
+    }
+    super.visitIsExpression(node);
+  }
+
+  @override
+  void visitAssignmentExpression(AssignmentExpression node) {
+    if (_outside(node)) _record(node.writeElement);
+    super.visitAssignmentExpression(node);
   }
 }
 

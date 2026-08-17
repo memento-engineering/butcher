@@ -98,7 +98,7 @@ bool f(int? x, bool ansi) => x == null && ansi;
     expect(ofOperator(mutations, 'logical'), hasLength(1));
   });
 
-  test('keeps null-test flips outside the depending use\'s guard', () async {
+  test('keeps null-test flips a second test can re-promote', () async {
     final mutations = await mutationsOf('''
 int f(String? s) {
   final missing = s == null;
@@ -108,8 +108,41 @@ int f(String? s) {
 ''');
     expect(
       ofOperator(mutations, 'equality'),
+      hasLength(2),
+      reason: 'either flip compiles: the other test still promotes s',
+    );
+  });
+
+  test('keeps null-test flips a duplicate guard can re-promote', () async {
+    final mutations = await mutationsOf('''
+int f(String? s) {
+  if (s == null) return 0;
+  if (s == null) return 1;
+  return s.length;
+}
+''');
+    expect(
+      ofOperator(mutations, 'equality'),
+      hasLength(2),
+      reason: 'either flip compiles: the other guard still promotes s',
+    );
+  });
+
+  test('keeps null-test flips an assignment can re-promote', () async {
+    final mutations = await mutationsOf('''
+int f(String? s) {
+  var t = 0;
+  while (s != null) {
+    s = 'x';
+    t += s.length;
+  }
+  return t;
+}
+''');
+    expect(
+      ofOperator(mutations, 'equality'),
       hasLength(1),
-      reason: 'the initializer test promotes nothing the second test guards',
+      reason: 'the flip compiles: the loop-body assignment re-promotes s',
     );
   });
 
