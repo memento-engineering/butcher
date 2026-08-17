@@ -89,6 +89,16 @@ final class NothingCovered implements CoverageProvider {
   void indexSources(Map<String, String> sources) {}
 }
 
+final class RecordingCoverage implements CoverageProvider {
+  var indexed = false;
+
+  @override
+  bool isCovered(Mutant mutant) => true;
+
+  @override
+  void indexSources(Map<String, String> sources) => indexed = true;
+}
+
 Future<String> miniProject({
   String calc = 'int add(int a, int b) => a + b;\n',
 }) async {
@@ -212,13 +222,20 @@ void main() {
     await expectLater(engine.run(), throwsArgumentError);
   });
 
-  test('aborts on a red background reading', () async {
+  test('aborts on a red background reading before any analysis', () async {
+    final coverage = RecordingCoverage();
     final engine = Engine(
       projectRoot: await miniProject(),
       paths: await isolatedRadPaths('rad_engine_state_'),
       runnerFactory: (_, _) => FakeRunner(baselineExitCode: 1),
+      coverage: coverage,
     );
     await expectLater(engine.run(), throwsA(isA<RunAborted>()));
+    expect(
+      coverage.indexed,
+      isFalse,
+      reason: 'generation and viability run after the reading',
+    );
   });
 
   test(

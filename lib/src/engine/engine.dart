@@ -34,7 +34,7 @@ typedef ProgressCallback = void Function(
 /// worker's share of the cores (ADR 0017).
 typedef RunnerFactory = TestRunner Function(String root, int suiteConcurrency);
 
-/// Orchestrates a full run: generate, contain, verify, irradiate, classify.
+/// Orchestrates a full run: contain, verify, generate, irradiate, classify.
 final class Engine {
   /// Creates an engine for the project at [projectRoot].
   Engine({
@@ -102,6 +102,41 @@ final class Engine {
   Future<RunResult> run() async {
     Directory(paths.runLogs).createSync(recursive: true);
 
+    // Contain and verify before the expensive analysis stages so a red
+    // suite aborts within the background reading's duration (ADR 0005).
+    final prepareWatch = Stopwatch()..start();
+    // Divide the cores among the requested jobs so parallel suites do not
+    // oversubscribe; the background reading uses the same concurrency to
+    // keep half-lives calibrated (ADR 0017).
+    final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ jobs);
+    final containments = [await Containment.create(projectRoot, paths: paths)];
+    await _resolveDependencies(containments.first.root);
+    final runners = [runnerFactory(containments.first.root, suiteConcurrency)];
+    prepareWatch.stop();
+
+    final background = await runners.first.run();
+    if (background.exitCode != 0) {
+      final summary = TestEvents.parse(background.output).summarize();
+      final evidence = summary.isEmpty
+          ? '${background.output}${background.errorOutput}'
+          : summary;
+      throw RunAborted(
+        'background reading is red; a green suite is a precondition '
+        '(ADR 0005). If a copy exclusion removed a required asset, fix '
+        '$containmentIgnoreFile.\n'
+        '$evidence',
+      );
+    }
+    final halfLife = halfLifeFor(background.duration);
+    logger?.info(
+      'background reading green in {DurationMs} ms, '
+      'half-life {HalfLifeMs} ms',
+      {
+        'DurationMs': background.duration.inMilliseconds,
+        'HalfLifeMs': halfLife.inMilliseconds,
+      },
+    );
+
     final generationWatch = Stopwatch()..start();
     final (mutants, sources) = await MutantGenerator(
       projectRoot: projectRoot,
@@ -129,20 +164,21 @@ final class Engine {
 
     final unviable = await _checkViability(mutants, sources);
 
-    final prepareWatch = Stopwatch()..start();
+    prepareWatch.start();
     final workers = max(1, min(jobs, mutants.length));
-    final containments = await Future.wait([
-      for (var i = 0; i < workers; i++)
-        Containment.create(projectRoot, paths: paths),
+    containments.addAll(
+      await Future.wait([
+        for (var i = 1; i < workers; i++)
+          Containment.create(projectRoot, paths: paths),
+      ]),
+    );
+    await Future.wait(
+      containments.skip(1).map((c) => _resolveDependencies(c.root)),
+    );
+    runners.addAll([
+      for (final c in containments.skip(1))
+        runnerFactory(c.root, suiteConcurrency),
     ]);
-    await Future.wait(containments.map((c) => _resolveDependencies(c.root)));
-    // Divide the cores among workers so parallel suites do not
-    // oversubscribe; the background reading uses the same concurrency to
-    // keep half-lives calibrated (ADR 0017).
-    final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ workers);
-    final runners = [
-      for (final c in containments) runnerFactory(c.root, suiteConcurrency),
-    ];
     // One run log per containment, named after it (ADR 0016).
     final runLogs = [
       for (final c in containments)
@@ -159,29 +195,6 @@ final class Engine {
         'Workers': workers,
         'SuiteConcurrency': suiteConcurrency,
         'DurationMs': prepareWatch.elapsedMilliseconds,
-      },
-    );
-
-    final background = await runners.first.run();
-    if (background.exitCode != 0) {
-      final summary = TestEvents.parse(background.output).summarize();
-      final evidence = summary.isEmpty
-          ? '${background.output}${background.errorOutput}'
-          : summary;
-      throw RunAborted(
-        'background reading is red; a green suite is a precondition '
-        '(ADR 0005). If a copy exclusion removed a required asset, fix '
-        '$containmentIgnoreFile.\n'
-        '$evidence',
-      );
-    }
-    final halfLife = halfLifeFor(background.duration);
-    logger?.info(
-      'background reading green in {DurationMs} ms, '
-      'half-life {HalfLifeMs} ms',
-      {
-        'DurationMs': background.duration.inMilliseconds,
-        'HalfLifeMs': halfLife.inMilliseconds,
       },
     );
 

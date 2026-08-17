@@ -21,8 +21,8 @@
 - Determinism ([0007](0007-deterministic-execution.md)) is preserved:
   results are stored by mutant index, so completion order never changes the
   report. Progress output follows completion order.
-- Suite concurrency is divided among workers
-  (`dart test --concurrency = cores ~/ workers`): the total stays near the
+- Suite concurrency is divided among the requested jobs
+  (`dart test --concurrency = cores ~/ jobs`): the total stays near the
   core count instead of oversubscribing multiplicatively.
 - The background reading runs once with that same per-suite concurrency, so
   half-lives ([0006](0006-outcome-taxonomy.md)) are calibrated under the
