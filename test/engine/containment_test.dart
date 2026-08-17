@@ -92,4 +92,17 @@ void main() {
     );
     await expectLater(containment.apply(drifted), throwsStateError);
   });
+
+  test('rejects a mutation past the end of the copied file', () async {
+    const pastEnd = Mutation(
+      filePath: 'lib/a.dart',
+      offset: 1000,
+      length: 1,
+      original: '+',
+      replacement: '-',
+      operatorId: 'arithmetic',
+      description: 'replace + with -',
+    );
+    await expectLater(containment.apply(pastEnd), throwsStateError);
+  });
 }

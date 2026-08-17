@@ -77,10 +77,14 @@ final class Containment {
     final file = File(p.join(root, mutation.filePath));
     final content = await file.readAsString();
     _pristine[mutation.filePath] = content;
-    final found = content.substring(
-      mutation.offset,
-      mutation.offset + mutation.length,
-    );
+    final end = mutation.offset + mutation.length;
+    if (end > content.length) {
+      throw StateError(
+        'containment drift in ${mutation.filePath}@${mutation.offset}: '
+        'expected "${mutation.original}", file ends at ${content.length}',
+      );
+    }
+    final found = content.substring(mutation.offset, end);
     if (found != mutation.original) {
       throw StateError(
         'containment drift in ${mutation.filePath}@${mutation.offset}: '
@@ -88,11 +92,7 @@ final class Containment {
       );
     }
     await file.writeAsString(
-      content.replaceRange(
-        mutation.offset,
-        mutation.offset + mutation.length,
-        mutation.replacement,
-      ),
+      content.replaceRange(mutation.offset, end, mutation.replacement),
     );
   }
 
