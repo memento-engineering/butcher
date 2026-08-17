@@ -35,13 +35,14 @@ final class Containment {
     final tempRoot = Directory(paths.root)..createSync(recursive: true);
     final target = await tempRoot.createTemp(containmentPrefix);
     final exclusions = ignore ?? RadIgnore.load(source);
+    // An in-project rad root must never copy itself (recursive growth); a
+    // rad root at or above the project only prunes the fresh target.
+    final prune = p.isWithin(source, paths.root) ? paths.root : target.path;
 
     await for (final entity in Directory(
       source,
     ).list(recursive: true, followLinks: false)) {
-      // An in-project rad root must never copy itself (recursive growth).
-      if (p.equals(paths.root, entity.path) ||
-          p.isWithin(paths.root, entity.path)) {
+      if (p.equals(prune, entity.path) || p.isWithin(prune, entity.path)) {
         continue;
       }
       final relative = p
