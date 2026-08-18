@@ -308,24 +308,17 @@ final class Engine {
       );
       // Expected mutant-level failures are outcomes, never exceptions
       // (ADR 0006); their evidence lands in the run log (ADR 0016).
-    } on IOException catch (error, stackTrace) {
-      return _runError(mutant, error, stackTrace);
-    } on StateError catch (error, stackTrace) {
-      return _runError(mutant, error, stackTrace);
+    } catch (error, stackTrace) {
+      if (error is! IOException && error is! StateError) rethrow;
+      return MutantResult(
+        mutant: mutant,
+        outcome: Outcome.runError,
+        error: '$error\n$stackTrace',
+      );
     } finally {
       await containment.restore(mutant.mutation.filePath);
     }
   }
-
-  static MutantResult _runError(
-    Mutant mutant,
-    Object error,
-    StackTrace stackTrace,
-  ) => MutantResult(
-    mutant: mutant,
-    outcome: Outcome.runError,
-    error: '$error\n$stackTrace',
-  );
 
   /// Appends one wide event for [result] to its worker's [runLog],
   /// correlated with the tool log through the shared `RunId` (ADR 0016).

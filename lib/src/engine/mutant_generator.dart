@@ -57,21 +57,16 @@ final class MutantGenerator {
             .where((f) => f.path.endsWith('.dart'))
             .where((f) => !generatedFileSuffixes.any((s) => f.path.endsWith(s)))
             .map((f) => p.normalize(f.absolute.path))
-            .where(
-              (f) => !ignore.excludes(
-                p.relative(f, from: root).replaceAll(r'\', '/'),
-                isDirectory: false,
-              ),
-            )
+            .map((f) => (f, p.relative(f, from: root).replaceAll(r'\', '/')))
+            .where((f) => !ignore.excludes(f.$2, isDirectory: false))
             .toList()
-          ..sort();
+          ..sort((a, b) => a.$1.compareTo(b.$1));
 
     final collection = AnalysisContextCollection(
       includedPaths: [p.normalize(libDir.absolute.path)],
     );
     final mutations = <Mutation>[];
-    for (final file in files) {
-      final relative = p.relative(file, from: root).replaceAll(r'\', '/');
+    for (final (file, relative) in files) {
       final result = await collection
           .contextFor(file)
           .currentSession

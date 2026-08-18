@@ -55,7 +55,7 @@ final class LcovCoverageProvider implements CoverageProvider {
   bool isCovered(Mutant mutant) {
     final file = hits[mutant.mutation.filePath];
     if (file == null) return false;
-    final index = _indexes[mutant.mutation.filePath] ?? LineIndex('');
+    final index = _indexes[mutant.mutation.filePath]!;
     final count = file[index.lineAt(mutant.mutation.offset)];
     return count == null || count > 0;
   }
