@@ -7,7 +7,6 @@ import '../engine/engine.dart';
 import '../engine/full_coverage_provider.dart';
 import '../engine/lcov_coverage_provider.dart';
 import '../engine/run_aborted.dart';
-import '../engine/test_version_check.dart';
 import '../log/rad_logger.dart';
 import '../rad_paths.dart';
 import '../report/console_report_sink.dart';
@@ -105,7 +104,6 @@ Future<int> radMain(
   // never remove another active run's state (ADR 0018).
   final RunWorkspace workspace;
   try {
-    ensureTestVersion(projectRoot);
     workspace = RunWorkspace.acquire(resolvedPaths)..clean();
   } on RunAborted catch (abort) {
     stderr.writeln(abort.message);

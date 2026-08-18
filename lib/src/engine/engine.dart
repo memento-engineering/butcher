@@ -21,6 +21,7 @@ import 'run_result.dart';
 import 'test_events.dart';
 import 'test_runner.dart';
 import 'test_selector.dart';
+import 'test_version_check.dart';
 import 'viability_checker.dart';
 import 'whole_suite_selector.dart';
 
@@ -115,6 +116,7 @@ final class Engine {
       await Containment.create(projectRoot, paths: paths, ignore: ignore),
     ];
     await _resolveDependencies(containments.first.root);
+    ensureTestVersion(containments.first.root);
     final runners = [runnerFactory(containments.first.root, suiteConcurrency)];
     prepareWatch.stop();
 

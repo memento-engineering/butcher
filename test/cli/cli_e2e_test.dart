@@ -243,14 +243,18 @@ void main() {
 
   test('aborts with exit code 70 on a too-old package:test', () async {
     final dir = await createFixturePackage();
-    final lock = File(p.join(dir.path, 'pubspec.lock'));
-    lock.writeAsStringSync(
-      lock.readAsStringSync().replaceFirstMapped(
-        RegExp(r'(  test:[\s\S]*?    version: )"[^"]+"'),
-        (match) => '${match[1]}"1.24.5"',
-      ),
+    // No lockfile: only the containment's resolved dependencies can tell.
+    File(p.join(dir.path, 'pubspec.lock')).deleteSync();
+    final pubspec = File(p.join(dir.path, 'pubspec.yaml'));
+    pubspec.writeAsStringSync(
+      pubspec.readAsStringSync().replaceFirst('test: any', 'test: 1.24.5'),
     );
+
     expect(await radMain([dir.path], out: StringBuffer(), paths: paths), 70);
+    expect(
+      File(paths.toolLog).readAsStringSync(),
+      contains('does not support --fail-fast'),
+    );
   });
 
   test('rejects an invalid threshold with exit code 64', () async {

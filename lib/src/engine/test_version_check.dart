@@ -8,10 +8,10 @@ import 'run_aborted.dart';
 /// mutant run passes.
 const minTestVersion = '1.24.6';
 
-/// Aborts when the resolved `package:test` in [projectRoot] predates
+/// Aborts when the `package:test` resolved into [root] predates
 /// [minTestVersion]; a missing lockfile or `test` entry passes.
-void ensureTestVersion(String projectRoot) {
-  final lock = File(p.join(projectRoot, 'pubspec.lock'));
+void ensureTestVersion(String root) {
+  final lock = File(p.join(root, 'pubspec.lock'));
   if (!lock.existsSync()) return;
   final version = RegExp(
     r'^  test:.*?^    version: "([^"]+)"',
