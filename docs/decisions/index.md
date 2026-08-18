@@ -8,12 +8,13 @@ How the decisions compose at runtime:
 
 ```mermaid
 flowchart TD
-    A[lock + startup cleanup] --> B[containment: filtered project or workspace copy]
+    A[lock + startup cleanup] --> P[provisioning: pub get an unresolved project]
+    P --> B[containment: filtered project or workspace copy]
     B --> C[background reading: verify suite green]
-    C --> D[analyzer: resolved AST → mutants]
+    C --> E[coverage: given or found lcov, else collected]
+    E --> D[analyzer: resolved AST → mutants]
     D --> V[viability check: non-compiling mutants filtered]
-    V --> E[tracer: collect or ingest per-test lcov]
-    E --> F[compile schemata once]
+    V --> F[compile schemata once]
     F --> G[per mutant: covering tests, fastest first, first kill wins]
     G --> H[TCE pass over survivors]
     H --> I[reports + criticality gate]
@@ -40,6 +41,6 @@ flowchart TD
 | [0017](0017-parallel-classification.md) | Parallel classification | accepted |
 | [0018](0018-run-workspace-lifecycle.md) | Run workspace lifecycle | accepted, staged v0.1–v0.2 |
 | [0019](0019-static-viability-filtering.md) | Static viability filtering | accepted |
-| [0020](0020-zero-setup-provisioning.md) | Zero-setup provisioning | accepted, planned v0.1 |
+| [0020](0020-zero-setup-provisioning.md) | Zero-setup provisioning | accepted |
 
 Feature staging: [../roadmap/index.md](../roadmap/index.md).

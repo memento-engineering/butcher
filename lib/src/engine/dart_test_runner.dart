@@ -33,6 +33,7 @@ final class DartTestRunner implements TestRunner {
     List<String>? tests,
     Duration? timeout,
     bool failFast = false,
+    String? coverageDir,
   }) async {
     final watch = Stopwatch()..start();
     final process = await Process.start(Platform.resolvedExecutable, [
@@ -40,6 +41,7 @@ final class DartTestRunner implements TestRunner {
       '--reporter',
       'json',
       if (failFast) '--fail-fast',
+      if (coverageDir != null) '--coverage=$coverageDir',
       if (concurrency != null) '--concurrency=$concurrency',
       for (final name in tests ?? const <String>[]) ...['--plain-name', name],
     ], workingDirectory: root);

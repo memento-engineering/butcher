@@ -38,6 +38,7 @@ final class FakeRunner implements TestRunner {
     List<String>? tests,
     Duration? timeout,
     bool failFast = false,
+    String? coverageDir,
   }) async {
     timeouts.add(timeout);
     failFasts.add(failFast);
@@ -66,6 +67,7 @@ final class CrashingRunner implements TestRunner {
     List<String>? tests,
     Duration? timeout,
     bool failFast = false,
+    String? coverageDir,
   }) async {
     if (_calls++ == 0) {
       return TestRun(
@@ -97,6 +99,7 @@ final class SuiteWritingRunner implements TestRunner {
     List<String>? tests,
     Duration? timeout,
     bool failFast = false,
+    String? coverageDir,
   }) async {
     final baseline = runs.isEmpty;
     runs.add(root);

@@ -11,11 +11,13 @@ import '../model/test_run.dart';
 import '../mutagens/mutagen_registry.dart';
 import '../rad_paths.dart';
 import 'containment.dart';
+import 'coverage_collector.dart';
 import 'coverage_provider.dart';
 import 'dart_test_runner.dart';
 import 'full_coverage_provider.dart';
 import 'mutant_generator.dart';
 import 'outcome_classifier.dart';
+import 'pub_get.dart';
 import 'rad_ignore.dart';
 import 'run_aborted.dart';
 import 'run_result.dart';
@@ -72,8 +74,8 @@ final class Engine {
   /// The active mutagen set.
   final MutagenRegistry registry;
 
-  /// Coverage seam; MVP default covers everything.
-  final CoverageProvider coverage;
+  /// Coverage seam; `null` collects coverage during the run (ADR 0020).
+  final CoverageProvider? coverage;
 
   /// Test selection seam; MVP default runs the whole suite.
   final TestSelector selector;
@@ -98,6 +100,10 @@ final class Engine {
   /// retained until the run ends (ADR 0016).
   static const outputExcerptLimit = 32 * 1024;
 
+  /// Directory inside the baseline containment holding the collected VM
+  /// coverage reports (ADR 0020).
+  static const coverageDirName = '.rad_coverage';
+
   /// Outcomes recorded as errors in their run log.
   static const failedOutcomes = {
     Outcome.timeout,
@@ -109,6 +115,7 @@ final class Engine {
   /// Runs the whole pipeline and returns every classified result.
   Future<RunResult> run() async {
     Directory(paths.runLogs).createSync(recursive: true);
+    await _provision();
 
     // Contain and verify before the expensive analysis stages so a red
     // suite aborts within the background reading's duration (ADR 0005).
@@ -123,7 +130,7 @@ final class Engine {
       paths: paths,
       ignore: ignore,
     );
-    await _resolveDependencies(baseline.root);
+    await pubGet(baseline.root, label: 'the containment');
     ensureTestVersion(baseline.root);
     // One pristine clone before the background reading; the workers are cloned
     // from it, so none inherits what that suite writes into the package tree
@@ -157,7 +164,8 @@ final class Engine {
       },
     );
 
-    final (mutants, sources, unviable) = await _generate(ignore);
+    final routing = await _resolveCoverage(baseline);
+    final (mutants, sources, unviable) = await _generate(ignore, routing);
 
     prepareWatch.start();
     final workers = max(1, min(jobs, mutants.length));
@@ -206,6 +214,7 @@ final class Engine {
           runLogs[slot],
           halfLife,
           unviable,
+          routing,
         );
         results[index] = result;
         done++;
@@ -245,6 +254,7 @@ final class Engine {
   /// units are collectible before the first worker runs (ADR 0016).
   Future<(List<Mutant>, Map<String, String>, Set<String>)> _generate(
     RadIgnore ignore,
+    CoverageProvider coverage,
   ) async {
     final watch = Stopwatch()..start();
     final generator = MutantGenerator(
@@ -295,6 +305,7 @@ final class Engine {
     RadLogger runLog,
     Duration halfLife,
     Set<String> unviable,
+    CoverageProvider coverage,
   ) async {
     if (!coverage.isCovered(mutant)) {
       return MutantResult(mutant: mutant, outcome: Outcome.noCoverage);
@@ -403,16 +414,46 @@ final class Engine {
     );
   }
 
-  Future<void> _resolveDependencies(String root) async {
-    final pubGet = await Process.run(Platform.resolvedExecutable, [
-      'pub',
-      'get',
-    ], workingDirectory: root);
-    if (pubGet.exitCode != 0) {
-      throw RunAborted(
-        'pub get failed in the containment:\n'
-        '${pubGet.stdout}${pubGet.stderr}',
-      );
+  /// Resolves an unresolved project before it is copied or analysed: it would
+  /// otherwise yield only unviable mutants (ADR 0020).
+  Future<void> _provision() async {
+    bool has(List<String> parts) =>
+        File(p.joinAll([projectRoot, ...parts])).existsSync();
+    // A missing or non-package root reports better from the copy and
+    // containment stages than from `pub get` here.
+    if (!has(['pubspec.yaml'])) return;
+    if (has(['pubspec.lock']) && has(['.dart_tool', 'package_config.json'])) {
+      return;
     }
+    final watch = Stopwatch()..start();
+    await pubGet(projectRoot, label: 'the project');
+    logger?.info('provisioned {ProjectRoot} in {DurationMs} ms', {
+      'ProjectRoot': projectRoot,
+      'DurationMs': watch.elapsedMilliseconds,
+    });
+  }
+
+  /// The routing coverage: the supplied provider, or one collected by an
+  /// extra instrumented run of the green suite (ADR 0020). It reuses the
+  /// baseline containment, which the workers no longer clone from, so none
+  /// of them inherits the coverage artefacts.
+  Future<CoverageProvider> _resolveCoverage(Containment baseline) async {
+    final supplied = coverage;
+    if (supplied != null) return supplied;
+    final watch = Stopwatch()..start();
+    // Nothing else runs during collection and its duration calibrates
+    // nothing, so it uses every core instead of one job's share.
+    final collected = await CoverageCollector(
+      root: baseline.root,
+      outputDir: p.join(baseline.root, coverageDirName),
+    ).collect(runnerFactory(baseline.root, Platform.numberOfProcessors));
+    logger?.info(
+      'collected coverage for {FileCount} files in {DurationMs} ms',
+      {
+        'FileCount': collected.hits.length,
+        'DurationMs': watch.elapsedMilliseconds,
+      },
+    );
+    return collected;
   }
 }

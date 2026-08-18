@@ -19,6 +19,10 @@
   run with no scoreable mutants reports no MSI and fails `--threshold`.
 - `--coverage` ingests an `lcov.info`: mutants on lines no test hits report as
   `noCoverage` and never run.
+- Zero setup: an unresolved project is `pub get`-ed first, a project's own
+  `coverage/lcov.info` is picked up without `--coverage`, and otherwise
+  coverage is collected in one extra suite run (`--no-collect-coverage`
+  falls back to treating all code as covered).
 - Mutant runs stop at the first failing test (`dart test --fail-fast`), so the
   project must resolve `package:test` 1.24.6 or newer.
 - Static viability check: mutants that fail analysis (e.g. a flipped null

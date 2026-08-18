@@ -35,7 +35,8 @@
 ## Consequences
 
 - Killing the tool at any point leaves the working tree pristine by
-  construction.
+  construction, apart from provisioning an unresolved project
+  ([0020](0020-zero-setup-provisioning.md)).
 - No restore logic to get wrong.
 - Workspace dependencies and cwd-relative test assets keep their layout.
 - Consumers can avoid copying large, project-specific directories.

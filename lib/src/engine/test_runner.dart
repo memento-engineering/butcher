@@ -6,9 +6,13 @@ abstract interface class TestRunner {
   ///
   /// [failFast] stops the suite at the first failure: one failing test
   /// already kills a mutant, so the rest is wasted work.
+  ///
+  /// [coverageDir] instruments the run and collects its line coverage there
+  /// (ADR 0020).
   Future<TestRun> run({
     List<String>? tests,
     Duration? timeout,
     bool failFast = false,
+    String? coverageDir,
   });
 }

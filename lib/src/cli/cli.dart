@@ -21,7 +21,8 @@ const defaultReportPath = 'mutation-report.json';
 /// Runs the `rad` CLI over [arguments]; returns the process exit code.
 ///
 /// Exit codes: 0 success, 1 criticality or honesty gate, 64 usage error,
-/// 70 aborted run (locked workspace, red background reading, failed pub get).
+/// 70 aborted run (locked workspace, red background reading, failed pub get
+/// or coverage collection).
 ///
 /// [paths] overrides every filesystem location used by the invocation.
 Future<int> radMain(
@@ -63,6 +64,13 @@ Future<int> radMain(
           'Defaults to half the CPU cores.',
     )
     ..addFlag(
+      'collect-coverage',
+      defaultsTo: true,
+      help:
+          'Collect coverage with an extra instrumented suite run when no '
+          'report is given or found. Disabling treats all code as covered.',
+    )
+    ..addFlag(
       'verbose',
       abbr: 'v',
       negatable: false,
@@ -100,13 +108,25 @@ Future<int> radMain(
     p.absolute(options.rest.isEmpty ? '.' : options.rest.single),
   );
   final resolvedPaths = paths ?? RadPaths.production();
+  // Given, then found, then collected by the engine (ADR 0020).
+  final found = coverageFile ?? _projectCoverageFile(projectRoot);
   // Parsed before acquisition so a broken report cannot strand the lock.
-  final coverage = coverageFile == null
-      ? const FullCoverageProvider()
+  final parsed = found == null
+      ? null
       : LcovCoverageProvider.parse(
-          coverageFile.readAsStringSync(),
+          found.readAsStringSync(),
           projectRoot: projectRoot,
         );
+  // A found report that records nothing is stale, not a project without
+  // coverage: routing on it would report every mutant as noCoverage
+  // (ADR 0020). A given one is the user's choice and is honoured as is.
+  final ingested =
+      parsed != null && (coverageFile != null || parsed.hits.isNotEmpty)
+      ? parsed
+      : null;
+  final coverage =
+      ingested ??
+      (options.flag('collect-coverage') ? null : const FullCoverageProvider());
   // Startup cleanup is the first run stage and needs the lock first: it must
   // never remove another active run's state (ADR 0018).
   final RunWorkspace workspace;
@@ -132,10 +152,10 @@ Future<int> radMain(
     'Argv': arguments,
   });
 
-  if (coverage is LcovCoverageProvider) {
+  if (ingested != null) {
     logger.info('ingested coverage for {FileCount} files from {Path}', {
-      'FileCount': coverage.hits.length,
-      'Path': coverageFile!.path,
+      'FileCount': ingested.hits.length,
+      'Path': found!.path,
     });
   }
 
@@ -245,6 +265,12 @@ File? _coverageFile(ArgResults options) {
     throw FormatException('--coverage report does not exist: ${file.path}');
   }
   return file;
+}
+
+/// The report a previous `dart test --coverage-path` left in the project.
+File? _projectCoverageFile(String projectRoot) {
+  final file = File(p.join(projectRoot, 'coverage', 'lcov.info'));
+  return file.existsSync() ? file : null;
 }
 
 int? _maxTimeouts(ArgResults options) {

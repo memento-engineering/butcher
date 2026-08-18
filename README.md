@@ -11,15 +11,26 @@ ones the tests kill.
   survived, and a timeout rate is printed whenever any occur.
 - With no scoreable mutants there is no MSI: scores print as `none` and
   `--threshold` fails.
-- Pass `--coverage` an `lcov.info` (`dart test --coverage-path=lcov.info`) to
-  skip mutants no test reaches: they report as `noCoverage` without a run,
-  which lowers the MSI but leaves the covered-code MSI intact.
+- Mutants no test reaches report as `noCoverage` without a run, which lowers
+  the MSI but leaves the covered-code MSI intact. Coverage comes from, in
+  order:
+
+| Order | Condition | Source |
+|---|---|---|
+| 1 | `--coverage <path>` given | that `lcov.info` |
+| 2 | `coverage/lcov.info` records something | that report |
+| 3 | otherwise | rad collects it in one extra suite run |
+
+- `--no-collect-coverage` drops step 3 and treats all code as covered.
+- A collection that fails or measures nothing aborts the run instead of
+  guessing; rerun with `--no-collect-coverage`.
 - Writes a Stryker JSON report (`mutation-report.json`); view it with the
   [Stryker report viewer](https://microsoft.github.io/mutation-testing-elements/).
 
 | Flag | Effect |
 |---|---|
 | `-c, --coverage` | `lcov.info` to route from; unhit lines are not run |
+| `--[no-]collect-coverage` | Collect coverage when no report is given or found |
 | `-t, --threshold` | Exit 1 when the MSI is below this percentage |
 | `--max-timeouts` | Exit 1 when more mutants than this time out |
 | `-o, --output` | Report path, relative to the project root |
@@ -30,8 +41,8 @@ ones the tests kill.
 - A red test suite aborts the run; a green suite is a precondition.
 - The project must resolve `package:test` 1.24.6 or newer; older versions
   abort the run.
-- Run `dart pub get` first: rad analyses the project as it is, so an
-  unresolved project yields only unviable mutants.
+- An unresolved project is provisioned first: rad runs `dart pub get` in it,
+  writing `pubspec.lock` and `.dart_tool/` into the project.
 - `.radignore` (gitignore-style rules incl. negation and directory patterns,
   project root) excludes paths from the isolated project copy tests run in.
   An excluded directory is never descended into, so `!` cannot re-include a

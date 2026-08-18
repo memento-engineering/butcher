@@ -17,9 +17,12 @@ void main() {
 ''';
 
 /// Creates a resolvable single-package fixture with one lib and one suite.
+///
+/// [resolve] runs `dart pub get` in it; skip it to test provisioning.
 Future<Directory> createFixturePackage({
   String calc = fixtureCalc,
   String testSource = fixtureTest,
+  bool resolve = true,
 }) async {
   final dir = await Directory.systemTemp.createTemp('rad_fixture_');
   addTearDown(() => dir.delete(recursive: true));
@@ -39,6 +42,7 @@ dev_dependencies:
   write('lib/calc.dart', calc);
   write('test/calc_test.dart', testSource);
 
+  if (!resolve) return dir;
   final pubGet = await Process.run(Platform.resolvedExecutable, [
     'pub',
     'get',

@@ -49,7 +49,14 @@ void main() {
       ..writeAsStringSync('from a previous run');
 
     final exit = await radMain(
-      ['--output', 'report.json', '--jobs', '2', dir.path],
+      [
+        '--output',
+        'report.json',
+        '--jobs',
+        '2',
+        '--no-collect-coverage',
+        dir.path,
+      ],
       out: out,
       paths: paths,
     );
@@ -61,6 +68,11 @@ void main() {
         .map((line) => jsonDecode(line) as Map<String, dynamic>)
         .toList();
     expect(logLines.first['@mt'], startsWith('starting rad'));
+    expect(
+      logLines.map((e) => e['@mt']),
+      isNot(contains(startsWith('collected coverage'))),
+      reason: '--no-collect-coverage treats all code as covered instead',
+    );
     expect(logLines.last['@mt'], startsWith('run complete'));
     expect(logLines.last['Msi'], closeTo(40, 0.01));
     expect(
@@ -138,7 +150,7 @@ void main() {
     final dir = await createFixturePackage(calc: _partiallyTestedCalc);
     final out = StringBuffer();
     final exit = await radMain(
-      ['--threshold', '90', '--verbose', dir.path],
+      ['--threshold', '90', '--verbose', '--no-collect-coverage', dir.path],
       out: out,
       paths: paths,
     );
@@ -174,6 +186,106 @@ void main() {
     );
   });
 
+  test('collects coverage and skips what no test reaches', () async {
+    final dir = await createFixturePackage(calc: _partiallyTestedCalc);
+    File(p.join(dir.path, 'lib', 'unused.dart'))
+        .writeAsStringSync('int mul(int a, int b) => a * b;\n');
+    final out = StringBuffer();
+
+    final exit = await radMain(
+      ['--jobs', '1', dir.path],
+      out: out,
+      paths: paths,
+    );
+
+    expect(exit, 0, reason: out.toString());
+    expect(out.toString(), contains('killed: 2'));
+    expect(
+      out.toString(),
+      contains('noCoverage: 5'),
+      reason: 'the unhit lines of calc.dart plus the file no test loads',
+    );
+    expect(out.toString(), contains('Covered-code MSI: 100.00%'));
+    expect(
+      File(paths.toolLog).readAsStringSync(),
+      contains('"@mt":"collected coverage for {FileCount} files'),
+    );
+  });
+
+  test('routes from coverage/lcov.info without --coverage', () async {
+    final dir = await createFixturePackage(calc: _partiallyTestedCalc);
+    File(p.join(dir.path, 'coverage', 'lcov.info'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('SF:lib/calc.dart\nDA:1,4\nDA:2,0\nend_of_record\n');
+    final out = StringBuffer();
+
+    final exit = await radMain(
+      ['--jobs', '1', dir.path],
+      out: out,
+      paths: paths,
+    );
+
+    expect(exit, 0, reason: out.toString());
+    expect(out.toString(), contains('noCoverage: 3'));
+    final logText = File(paths.toolLog).readAsStringSync();
+    expect(logText, contains('"@mt":"ingested coverage for {FileCount} files'));
+    expect(
+      logText,
+      isNot(contains('collected coverage')),
+      reason: 'a report in the project preempts collection',
+    );
+  });
+
+  test('collects when coverage/lcov.info records nothing', () async {
+    final dir = await createFixturePackage(calc: _partiallyTestedCalc);
+    File(p.join(dir.path, 'coverage', 'lcov.info'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('');
+    final out = StringBuffer();
+
+    final exit = await radMain(
+      ['--jobs', '1', dir.path],
+      out: out,
+      paths: paths,
+    );
+
+    expect(exit, 0, reason: out.toString());
+    expect(
+      out.toString(),
+      contains('killed: 2'),
+      reason: 'a stale report must not route every mutant to noCoverage',
+    );
+    final logText = File(paths.toolLog).readAsStringSync();
+    expect(
+      logText,
+      contains('"@mt":"collected coverage for {FileCount} files'),
+    );
+    expect(logText, isNot(contains('ingested coverage')));
+  });
+
+  test('provisions an unresolved project before analysing it', () async {
+    final dir = await createFixturePackage(resolve: false);
+    final out = StringBuffer();
+
+    final exit = await radMain(
+      ['--no-collect-coverage', '--jobs', '1', dir.path],
+      out: out,
+      paths: paths,
+    );
+
+    expect(exit, 0, reason: out.toString());
+    expect(File(p.join(dir.path, 'pubspec.lock')).existsSync(), isTrue);
+    expect(
+      File(p.join(dir.path, '.dart_tool', 'package_config.json')).existsSync(),
+      isTrue,
+    );
+    expect(out.toString(), contains('killed: 2'));
+    expect(
+      File(paths.toolLog).readAsStringSync(),
+      contains('"@mt":"provisioned {ProjectRoot} in {DurationMs} ms"'),
+    );
+  });
+
   test('rejects a missing coverage report with exit code 64', () async {
     expect(
       await radMain(
@@ -193,7 +305,7 @@ void main() {
     final out = StringBuffer();
 
     final exit = await radMain(
-      ['--max-timeouts', '0', dir.path],
+      ['--max-timeouts', '0', '--no-collect-coverage', dir.path],
       out: out,
       paths: paths,
     );
@@ -210,7 +322,7 @@ void main() {
 
     final exit = await IOOverrides.runZoned(
       () => radMain(
-        ['--threshold', '50', dir.path],
+        ['--threshold', '50', '--no-collect-coverage', dir.path],
         out: StringBuffer(),
         paths: paths,
       ),
@@ -265,8 +377,8 @@ void main() {
 
   test('aborts with exit code 70 on a too-old package:test', () async {
     final dir = await createFixturePackage();
-    // No lockfile: only the containment's resolved dependencies can tell.
-    File(p.join(dir.path, 'pubspec.lock')).deleteSync();
+    // The project's lockfile still pins a new package:test; only the
+    // containment's re-resolved dependencies can tell.
     final pubspec = File(p.join(dir.path, 'pubspec.yaml'));
     pubspec.writeAsStringSync(
       pubspec.readAsStringSync().replaceFirst('test: any', 'test: 1.24.5'),

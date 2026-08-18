@@ -1,6 +1,6 @@
 # 0020: Zero-setup provisioning
 
-- Status: accepted, planned v0.1
+- Status: accepted
 
 ## Context
 
@@ -21,7 +21,7 @@
 | Order | Condition | Source |
 |---|---|---|
 | 1 | `--coverage <path>` given | that file |
-| 2 | `coverage/lcov.info` exists | that file |
+| 2 | `coverage/lcov.info` exists and records something | that file |
 | 3 | otherwise | rad collects it |
 
 - Collection is its own suite run inside a containment, separate from the
@@ -39,6 +39,11 @@
 - rad writes `pubspec.lock` and `.dart_tool/` into an unprovisioned project.
 - Collected paths are containment-absolute and must map back to
   project-relative paths before routing.
+- A collection run that fails or records nothing aborts: assuming full
+  coverage inflates the score, assuming none reports every mutant as
+  `noCoverage` ([0013](0013-score-and-honesty-metrics.md)).
+- A found report that records nothing is stale and is skipped for the same
+  reason; a given one is honoured as is.
 
 ## Rejected
 
