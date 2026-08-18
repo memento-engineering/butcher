@@ -79,8 +79,10 @@ void main() {
       Directory(paths.root).listSync().whereType<Directory>().where(
         (directory) => p.basename(directory.path).startsWith('containment_'),
       ),
-      hasLength(2),
-      reason: 'containments remain until the next run starts',
+      hasLength(3),
+      reason:
+          'the background reading plus one per --jobs worker, all kept '
+          'until the next run starts',
     );
     expect(
       out.toString(),
@@ -274,6 +276,28 @@ void main() {
     expect(
       File(paths.toolLog).readAsStringSync(),
       contains('does not support --fail-fast'),
+    );
+    expect(
+      Directory(paths.root).listSync().whereType<Directory>().where(
+        (directory) => p.basename(directory.path).startsWith('containment_'),
+      ),
+      hasLength(1),
+      reason: 'the version check precedes the template clone',
+    );
+  });
+
+  test('releases the lock when the run fails unexpectedly', () async {
+    final missing = p.join(paths.root, 'no_such_project');
+
+    await expectLater(
+      radMain([missing], out: StringBuffer(), paths: paths),
+      throwsA(isA<FileSystemException>()),
+    );
+
+    expect(
+      File(paths.lockFile).existsSync(),
+      isFalse,
+      reason: 'an exception escaping the run must not strand the lock',
     );
   });
 

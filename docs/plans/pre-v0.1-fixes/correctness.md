@@ -1,5 +1,7 @@
 # Correctness fixes
 
+- Status: fixed; see [index.md](index.md) for the resolution.
+
 Ordered by severity. Part of [index.md](index.md).
 
 ## 1. Promotion guard drops viable mutants

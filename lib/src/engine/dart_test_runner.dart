@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../model/test_run.dart';
+import 'capped_output.dart';
 import 'test_runner.dart';
 
 /// Runs `dart test` via [Platform.resolvedExecutable] (ADR 0003).
@@ -18,6 +19,14 @@ final class DartTestRunner implements TestRunner {
 
   /// Value for `dart test --concurrency`; `null` keeps the suite default.
   final int? concurrency;
+
+  /// Characters retained from stdout. Every verdict is parsed out of this
+  /// stream, so the bound sits above any real suite (~16k tests' events) and
+  /// only catches a runaway mutant.
+  static const stdoutLimit = 8 * 1024 * 1024;
+
+  /// Characters retained from stderr; nothing is parsed from it.
+  static const stderrLimit = 256 * 1024;
 
   @override
   Future<TestRun> run({
@@ -36,8 +45,8 @@ final class DartTestRunner implements TestRunner {
     ], workingDirectory: root);
 
     const decoder = Utf8Decoder(allowMalformed: true);
-    final output = StringBuffer();
-    final errors = StringBuffer();
+    final output = CappedOutput(limit: stdoutLimit);
+    final errors = CappedOutput(limit: stderrLimit);
     final drained = Future.wait([
       process.stdout.transform(decoder).forEach(output.write),
       process.stderr.transform(decoder).forEach(errors.write),
@@ -65,20 +74,32 @@ final class DartTestRunner implements TestRunner {
   }
 
   /// Kills the suite and everything it spawned. Windows walks the tree with
-  /// `taskkill /T`; elsewhere the tree comes from a `ps` snapshot, so
-  /// processes spawned after the snapshot survive.
+  /// `taskkill /T`; elsewhere the tree comes from a `ps` snapshot taken
+  /// before the kill, while the children are still attached, so processes
+  /// spawned after it survive.
   static Future<void> _killTree(Process process) async {
     if (Platform.isWindows) {
       await Process.run('taskkill', ['/PID', '${process.pid}', '/T', '/F']);
     } else {
-      final ps = await Process.run('ps', ['-A', '-o', 'pid=,ppid=']);
-      final pids = descendantPids('${ps.stdout}', process.pid);
+      final pids = descendantPids(await processSnapshot(), process.pid);
       process.kill(ProcessSignal.sigkill);
       for (final pid in pids) {
         Process.killPid(pid, ProcessSignal.sigkill);
       }
     }
     await process.exitCode;
+  }
+
+  /// `ps -A -o pid=,ppid=` output, or empty when the image has no [ps]: a
+  /// missing helper costs the descendants, never the hung suite itself.
+  ///
+  /// [ps] is a seam for tests to cover the missing case on any platform.
+  static Future<String> processSnapshot([String ps = 'ps']) async {
+    try {
+      return '${(await Process.run(ps, ['-A', '-o', 'pid=,ppid='])).stdout}';
+    } on ProcessException {
+      return '';
+    }
   }
 
   /// Transitive child pids of [rootPid] in `ps -A -o pid=,ppid=` output.

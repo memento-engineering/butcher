@@ -39,6 +39,26 @@ void main() {
     expect(swaps.map((m) => m.length).toSet(), {1});
   });
 
+  test('swaps int multiplication to truncating division', () async {
+    final mutations = await mutationsOf('int f(int a, int b) => a * b;');
+    final swaps = mutations.where((m) => m.operatorId == 'arithmetic');
+    expect(swaps.map((m) => m.replacement), unorderedEquals(['~/', '+']));
+  });
+
+  test('swaps double remainder to floating division', () async {
+    final mutations = await mutationsOf(
+      'double f(double a, double b) => a % b;',
+    );
+    final swaps = mutations.where((m) => m.operatorId == 'arithmetic');
+    expect(swaps.map((m) => m.replacement), unorderedEquals(['*', '/']));
+  });
+
+  test('keeps the declared swap when the result type is num', () async {
+    final mutations = await mutationsOf('num f(num a, num b) => a * b;');
+    final swaps = mutations.where((m) => m.operatorId == 'arithmetic');
+    expect(swaps.map((m) => m.replacement), unorderedEquals(['/', '+']));
+  });
+
   test('guards string concatenation from arithmetic swaps', () async {
     final mutations = await mutationsOf("String f(String s) => 'a' + s;");
     expect(mutations.where((m) => m.operatorId == 'arithmetic'), isEmpty);

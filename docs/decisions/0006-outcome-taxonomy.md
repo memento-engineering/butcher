@@ -18,6 +18,10 @@
 - `Killed`, `Survived`, and `Timeout` remain separate peer outcomes in results.
 - Timeouts are inconclusive. They count as neither killed nor survived.
 - `--max-timeouts` fails a run when its timeout ceiling is exceeded.
+- A timed-out suite is killed with its children: `taskkill /T` on Windows,
+  elsewhere a `ps` snapshot taken before the kill. Best effort by design:
+  `setsid` is absent from minimal images and Dart cannot spawn a process
+  group, so a process spawned after the snapshot survives.
 
 ## Rejected
 

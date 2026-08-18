@@ -14,6 +14,13 @@
 - A worker pool classifies mutants concurrently; pulled forward from v0.1.
 - Each worker owns one containment copy ([0004](0004-shadow-copy-isolation.md));
   mutants never share a mutated tree.
+- Only the baseline containment is built and `dart pub get`-ed, so dependency
+  resolution runs once per run. One pristine clone of it is taken before the
+  background reading; the workers are cloned from that template after
+  generation, capped by the mutant count. No worker inherits what the reading's
+  suite writes into the package tree, and a red reading
+  ([0005](0005-mandatory-baseline-verification.md)) aborts having copied the
+  tree twice instead of once per job.
 - Workers pull from one shared queue; the unit of work stays generic for
   the v1.0 switch to "mutant × covering test".
 - `--jobs`/`-j` sets the worker count; default `max(1, cores ~/ 2)` because

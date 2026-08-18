@@ -1,5 +1,7 @@
 # Polish fixes
 
+- Status: fixed; see [index.md](index.md) for the resolution.
+
 Release, lifecycle, and logging gaps. Part of [index.md](index.md).
 
 ## 1. Pana verification currently fails

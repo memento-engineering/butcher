@@ -7,6 +7,7 @@ import '../log/rad_logger.dart';
 import '../model/mutant.dart';
 import '../model/mutant_result.dart';
 import '../model/outcome.dart';
+import '../model/test_run.dart';
 import '../mutagens/mutagen_registry.dart';
 import '../rad_paths.dart';
 import 'containment.dart';
@@ -92,6 +93,11 @@ final class Engine {
   /// Correlates and namespaces every mutant-run log from this engine run.
   final String runId;
 
+  /// Characters of each suite stream kept per mutant. The live stream stays
+  /// generous so nothing is parsed truncated, but every mutant's excerpt is
+  /// retained until the run ends (ADR 0016).
+  static const outputExcerptLimit = 32 * 1024;
+
   /// Outcomes recorded as errors in their run log.
   static const failedOutcomes = {
     Outcome.timeout,
@@ -112,15 +118,23 @@ final class Engine {
     // keep half-lives calibrated (ADR 0017).
     final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ jobs);
     final ignore = RadIgnore.load(projectRoot);
-    final containments = [
-      await Containment.create(projectRoot, paths: paths, ignore: ignore),
-    ];
-    await _resolveDependencies(containments.first.root);
-    ensureTestVersion(containments.first.root);
-    final runners = [runnerFactory(containments.first.root, suiteConcurrency)];
+    final baseline = await Containment.create(
+      projectRoot,
+      paths: paths,
+      ignore: ignore,
+    );
+    await _resolveDependencies(baseline.root);
+    ensureTestVersion(baseline.root);
+    // One pristine clone before the background reading; the workers are cloned
+    // from it, so none inherits what that suite writes into the package tree
+    // (ADR 0017) and a red reading still costs one extra copy (ADR 0005).
+    final template = await baseline.clone();
     prepareWatch.stop();
 
-    final background = await runners.first.run();
+    final background = await runnerFactory(
+      baseline.root,
+      suiteConcurrency,
+    ).run();
     if (background.exitCode != 0) {
       final summary = TestEvents.parse(background.output).summarize();
       final evidence = summary.isEmpty
@@ -143,12 +157,102 @@ final class Engine {
       },
     );
 
-    final generationWatch = Stopwatch()..start();
-    final (mutants, sources) = await MutantGenerator(
+    final (mutants, sources, unviable) = await _generate(ignore);
+
+    prepareWatch.start();
+    final workers = max(1, min(jobs, mutants.length));
+    final containments = [
+      template,
+      ...await Future.wait([
+        for (var i = 1; i < workers; i++) template.clone(),
+      ]),
+    ];
+    final runners = [
+      for (final c in containments) runnerFactory(c.root, suiteConcurrency),
+    ];
+    prepareWatch.stop();
+    logger?.info(
+      'prepared {Containments} containments in {DurationMs} ms, '
+      '{SuiteConcurrency} test threads each',
+      {
+        'Containments': containments.length,
+        'SuiteConcurrency': suiteConcurrency,
+        'DurationMs': prepareWatch.elapsedMilliseconds,
+      },
+    );
+    // One run log per containment, named after it (ADR 0016).
+    final runLogs = [
+      for (final c in containments)
+        RadLogger(
+          verbose: false,
+          path: p.join(paths.runLogs, '${c.name}.log'),
+          runId: runId,
+        ),
+    ];
+
+    // One shared queue; results keyed by index so completion order never
+    // changes the report (ADR 0007, ADR 0017).
+    final results = List<MutantResult?>.filled(mutants.length, null);
+    var next = 0;
+    var done = 0;
+    Future<void> worker(int slot) async {
+      while (true) {
+        final index = next++;
+        if (index >= mutants.length) return;
+        final result = await _classify(
+          mutants[index],
+          containments[slot],
+          runners[slot],
+          runLogs[slot],
+          halfLife,
+          unviable,
+        );
+        results[index] = result;
+        done++;
+        logger?.info('classified {MutantId} as {Outcome} ({Done}/{Total})', {
+          'MutantId': result.mutant.id,
+          'Outcome': result.outcome.name,
+          'Done': done,
+          'Total': mutants.length,
+          'Worker': slot,
+          'Containment': containments[slot].name,
+          'File': result.mutant.mutation.filePath,
+          'Offset': result.mutant.mutation.offset,
+          'Operator': result.mutant.mutation.operatorId,
+          'Replacement': result.mutant.mutation.replacement,
+          'ExitCode': result.testRun?.exitCode,
+          'TimedOut': result.testRun?.timedOut,
+          'DurationMs': result.testRun?.duration.inMilliseconds,
+        });
+        onProgress?.call(done, mutants.length, result);
+      }
+    }
+
+    await Future.wait([for (var i = 0; i < workers; i++) worker(i)]);
+    return RunResult(
+      results: results.cast<MutantResult>(),
+      sources: sources,
+      backgroundReading: background.duration,
+      halfLife: halfLife,
+    );
+  }
+
+  /// Every mutant with its file's pristine source, plus the ids of those that
+  /// fail static analysis: a non-compiling mutant needs no evidence from the
+  /// suite (ADR 0019).
+  ///
+  /// The analyzer state lives and dies inside this method, so its resolved
+  /// units are collectible before the first worker runs (ADR 0016).
+  Future<(List<Mutant>, Map<String, String>, Set<String>)> _generate(
+    RadIgnore ignore,
+  ) async {
+    final watch = Stopwatch()..start();
+    final generator = MutantGenerator(
       projectRoot: projectRoot,
       registry: registry,
       ignore: ignore,
-    ).generate();
+    );
+    final (mutants, sources) = await generator.generate();
     coverage.indexSources(sources);
     final perFile = <String, int>{for (final file in sources.keys) file: 0};
     for (final mutant in mutants) {
@@ -165,109 +269,13 @@ final class Engine {
       {
         'MutantCount': mutants.length,
         'FileCount': sources.length,
-        'DurationMs': generationWatch.elapsedMilliseconds,
+        'DurationMs': watch.elapsedMilliseconds,
       },
     );
 
-    final unviable = await _checkViability(mutants, sources);
-
-    prepareWatch.start();
-    final workers = max(1, min(jobs, mutants.length));
-    containments.addAll(
-      await Future.wait([
-        for (var i = 1; i < workers; i++)
-          Containment.create(projectRoot, paths: paths, ignore: ignore),
-      ]),
-    );
-    await Future.wait(
-      containments.skip(1).map((c) => _resolveDependencies(c.root)),
-    );
-    runners.addAll([
-      for (final c in containments.skip(1))
-        runnerFactory(c.root, suiteConcurrency),
-    ]);
-    // One run log per containment, named after it (ADR 0016).
-    final runLogs = [
-      for (final c in containments)
-        RadLogger(
-          verbose: false,
-          path: p.join(paths.runLogs, '${c.name}.log'),
-          runId: runId,
-        ),
-    ];
-    logger?.info(
-      'prepared {Workers} containments in {DurationMs} ms, '
-      '{SuiteConcurrency} test threads each',
-      {
-        'Workers': workers,
-        'SuiteConcurrency': suiteConcurrency,
-        'DurationMs': prepareWatch.elapsedMilliseconds,
-      },
-    );
-
-    // One shared queue; results keyed by index so completion order never
-    // changes the report (ADR 0007, ADR 0017).
-    final results = List<MutantResult?>.filled(mutants.length, null);
-    var next = 0;
-    var done = 0;
-    Future<void> worker(int slot) async {
-      while (true) {
-        final index = next++;
-        if (index >= mutants.length) return;
-        final result = await _classify(
-          mutants[index],
-          containments[slot],
-          runners[slot],
-          halfLife,
-          unviable,
-        );
-        results[index] = result;
-        done++;
-        logger?.info('classified {MutantId} as {Outcome} ({Done}/{Total})', {
-          'MutantId': result.mutant.id,
-          'Outcome': result.outcome.name,
-          'Done': done,
-          'Total': mutants.length,
-          'Worker': slot,
-          'Containment': containments[slot].name,
-          'ExitCode': result.testRun?.exitCode,
-          'TimedOut': result.testRun?.timedOut,
-          'DurationMs': result.testRun?.duration.inMilliseconds,
-        });
-        if (result.testRun != null || result.error != null) {
-          _logMutantRun(runLogs[slot], containments[slot].name, result);
-        }
-        onProgress?.call(done, mutants.length, result);
-      }
-    }
-
-    await Future.wait([for (var i = 0; i < workers; i++) worker(i)]);
-    return RunResult(
-      results: results.cast<MutantResult>(),
-      sources: sources,
-      backgroundReading: background.duration,
-      halfLife: halfLife,
-    );
-  }
-
-  /// Marks covered mutants that fail static analysis unviable before any
-  /// test run; a non-compiling mutant needs no evidence from the suite
-  /// (ADR 0019).
-  Future<Set<String>> _checkViability(
-    List<Mutant> mutants,
-    Map<String, String> sources,
-  ) async {
-    final watch = Stopwatch()..start();
-    final checker = ViabilityChecker(projectRoot: projectRoot);
-    final unviable = <String>{};
-    for (final mutant in mutants) {
-      if (!coverage.isCovered(mutant)) continue;
-      final pristine = sources[mutant.mutation.filePath];
-      if (pristine == null) continue;
-      if (!await checker.compiles(mutant.mutation, pristine)) {
-        unviable.add(mutant.id);
-      }
-    }
+    watch.reset();
+    final unviable = await ViabilityChecker(analysis: generator.analysis)
+        .unviable(mutants.where(coverage.isCovered), sources);
     logger?.info(
       'checked viability of {MutantCount} mutants in {DurationMs} ms; '
       '{UnviableCount} unviable',
@@ -277,13 +285,14 @@ final class Engine {
         'DurationMs': watch.elapsedMilliseconds,
       },
     );
-    return unviable;
+    return (mutants, sources, unviable);
   }
 
   Future<MutantResult> _classify(
     Mutant mutant,
     Containment containment,
     TestRunner runner,
+    RadLogger runLog,
     Duration halfLife,
     Set<String> unviable,
   ) async {
@@ -301,31 +310,59 @@ final class Engine {
         // One failing test already kills the mutant; the rest is wasted work.
         failFast: true,
       );
-      return MutantResult(
+      // The whole stream is parsed once here and dropped afterwards; only an
+      // excerpt outlives this classification (ADR 0016).
+      final events = TestEvents.parse(run.output);
+      final result = MutantResult(
         mutant: mutant,
-        outcome: const OutcomeClassifier().classify(run),
-        testRun: run,
+        outcome: const OutcomeClassifier().classify(run, events),
+        testRun: _excerpt(run),
       );
+      _logMutantRun(runLog, containment.name, result, events.errors);
+      return result;
       // Expected mutant-level failures are outcomes, never exceptions
       // (ADR 0006); their evidence lands in the run log (ADR 0016).
     } catch (error, stackTrace) {
       if (error is! IOException && error is! StateError) rethrow;
-      return MutantResult(
+      final result = MutantResult(
         mutant: mutant,
         outcome: Outcome.runError,
         error: '$error\n$stackTrace',
       );
+      _logMutantRun(runLog, containment.name, result, const []);
+      return result;
     } finally {
       await containment.restore(mutant.mutation.filePath);
     }
   }
 
+  /// Copy of [run] keeping only a bounded excerpt of each stream, since every
+  /// mutant's result lives until the run ends (ADR 0016).
+  static TestRun _excerpt(TestRun run) => TestRun(
+    exitCode: run.exitCode,
+    timedOut: run.timedOut,
+    output: _cap(run.output),
+    errorOutput: _cap(run.errorOutput),
+    duration: run.duration,
+  );
+
+  static String _cap(String stream) {
+    if (stream.length <= outputExcerptLimit) return stream;
+    const head = outputExcerptLimit ~/ 2;
+    return '${stream.substring(0, head)}\n'
+        '[rad] truncated ${stream.length - outputExcerptLimit} characters\n'
+        '${stream.substring(stream.length - outputExcerptLimit + head)}';
+  }
+
   /// Appends one wide event for [result] to its worker's [runLog],
   /// correlated with the tool log through the shared `RunId` (ADR 0016).
+  /// [nestedErrors] come from the full stream, of which [result] keeps only
+  /// an excerpt.
   void _logMutantRun(
     RadLogger runLog,
     String containment,
     MutantResult result,
+    List<String> nestedErrors,
   ) {
     final run = result.testRun;
     final mutation = result.mutant.mutation;
@@ -352,8 +389,7 @@ final class Engine {
     } else {
       runLog.info('mutant run completed: {MutantId} as {Outcome}', properties);
     }
-    if (run == null) return;
-    for (final error in TestEvents.parse(run.output).errors) {
+    for (final error in nestedErrors) {
       runLog.error('nested test error: {Error}', {'Error': error});
     }
   }

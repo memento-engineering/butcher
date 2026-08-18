@@ -31,6 +31,10 @@
 - Division of labor: mutagen guards minimize unviable mutants by reading
   promotion facts off the resolved AST (`PromotionDependence`); this filter
   eliminates the remainder. Guards err toward keeping a mutant.
+- The check reuses generation's analysis state and processes a file's
+  mutants as one batch, so a file is resolved once per mutant instead of
+  twice. Both stages scope that state, so the resolved units are collectible
+  before the first worker runs ([0016](0016-wide-event-logging.md)).
 - Schemata ([0010](0010-mutant-schemata.md)) requires every injected mutant
   to compile; this filter is its prerequisite.
 - The TCE pass ([0012](0012-tce-equivalent-detection.md)) becomes a peer

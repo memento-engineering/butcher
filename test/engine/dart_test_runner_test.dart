@@ -1,10 +1,53 @@
 @Timeout(Duration(minutes: 2))
 library;
 
-import 'package:radioactive_dart/src/engine/dart_test_runner.dart';
+import 'dart:convert';
+
+import 'package:radioactive_dart/radioactive_dart.dart';
+import 'package:radioactive_dart/src/engine/capped_output.dart';
+import 'package:radioactive_dart/src/engine/outcome_classifier.dart';
+import 'package:radioactive_dart/src/engine/test_events.dart';
 import 'package:test/test.dart';
 
 import '../helpers/fixtures.dart';
+
+/// A `dart test --reporter json` stream for [tests] tests, [failing] naming
+/// the one that fails.
+String reporterEvents({required int tests, required int failing}) {
+  final events = StringBuffer();
+  for (var id = 0; id < tests; id++) {
+    events.writeln(
+      jsonEncode({
+        'test': {
+          'id': id,
+          'name': 'engine parses a deeply nested configuration document $id',
+          'suiteID': 0,
+          'groupIDs': [1, 2],
+          'metadata': {'skip': false, 'skipReason': null},
+          'line': id,
+          'column': 5,
+          'url': 'file:///home/runner/project/test/engine/feature_test.dart',
+        },
+        'type': 'testStart',
+        'time': id * 7,
+      }),
+    );
+    events.writeln(
+      jsonEncode({
+        'testID': id,
+        'result': id == failing ? 'failure' : 'success',
+        'skipped': false,
+        'hidden': false,
+        'type': 'testDone',
+        'time': id * 7 + 3,
+      }),
+    );
+  }
+  return events.toString();
+}
+
+Outcome classify(TestRun run) =>
+    const OutcomeClassifier().classify(run, TestEvents.parse(run.output));
 
 void main() {
   test('reports a green suite with exit code 0', () async {
@@ -62,6 +105,55 @@ void main() {
     expect(run.output, isNot(contains('adds again')));
   });
 
+  test('caps flooding stderr without touching the verdict on stdout', () async {
+    final dir = await createFixturePackage(
+      testSource: '''
+import 'dart:io';
+
+import 'package:test/test.dart';
+
+void main() {
+  test('floods', () {
+    for (var i = 0; i < 2000; i++) {
+      stderr.writeln('x' * 200);
+    }
+    fail('boom');
+  });
+}
+''',
+    );
+
+    final run = await DartTestRunner(dir.path).run();
+
+    expect(run.errorOutput.length, lessThan(DartTestRunner.stderrLimit + 64));
+    expect(run.errorOutput, contains('[rad] truncated'));
+    expect(run.output, isNot(contains('[rad] truncated')));
+    expect(classify(run), Outcome.killed);
+  });
+
+  test('keeps a mid-suite failure in a large event stream', () {
+    final events = reporterEvents(tests: 500, failing: 250);
+    expect(
+      events.length,
+      greaterThan(64 * 1024),
+      reason: 'a few hundred tests already exceed a small cap',
+    );
+
+    final buffer = CappedOutput(limit: DartTestRunner.stdoutLimit);
+    for (final line in const LineSplitter().convert(events)) {
+      buffer.write('$line\n');
+    }
+
+    expect('$buffer', events, reason: 'a real suite must pass through whole');
+    final run = TestRun(
+      exitCode: 1,
+      timedOut: false,
+      output: '$buffer',
+      duration: Duration.zero,
+    );
+    expect(classify(run), Outcome.killed);
+  });
+
   test('kills a hung suite at its half-life', () async {
     final dir = await createFixturePackage(
       testSource: '''
@@ -76,6 +168,13 @@ void main() {
         .run(timeout: const Duration(seconds: 10));
     expect(run.timedOut, isTrue);
     expect(run.exitCode, -1);
+    expect(classify(run), Outcome.timeout);
+  });
+
+  test('yields an empty process snapshot when the image has no ps', () async {
+    // Without a snapshot the tree stays unknown, but the hung suite is still
+    // killed and still times out instead of erroring out of the run.
+    expect(await DartTestRunner.processSnapshot('rad_absent_ps'), isEmpty);
   });
 
   test('collects transitive descendants from ps output', () {

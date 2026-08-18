@@ -41,4 +41,14 @@ void main() {
     expect(File(paths.lockFile).existsSync(), isFalse);
     expect(RunWorkspace.acquire(paths), isA<RunWorkspace>());
   });
+
+  test('releases the lock when startup cleanup fails', () {
+    File(paths.runLogs).writeAsStringSync('not a directory');
+    final workspace = RunWorkspace.acquire(paths);
+
+    expect(workspace.clean, throwsA(isA<RunAborted>()));
+
+    expect(File(paths.lockFile).existsSync(), isFalse);
+    expect(RunWorkspace.acquire(paths), isA<RunWorkspace>());
+  });
 }

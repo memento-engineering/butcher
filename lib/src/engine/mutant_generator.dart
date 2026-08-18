@@ -1,13 +1,14 @@
 import 'dart:io';
 
-import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:path/path.dart' as p;
 
 import '../model/mutant.dart';
 import '../model/mutation.dart';
 import '../mutagens/mutagen_registry.dart';
+import 'containment.dart';
 import 'mutation_visitor.dart';
+import 'project_analysis.dart';
 import 'rad_ignore.dart';
 
 /// Suffixes of generated files never irradiated.
@@ -41,6 +42,9 @@ final class MutantGenerator {
   /// Consumer exclusions shared with containment (ADR 0004).
   final RadIgnore ignore;
 
+  /// Analyzer state the viability check reuses (ADR 0019).
+  late final analysis = ProjectAnalysis(projectRoot: projectRoot);
+
   /// All mutants, sorted with stable ids (ADR 0007), plus the pristine
   /// source per irradiated file so reports stay aligned even when the
   /// working tree changes mid-run.
@@ -58,16 +62,17 @@ final class MutantGenerator {
             .where((f) => !generatedFileSuffixes.any((s) => f.path.endsWith(s)))
             .map((f) => p.normalize(f.absolute.path))
             .map((f) => (f, p.relative(f, from: root).replaceAll(r'\', '/')))
+            .where(
+              (f) =>
+                  !p.posix.split(f.$2).any(toolingContainmentExcludes.contains),
+            )
             .where((f) => !ignore.excludes(f.$2, isDirectory: false))
             .toList()
           ..sort((a, b) => a.$1.compareTo(b.$1));
 
-    final collection = AnalysisContextCollection(
-      includedPaths: [p.normalize(libDir.absolute.path)],
-    );
     final mutations = <Mutation>[];
     for (final (file, relative) in files) {
-      final result = await collection
+      final result = await analysis.collection
           .contextFor(file)
           .currentSession
           .getResolvedUnit(file);

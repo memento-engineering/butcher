@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0
 
 - `rad` CLI: irradiates `lib/`, prints per-outcome counts, MSI, and
   covered-code MSI, and writes a Stryker JSON report (`--output`).
@@ -26,8 +26,10 @@
 - Promotion-aware guards: equality and logical mutagens skip flips whose
   stranded promotions could never compile, instead of reporting them.
 - Parallel classification: `--jobs` workers, each with its own containment.
-- Wide-event CLEF logging: one tool log, one run log per containment,
-  `--verbose` renders events to the console.
-- Startup cleanup under an exclusive run lock; a held lock aborts the run.
+- Wide-event CLEF logging: one tool log, one run log per containment, each
+  mutant's suite output kept as a capped excerpt; `--verbose` renders events to
+  the console, ANSI-colored when stdout is a terminal.
+- Startup cleanup under an exclusive run lock; a held lock aborts the run,
+  and a failed run releases its own lock.
 - Keep containments and logs until the next run's startup cleanup.
 - Allow `RAD_TEMP` to redirect the containment and log root.

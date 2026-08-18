@@ -7,11 +7,11 @@ final class OutcomeClassifier {
   /// Creates the classifier; it holds no state.
   const OutcomeClassifier();
 
-  /// The outcome [run] earned for its mutant.
-  Outcome classify(TestRun run) {
+  /// The outcome [run] earned for its mutant, [events] being its parsed
+  /// stream; the caller parses it, since it also logs its errors.
+  Outcome classify(TestRun run, TestEvents events) {
     if (run.timedOut) return Outcome.timeout;
     if (run.exitCode == 0) return Outcome.survived;
-    final events = TestEvents.parse(run.output);
     if (events.testFailures.isNotEmpty) return Outcome.killed;
     if (events.loadFailures.isNotEmpty) return Outcome.unviable;
     return Outcome.runError;

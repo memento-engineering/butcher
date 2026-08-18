@@ -95,6 +95,31 @@ void main() {
     final rendered = loud.toString();
     expect(rendered, contains('\x1B[32mINF\x1B[0m'));
     expect(rendered, contains('\x1B[36mx\x1B[0m'));
+    expect(
+      File(path).readAsStringSync(),
+      isNot(contains('\x1B')),
+      reason: 'the CLEF log stays machine-readable',
+    );
+  });
+
+  test('auto-detects colors from the terminal the console writes to', () {
+    final terminal = _FakeStdout(supportsAnsiEscapes: true);
+    final redirected = _FakeStdout(supportsAnsiEscapes: false);
+
+    expect(
+      _withStdout(terminal, () => logger(console: terminal).colors),
+      isTrue,
+    );
+    expect(
+      _withStdout(redirected, () => logger(console: redirected).colors),
+      isFalse,
+      reason: 'piped output must not get escape codes',
+    );
+    expect(
+      _withStdout(terminal, () => logger(console: StringBuffer()).colors),
+      isFalse,
+      reason: 'another sink is not the terminal',
+    );
   });
 
   test('adopts a caller-provided run id for correlation', () {
@@ -117,4 +142,17 @@ void main() {
     logger(verbose: true, console: loud).info('missing {Nope}');
     expect(loud.toString(), contains('missing {Nope}'));
   });
+}
+
+T _withStdout<T>(Stdout terminal, T Function() body) =>
+    IOOverrides.runZoned(body, stdout: () => terminal);
+
+final class _FakeStdout implements Stdout {
+  _FakeStdout({required this.supportsAnsiEscapes});
+
+  @override
+  final bool supportsAnsiEscapes;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

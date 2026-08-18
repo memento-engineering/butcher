@@ -6,8 +6,12 @@ import '../model/mutation.dart';
 import '../rad_paths.dart';
 import 'rad_ignore.dart';
 
-/// Directories never copied into a containment (ADR 0004).
-const defaultContainmentExcludes = ['.git', '.dart_tool', 'build', 'coverage'];
+/// Top-level output directories never copied into a containment (ADR 0004).
+const defaultContainmentExcludes = ['build', 'coverage'];
+
+/// Tooling artefacts never copied, at any depth; generation skips the same
+/// names so the two exclusion sets cannot desync (ADR 0004).
+const toolingContainmentExcludes = ['.git', '.dart_tool'];
 
 /// Prefix of every containment directory; startup cleanup matches on it.
 const containmentPrefix = 'containment_';
@@ -38,29 +42,63 @@ final class Containment {
     // rad root at or above the project only prunes the fresh target.
     final prune = p.isWithin(source, paths.root) ? paths.root : target.path;
 
-    await for (final entity in Directory(
-      source,
-    ).list(recursive: true, followLinks: false)) {
-      if (p.equals(prune, entity.path) || p.isWithin(prune, entity.path)) {
-        continue;
-      }
-      final relative = p
-          .relative(entity.path, from: source)
-          .replaceAll(r'\', '/');
-      if (_excluded(relative, entity is Directory, ignore)) continue;
-      final destination = p.join(target.path, relative);
-      if (entity is Directory) {
-        Directory(destination).createSync(recursive: true);
-      } else if (entity is File) {
-        Directory(p.dirname(destination)).createSync(recursive: true);
-        entity.copySync(destination);
-      }
-    }
+    await _copyInto(
+      Directory(source),
+      target.path,
+      '',
+      (entity, name, relative) =>
+          p.equals(prune, entity.path) ||
+          _excluded(name, relative, entity is Directory, ignore),
+    );
     return Containment._(target.path);
   }
 
-  static bool _excluded(String relative, bool isDirectory, RadIgnore ignore) {
-    if (defaultContainmentExcludes.contains(p.posix.split(relative).first)) {
+  /// Copies this containment, resolved dependencies included, into a fresh
+  /// independent one so `dart pub get` runs once per run instead of once per
+  /// worker (ADR 0017).
+  Future<Containment> clone() async {
+    final target = await Directory(
+      p.dirname(root),
+    ).createTemp(containmentPrefix);
+    await _copyInto(Directory(root), target.path, '', (_, _, _) => false);
+    return Containment._(target.path);
+  }
+
+  /// Recurses [source] into [destination], [prefix] being the source-relative
+  /// posix path of [source]; entities matching [skip] are never copied and
+  /// directories among them are never descended into. [skip] receives each
+  /// entity's own name and its source-relative posix path.
+  static Future<void> _copyInto(
+    Directory source,
+    String destination,
+    String prefix,
+    bool Function(FileSystemEntity entity, String name, String relative) skip,
+  ) async {
+    await Directory(destination).create(recursive: true);
+    await for (final entity in source.list(followLinks: false)) {
+      final name = p.basename(entity.path);
+      final relative = prefix.isEmpty ? name : '$prefix/$name';
+      if (skip(entity, name, relative)) continue;
+      final target = p.join(destination, name);
+      if (entity is Directory) {
+        await _copyInto(entity, target, relative, skip);
+      } else if (entity is File) {
+        await entity.copy(target);
+      }
+    }
+  }
+
+  /// Whether [relative], whose last segment is [name], stays out of the copy;
+  /// the walk is hierarchical, so a top-level entity is one where [relative]
+  /// is just [name].
+  static bool _excluded(
+    String name,
+    String relative,
+    bool isDirectory,
+    RadIgnore ignore,
+  ) {
+    if (toolingContainmentExcludes.contains(name) ||
+        (relative == name && defaultContainmentExcludes.contains(name))) {
       return true;
     }
     return ignore.excludes(relative, isDirectory: isDirectory);

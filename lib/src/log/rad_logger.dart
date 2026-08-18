@@ -10,9 +10,10 @@ import 'dart:io';
 final class RadLogger {
   /// Creates the logger, replacing any log file left by a previous run.
   ///
-  /// [colors] defaults to auto-detection: on only when writing to a
-  /// terminal that supports ANSI escapes. Pass [runId] to correlate this
-  /// log with another one (e.g. mutant-run logs with the tool log).
+  /// [colors] defaults to auto-detection: on only when [console] is stdout
+  /// and that stdout is a terminal supporting ANSI escapes. Pass [runId] to
+  /// correlate this log with another one (e.g. mutant-run logs with the tool
+  /// log).
   RadLogger({
     required this.verbose,
     required this.path,
@@ -20,7 +21,9 @@ final class RadLogger {
     bool? colors,
     String? runId,
   }) : console = console ?? stdout,
-       colors = colors ?? (console == null && stdout.supportsAnsiEscapes),
+       colors =
+           colors ??
+           (identical(console ?? stdout, stdout) && stdout.supportsAnsiEscapes),
        runId =
            runId ?? DateTime.now().microsecondsSinceEpoch.toRadixString(36) {
     final file = File(path);

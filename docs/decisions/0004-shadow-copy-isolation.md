@@ -19,9 +19,16 @@
 - Resolve the root, tool log, and run-log folder once in `RadPaths`; pass that
   context through the CLI, engine, containment, and logger seams.
 - Tests inject an isolated `RadPaths` root and never touch production paths.
-- Skip well-known metadata and generated output.
+- Skip well-known metadata and generated output, pruning those directories
+  instead of walking them:
+
+| Names | Matched |
+| --- | --- |
+| `.git`, `.dart_tool` | at any depth; never mutable source |
+| `build`, `coverage` | top level only; deeper ones may hold mutable source |
 - Support a gitignore-style file for consumer-defined copy exclusions:
-  `.radignore` at the project root.
+  `.radignore` at the project root. A directory rule prunes the walk, so a
+  negation cannot re-include anything below it, as git documents.
 - Run tests from the copied package root.
 - Mechanics validated by [../plans/spike-shadow-copy.md](../plans/spike-shadow-copy.md).
 

@@ -79,6 +79,37 @@ final class CrashingRunner implements TestRunner {
   }
 }
 
+/// Writes a marker into its containment during the background reading, as a
+/// real suite writes incremental kernels and test fixtures into its tree.
+final class SuiteWritingRunner implements TestRunner {
+  SuiteWritingRunner(this.root, this.runs);
+
+  static const marker = 'suite_artifact';
+
+  final String root;
+
+  /// Roots that have run, shared by every runner; the first run is the
+  /// background reading.
+  final List<String> runs;
+
+  @override
+  Future<TestRun> run({
+    List<String>? tests,
+    Duration? timeout,
+    bool failFast = false,
+  }) async {
+    final baseline = runs.isEmpty;
+    runs.add(root);
+    if (baseline) File(p.join(root, marker)).writeAsStringSync('');
+    return TestRun(
+      exitCode: baseline ? 0 : 1,
+      timedOut: false,
+      output: baseline ? '' : _killedOutput,
+      duration: const Duration(seconds: 1),
+    );
+  }
+}
+
 final class NothingCovered implements CoverageProvider {
   const NothingCovered();
 
@@ -98,6 +129,13 @@ final class RecordingCoverage implements CoverageProvider {
   @override
   void indexSources(Map<String, String> sources) => indexed = true;
 }
+
+List<Directory> _containmentsIn(RadPaths paths) =>
+    Directory(paths.root)
+        .listSync()
+        .whereType<Directory>()
+        .where((dir) => p.basename(dir.path).startsWith('containment_'))
+        .toList();
 
 Future<String> miniProject({
   String calc = 'int add(int a, int b) => a + b;\n',
@@ -224,9 +262,11 @@ void main() {
 
   test('aborts on a red background reading before any analysis', () async {
     final coverage = RecordingCoverage();
+    final paths = await isolatedRadPaths('rad_engine_state_');
     final engine = Engine(
       projectRoot: await miniProject(),
-      paths: await isolatedRadPaths('rad_engine_state_'),
+      paths: paths,
+      jobs: 8,
       runnerFactory: (_, _) => FakeRunner(baselineExitCode: 1),
       coverage: coverage,
     );
@@ -236,6 +276,13 @@ void main() {
       isFalse,
       reason: 'generation and viability run after the reading',
     );
+    expect(
+      _containmentsIn(paths),
+      hasLength(2),
+      reason:
+          'a red reading costs the baseline plus one template, not a copy '
+          'per job',
+    );
   });
 
   test(
@@ -243,9 +290,10 @@ void main() {
     () async {
       final roots = <String>[];
       final runner = FakeRunner();
+      final paths = await isolatedRadPaths('rad_engine_state_');
       await Engine(
         projectRoot: await miniProject(),
-        paths: await isolatedRadPaths('rad_engine_state_'),
+        paths: paths,
         jobs: 99,
         runnerFactory: (root, _) {
           roots.add(root);
@@ -253,8 +301,14 @@ void main() {
         },
       ).run();
 
-      expect(roots, hasLength(2), reason: '2 mutants cap 99 jobs at 2 workers');
-      expect(roots.toSet(), hasLength(2), reason: 'containments are distinct');
+      // The first runner reads the background; the rest are the workers.
+      expect(
+        roots.skip(1),
+        hasLength(2),
+        reason: '2 mutants cap 99 jobs at 2 workers',
+      );
+      expect(roots.toSet(), hasLength(3), reason: 'containments are distinct');
+      expect(_containmentsIn(paths), hasLength(3));
     },
   );
 
@@ -284,10 +338,19 @@ void main() {
     expect(log, contains('"@mt":"found {MutantCount} mutants in {File}"'));
     expect(log, contains('"@mt":"generated {MutantCount} mutants'));
     expect(log, contains('"@mt":"checked viability of {MutantCount} mutants'));
-    expect(log, contains('"@mt":"prepared {Workers} containments'));
+    expect(log, contains('"@mt":"prepared {Containments} containments'));
     expect(log, contains('"@mt":"background reading green'));
     expect(log, contains('"@mt":"classified {MutantId} as {Outcome}'));
     expect(log, contains('"Outcome":"runError"'));
+    final classified = log
+        .split('\n')
+        .where((line) => line.contains('"@mt":"classified'))
+        .map((line) => jsonDecode(line) as Map<String, dynamic>)
+        .first;
+    expect(classified['File'], endsWith('.dart'));
+    expect(classified['Offset'], isA<int>());
+    expect(classified['Operator'], isNotEmpty);
+    expect(classified['Replacement'], isA<String>());
     expect(
       log,
       contains('"Containment":"containment_'),
@@ -384,7 +447,82 @@ void main() {
     ).run();
 
     final expected = max(1, Platform.numberOfProcessors ~/ 2);
-    expect(concurrencies, [expected, expected]);
+    expect(concurrencies, [expected, expected, expected]);
+  });
+
+  test('clones workers before the background reading runs', () async {
+    final roots = <String>[];
+    final runs = <String>[];
+    await Engine(
+      projectRoot: await miniProject(),
+      paths: await isolatedRadPaths('rad_engine_clone_'),
+      jobs: 2,
+      runnerFactory: (root, _) {
+        roots.add(root);
+        return SuiteWritingRunner(root, runs);
+      },
+    ).run();
+
+    expect(roots, hasLength(3));
+    expect(runs.first, roots.first, reason: 'the baseline reads background');
+    for (final worker in roots.skip(1)) {
+      expect(
+        File(p.join(worker, '.dart_tool', 'package_config.json')).existsSync(),
+        isTrue,
+        reason: 'clones carry the resolved dependencies',
+      );
+      expect(
+        File(p.join(worker, SuiteWritingRunner.marker)).existsSync(),
+        isFalse,
+        reason: 'a worker must not inherit what the background reading wrote',
+      );
+    }
+  });
+
+  test('retains only an excerpt of a huge suite stream', () async {
+    final paths = await isolatedRadPaths('rad_engine_excerpt_');
+    final flood = 'flood\n' * 20000;
+    // The verdict and the error sit in the middle, where the excerpt cannot
+    // reach them: both must be parsed out of the full stream.
+    final runner = FakeRunner(
+      mutantOutput:
+          '$flood'
+          '{"test":{"id":3,"name":"adds"},"type":"testStart"}\n'
+          '{"testID":3,"error":"venting core","type":"error"}\n'
+          '{"testID":3,"result":"failure","skipped":false,"hidden":false,'
+          '"type":"testDone"}\n'
+          '$flood',
+    );
+    final result = await Engine(
+      projectRoot: await miniProject(),
+      paths: paths,
+      runnerFactory: (_, _) => runner,
+    ).run();
+
+    for (final mutantResult in result.results) {
+      expect(mutantResult.outcome, Outcome.killed);
+      expect(
+        mutantResult.testRun!.output.length,
+        lessThan(Engine.outputExcerptLimit + 64),
+      );
+      expect(mutantResult.testRun!.output, contains('[rad] truncated'));
+    }
+    final events = [
+      for (final file in Directory(paths.runLogs).listSync().whereType<File>())
+        for (final line in file.readAsLinesSync())
+          jsonDecode(line) as Map<String, dynamic>,
+    ];
+    for (final event in events.where((e) => e.containsKey('Output'))) {
+      expect(
+        (event['Output'] as String).length,
+        lessThan(Engine.outputExcerptLimit + 64),
+      );
+    }
+    expect(
+      events.where((e) => e['@mt'] == 'nested test error: {Error}'),
+      hasLength(2),
+      reason: 'errors are parsed out of the full stream, not the excerpt',
+    );
   });
 
   test('keeps report order deterministic under parallel completion', () async {

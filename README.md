@@ -30,19 +30,24 @@ ones the tests kill.
 - A red test suite aborts the run; a green suite is a precondition.
 - The project must resolve `package:test` 1.24.6 or newer; older versions
   abort the run.
+- Run `dart pub get` first: rad analyses the project as it is, so an
+  unresolved project yields only unviable mutants.
 - `.radignore` (gitignore-style rules incl. negation and directory patterns,
   project root) excludes paths from the isolated project copy tests run in.
+  An excluded directory is never descended into, so `!` cannot re-include a
+  file below it, just like git.
 - All temp data (containment copies, logs) lives under one rad temp root.
 - The default root is `<system temp>/rad/`; `RAD_TEMP` redirects it to an exact
   path.
 - A run takes an exclusive `<rad temp root>/.lock`, then clears what earlier
   runs left there. A run that finds the lock held aborts with exit 70 instead
-  of touching the other run's state; a crashed run leaves the lock behind.
+  of touching the other run's state; only a run killed outright leaves the
+  lock behind.
 - Each run writes wide-event CLEF logs to `<rad temp root>/rad.log`,
-  replacing the previous run's file. Suite output of every executed mutant is
-  kept in `<rad temp root>/runs/`, one log per worker named after its
-  containment. The folder remains present; a new run clears only its previous
-  contents. Nested engine runs cannot clear or overwrite the active tool run's
+  replacing the previous run's file. A 32 KiB head-and-tail excerpt of every
+  executed mutant's suite output is kept in `<rad temp root>/runs/`, one log
+  per worker named after its containment. The folder remains present; a new
+  run clears only its previous contents. Nested engine runs cannot clear or overwrite the active tool run's
   files.
 
 ## Windows performance

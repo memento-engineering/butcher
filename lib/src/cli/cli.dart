@@ -100,6 +100,13 @@ Future<int> radMain(
     p.absolute(options.rest.isEmpty ? '.' : options.rest.single),
   );
   final resolvedPaths = paths ?? RadPaths.production();
+  // Parsed before acquisition so a broken report cannot strand the lock.
+  final coverage = coverageFile == null
+      ? const FullCoverageProvider()
+      : LcovCoverageProvider.parse(
+          coverageFile.readAsStringSync(),
+          projectRoot: projectRoot,
+        );
   // Startup cleanup is the first run stage and needs the lock first: it must
   // never remove another active run's state (ADR 0018).
   final RunWorkspace workspace;
@@ -125,12 +132,6 @@ Future<int> radMain(
     'Argv': arguments,
   });
 
-  final coverage = coverageFile == null
-      ? const FullCoverageProvider()
-      : LcovCoverageProvider.parse(
-          coverageFile.readAsStringSync(),
-          projectRoot: projectRoot,
-        );
   if (coverage is LcovCoverageProvider) {
     logger.info('ingested coverage for {FileCount} files from {Path}', {
       'FileCount': coverage.hits.length,
@@ -152,7 +153,8 @@ Future<int> radMain(
           ),
   );
 
-  // Set on every path below; the workspace lock is released before returning.
+  // Set on every path below; the lock is released even when the run throws,
+  // since a stranded lock blocks every later run (ADR 0018).
   int exitCode;
   try {
     sink.writeln('irradiating $projectRoot');
@@ -216,8 +218,9 @@ Future<int> radMain(
     });
     stderr.writeln(abort.message);
     exitCode = 70;
+  } finally {
+    workspace.release();
   }
-  workspace.release();
   return exitCode;
 }
 

@@ -61,6 +61,24 @@ void main() {
     expect(mutants.map((m) => m.mutation.filePath), everyElement('lib/a.dart'));
   });
 
+  test('skips dart files inside tooling directories', () async {
+    final dir = await fixtureProject();
+    File(p.join(dir.path, 'lib', '.dart_tool', 'cached.dart'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('int mul(int a, int b) => a * b;\n');
+    final (mutants, sources) = await MutantGenerator(
+      projectRoot: dir.path,
+      registry: MutagenRegistry.defaults(),
+      ignore: RadIgnore.load(dir.path),
+    ).generate();
+    expect(sources.keys, isNot(contains('lib/.dart_tool/cached.dart')));
+    expect(
+      mutants.map((m) => m.mutation.filePath),
+      everyElement(isNot('lib/.dart_tool/cached.dart')),
+      reason: 'no containment copies it, so no mutant may target it',
+    );
+  });
+
   test('does not follow symlinks', () async {
     final dir = await fixtureProject();
     final outside = await Directory.systemTemp.createTemp('rad_gen_link_');

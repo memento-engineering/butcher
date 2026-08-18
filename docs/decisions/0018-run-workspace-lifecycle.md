@@ -22,8 +22,10 @@
   - every top-level `containment_*` directory;
   - every immediate child of the run-log directory.
 - The run-log directory itself is never removed.
-- Failure to clean any target aborts before mutant generation.
-- A clean exit removes the lock file. A crash leaves it as evidence.
+- Failure to clean any target aborts before mutant generation and releases
+  the lock: the run never started.
+- Every exit removes the lock file, a failed run included: a stranded lock
+  blocks every later run. Only a killed process leaves it behind.
 - No containment or evidence cleanup runs at exit.
 
 ## Consequences

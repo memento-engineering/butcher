@@ -1,5 +1,7 @@
 # Performance fixes
 
+- Status: fixed; see [index.md](index.md) for the resolution.
+
 Part of [index.md](index.md).
 
 ## 1. Viability check is serial and duplicates analysis

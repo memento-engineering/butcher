@@ -33,6 +33,9 @@ final class RunWorkspace {
 
   /// Removes the previous tool log, leftover containments, and every run log,
   /// keeping the run-log directory itself; aborts when a target survives.
+  ///
+  /// A failed cleanup releases the lock: the run never started, so leaving it
+  /// behind would only make later runs report a conflict that does not exist.
   void clean() {
     try {
       final toolLog = File(paths.toolLog);
@@ -47,6 +50,7 @@ final class RunWorkspace {
         entry.deleteSync(recursive: true);
       }
     } on FileSystemException catch (error) {
+      release();
       throw RunAborted(
         'startup cleanup failed for ${error.path}: ${error.message}',
       );

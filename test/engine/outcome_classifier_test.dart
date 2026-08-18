@@ -32,47 +32,39 @@ TestRun run({int exitCode = 0, bool timedOut = false, String output = ''}) =>
       duration: const Duration(seconds: 1),
     );
 
-void main() {
-  const classifier = OutcomeClassifier();
+Outcome classify(TestRun run) =>
+    const OutcomeClassifier().classify(run, TestEvents.parse(run.output));
 
+void main() {
   test('classifies a passing suite as survived', () {
-    expect(classifier.classify(run(exitCode: 0)), Outcome.survived);
+    expect(classify(run(exitCode: 0)), Outcome.survived);
   });
 
   test('classifies a failing test as killed', () {
-    expect(
-      classifier.classify(run(exitCode: 1, output: _failedTest)),
-      Outcome.killed,
-    );
+    expect(classify(run(exitCode: 1, output: _failedTest)), Outcome.killed);
   });
 
   test('classifies a load failure as unviable', () {
-    expect(
-      classifier.classify(run(exitCode: 1, output: _loadFailure)),
-      Outcome.unviable,
-    );
+    expect(classify(run(exitCode: 1, output: _loadFailure)), Outcome.unviable);
   });
 
   test('is not fooled by nested load-failure text in print events', () {
     expect(
-      classifier.classify(run(exitCode: 1, output: _pollutedFailure)),
+      classify(run(exitCode: 1, output: _pollutedFailure)),
       Outcome.killed,
     );
   });
 
   test('classifies a killed process as timeout', () {
-    expect(
-      classifier.classify(run(exitCode: -1, timedOut: true)),
-      Outcome.timeout,
-    );
+    expect(classify(run(exitCode: -1, timedOut: true)), Outcome.timeout);
   });
 
   test('classifies unparseable failures as runError', () {
     expect(
-      classifier.classify(run(exitCode: 70, output: 'venting core')),
+      classify(run(exitCode: 70, output: 'venting core')),
       Outcome.runError,
     );
-    expect(classifier.classify(run(exitCode: 1)), Outcome.runError);
+    expect(classify(run(exitCode: 1)), Outcome.runError);
   });
 
   group('TestEvents', () {

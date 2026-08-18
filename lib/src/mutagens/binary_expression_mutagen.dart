@@ -11,8 +11,13 @@ abstract class BinaryExpressionMutagen implements Mutagen {
   /// Allows subclasses to have const constructors.
   const BinaryExpressionMutagen();
 
-  /// Operator lexeme mapped to its replacement lexemes.
+  /// Operator lexeme mapped to its replacement lexemes; a lexeme never maps
+  /// onto itself, since an identity replacement is no mutation.
   Map<String, List<String>> get swaps;
+
+  /// Replacement lexemes proposed for [node]; defaults to [swaps].
+  List<String> replacementsFor(BinaryExpression node) =>
+      swaps[node.operator.lexeme] ?? const [];
 
   /// Whether [node] is safe to mutate; defaults to numeric operands only.
   bool guard(BinaryExpression node) =>
@@ -21,8 +26,8 @@ abstract class BinaryExpressionMutagen implements Mutagen {
   /// The mutations this mutagen proposes for [node] in [filePath], or none.
   List<Mutation> mutate(BinaryExpression node, String filePath) {
     final operator = node.operator;
-    final replacements = swaps[operator.lexeme];
-    if (replacements == null || !guard(node)) return const [];
+    final replacements = replacementsFor(node);
+    if (replacements.isEmpty || !guard(node)) return const [];
     return [
       for (final replacement in replacements)
         Mutation(

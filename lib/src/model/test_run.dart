@@ -15,10 +15,13 @@ final class TestRun {
   /// Whether the process exceeded its half-life and was killed.
   final bool timedOut;
 
-  /// Suite stdout: the JSON reporter event stream.
+  /// Suite stdout: the JSON reporter event stream, capped while it is read
+  /// (`CappedOutput`) so a runaway mutant cannot exhaust memory. Once the
+  /// mutant is classified, only an excerpt of it is retained (ADR 0016).
   final String output;
 
-  /// Suite stderr, buffered separately so it cannot split an event line.
+  /// Suite stderr, buffered separately so it cannot split an event line,
+  /// and capped tighter than [output] since nothing is parsed from it.
   final String errorOutput;
 
   /// Wall-clock duration of the run.

@@ -22,6 +22,12 @@ Future<Directory> fixtureProject() async {
   write('.git/config', 'x');
   write('.dart_tool/package_config.json', '{}');
   write('build/out.txt', 'x');
+  write('lib/nested/build/gen.dart', 'const g = 1;\n');
+  write('tool/build', '#!/bin/sh\n');
+  write('packages/sub/lib/b.dart', 'const b = 1;\n');
+  write('packages/sub/.dart_tool/package_config.json', '{}');
+  write('packages/sub/build/out.txt', 'x');
+  write('packages/sub/.git/config', 'x');
   write('assets/big/blob.bin', 'x');
   write('assets/big/keep.txt', 'keep');
   write('assets/small.txt', 'keep');
@@ -66,6 +72,30 @@ void main() {
     expect(has('deep/nested/trace.log'), isFalse);
   });
 
+  test('prunes nested tooling directories only', () {
+    bool has(String relative) =>
+        File(p.join(containment.root, relative)).existsSync();
+    expect(has('packages/sub/lib/b.dart'), isTrue);
+    expect(has('packages/sub/.dart_tool/package_config.json'), isFalse);
+    expect(has('packages/sub/.git/config'), isFalse);
+    expect(has('packages/sub/build/out.txt'), isTrue);
+    expect(has('lib/nested/build/gen.dart'), isTrue);
+    expect(has('tool/build'), isTrue);
+  });
+
+  test('keeps a directory rule from being undone below it', () async {
+    final project = await fixtureProject();
+    File(p.join(project.path, '.radignore'))
+        .writeAsStringSync('assets/big/\n!assets/big/keep.txt\n');
+    final copy = await Containment.create(
+      project.path,
+      paths: await isolatedRadPaths('rad_containment_rule_'),
+      ignore: RadIgnore.load(project.path),
+    );
+    expect(Directory(p.join(copy.root, 'assets/big')).existsSync(), isFalse);
+    expect(File(p.join(copy.root, 'assets/small.txt')).existsSync(), isTrue);
+  });
+
   test('does not copy an in-project rad root', () async {
     final project = await fixtureProject();
     final inProject = RadPaths(root: p.join(project.path, '.rad_temp'));
@@ -87,6 +117,47 @@ void main() {
     );
     expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
     expect(Directory(p.join(copy.root, copy.name)).existsSync(), isFalse);
+  });
+
+  test('clones the copied tree into an independent containment', () async {
+    File(p.join(containment.root, '.dart_tool/package_config.json'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('{"resolved": true}');
+    final clone = await containment.clone();
+
+    expect(p.isWithin(paths.root, clone.root), isTrue);
+    expect(clone.root, isNot(containment.root));
+    expect(
+      File(p.join(clone.root, '.dart_tool/package_config.json'))
+          .readAsStringSync(),
+      '{"resolved": true}',
+    );
+
+    const mutation = Mutation(
+      filePath: 'lib/a.dart',
+      offset: 27,
+      length: 1,
+      original: '+',
+      replacement: '-',
+      operatorId: 'arithmetic',
+      description: 'replace + with -',
+    );
+    await clone.apply(mutation);
+    expect(
+      File(p.join(clone.root, 'lib/a.dart')).readAsStringSync(),
+      contains('a - b'),
+    );
+    expect(
+      File(p.join(containment.root, 'lib/a.dart')).readAsStringSync(),
+      contains('a + b'),
+    );
+
+    await containment.apply(mutation);
+    await containment.restore('lib/a.dart');
+    expect(
+      File(p.join(clone.root, 'lib/a.dart')).readAsStringSync(),
+      contains('a - b'),
+    );
   });
 
   test(
