@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:radioactive_dart/radioactive_dart.dart';
 import 'package:radioactive_dart/src/engine/containment.dart';
 import 'package:radioactive_dart/src/engine/mutant_generator.dart';
+import 'package:radioactive_dart/src/engine/rad_ignore.dart';
 import 'package:test/test.dart';
 
 import '../helpers/paths.dart';
@@ -19,11 +20,16 @@ Future<void> roundtrip(String source) async {
   final (mutants, _) = await MutantGenerator(
     projectRoot: dir.path,
     registry: MutagenRegistry.defaults(),
+    ignore: RadIgnore.load(dir.path),
   ).generate();
   expect(mutants, isNotEmpty);
 
   final paths = await isolatedRadPaths('rad_roundtrip_state_');
-  final containment = await Containment.create(dir.path, paths: paths);
+  final containment = await Containment.create(
+    dir.path,
+    paths: paths,
+    ignore: RadIgnore.load(dir.path),
+  );
   final copy = File(p.join(containment.root, 'lib', 'a.dart'));
   for (final mutant in mutants) {
     await containment.apply(mutant.mutation);

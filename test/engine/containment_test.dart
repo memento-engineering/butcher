@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:radioactive_dart/radioactive_dart.dart';
 import 'package:radioactive_dart/src/engine/containment.dart';
+import 'package:radioactive_dart/src/engine/rad_ignore.dart';
 import 'package:test/test.dart';
 
 import '../helpers/paths.dart';
@@ -42,7 +43,11 @@ void main() {
   setUp(() async {
     source = await fixtureProject();
     paths = await isolatedRadPaths('rad_containment_state_');
-    containment = await Containment.create(source.path, paths: paths);
+    containment = await Containment.create(
+      source.path,
+      paths: paths,
+      ignore: RadIgnore.load(source.path),
+    );
   });
 
   test('lives inside the configured temp folder', () {
@@ -66,7 +71,11 @@ void main() {
   test('does not copy an in-project rad root', () async {
     final project = await fixtureProject();
     final inProject = RadPaths(root: p.join(project.path, '.rad_temp'));
-    final copy = await Containment.create(project.path, paths: inProject);
+    final copy = await Containment.create(
+      project.path,
+      paths: inProject,
+      ignore: RadIgnore.load(project.path),
+    );
     expect(Directory(p.join(copy.root, '.rad_temp')).existsSync(), isFalse);
     expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
   });
@@ -78,6 +87,7 @@ void main() {
     final copy = await Containment.create(
       project.path,
       paths: RadPaths(root: ancestor.path),
+      ignore: RadIgnore.load(project.path),
     );
     expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
   });
@@ -87,6 +97,7 @@ void main() {
     final copy = await Containment.create(
       project.path,
       paths: RadPaths(root: project.path),
+      ignore: RadIgnore.load(project.path),
     );
     expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
     expect(Directory(p.join(copy.root, copy.name)).existsSync(), isFalse);

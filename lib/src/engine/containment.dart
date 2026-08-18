@@ -24,17 +24,16 @@ final class Containment {
 
   final Map<String, String> _pristine = {};
 
-  /// Copies [projectRoot] into a fresh temp dir, honoring exclusions; a
-  /// missing [ignore] loads the project's `.radignore`.
+  /// Copies [projectRoot] into a fresh temp dir, honoring [ignore] and the
+  /// default exclusions.
   static Future<Containment> create(
     String projectRoot, {
     required RadPaths paths,
-    RadIgnore? ignore,
+    required RadIgnore ignore,
   }) async {
     final source = p.normalize(p.absolute(projectRoot));
     final tempRoot = Directory(paths.root)..createSync(recursive: true);
     final target = await tempRoot.createTemp(containmentPrefix);
-    final exclusions = ignore ?? RadIgnore.load(source);
     // An in-project rad root must never copy itself (recursive growth); a
     // rad root at or above the project only prunes the fresh target.
     final prune = p.isWithin(source, paths.root) ? paths.root : target.path;
@@ -48,7 +47,7 @@ final class Containment {
       final relative = p
           .relative(entity.path, from: source)
           .replaceAll(r'\', '/');
-      if (_excluded(relative, entity is Directory, exclusions)) continue;
+      if (_excluded(relative, entity is Directory, ignore)) continue;
       final destination = p.join(target.path, relative);
       if (entity is Directory) {
         Directory(destination).createSync(recursive: true);

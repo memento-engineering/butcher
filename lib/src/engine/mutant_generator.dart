@@ -24,13 +24,13 @@ const generatedFileSuffixes = [
 
 /// Enumerates mutants for a project's `lib/` via one resolved AST walk.
 final class MutantGenerator {
-  /// Creates a generator over [projectRoot] using [registry]; a missing
-  /// [ignore] loads the project's `.radignore`.
+  /// Creates a generator over [projectRoot] using [registry], skipping what
+  /// [ignore] excludes.
   MutantGenerator({
     required this.projectRoot,
     required this.registry,
-    RadIgnore? ignore,
-  }) : ignore = ignore ?? RadIgnore.load(projectRoot);
+    required this.ignore,
+  });
 
   /// Absolute path of the project under test.
   final String projectRoot;

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:radioactive_dart/radioactive_dart.dart';
 import 'package:radioactive_dart/src/engine/mutant_generator.dart';
+import 'package:radioactive_dart/src/engine/rad_ignore.dart';
 import 'package:test/test.dart';
 
 Future<Directory> fixtureProject() async {
@@ -27,6 +28,7 @@ void main() {
       final generator = MutantGenerator(
         projectRoot: dir.path,
         registry: MutagenRegistry.defaults(),
+        ignore: RadIgnore.load(dir.path),
       );
       final (mutants, sources) = await generator.generate();
 
@@ -53,6 +55,7 @@ void main() {
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
       registry: MutagenRegistry.defaults(),
+      ignore: RadIgnore.load(dir.path),
     ).generate();
     expect(sources.keys, ['lib/a.dart']);
     expect(mutants.map((m) => m.mutation.filePath), everyElement('lib/a.dart'));
@@ -73,6 +76,7 @@ void main() {
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
       registry: MutagenRegistry.defaults(),
+      ignore: RadIgnore.load(dir.path),
     ).generate();
     expect(sources.keys, isNot(contains('lib/linked.dart')));
     expect(
@@ -87,6 +91,7 @@ void main() {
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
       registry: MutagenRegistry.defaults(),
+      ignore: RadIgnore.load(dir.path),
     ).generate();
     expect(mutants, isEmpty);
     expect(sources, isEmpty);
