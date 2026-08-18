@@ -9,15 +9,18 @@
 - Nullability mutagens: `a ?? b` mutates into always (`b`) and never (`a!`)
   falling back, `?.` access mutates into `!.`, and `null` is injected into
   declared-nullable returns, arguments, assignments, and initializers.
-- Containment isolation of the project copy, with `.radignore` exclusions;
-  a red background reading aborts the run.
+- Containment isolation of the project copy, with gitignore-style
+  `.radignore` exclusions that also skip mutant generation; a red background
+  reading aborts the run before generation and viability analysis.
 - Outcome taxonomy: killed, survived, noCoverage, timeout, unviable, runError.
   Timeouts are inconclusive: they enter neither MSI term, and a timeout rate
   is printed when any occur.
-- Gates: `--threshold` on the MSI, `--max-timeouts` on timed-out mutants.
+- Gates: `--threshold` on the MSI, `--max-timeouts` on timed-out mutants. A
+  run with no scoreable mutants reports no MSI and fails `--threshold`.
 - `--coverage` ingests an `lcov.info`: mutants on lines no test hits report as
   `noCoverage` and never run.
-- Mutant runs stop at the first failing test (`dart test --fail-fast`).
+- Mutant runs stop at the first failing test (`dart test --fail-fast`), so the
+  project must resolve `package:test` 1.24.6 or newer.
 - Static viability check: mutants that fail analysis (e.g. a flipped null
   check breaking type promotion) report as unviable without a test run.
 - Promotion-aware guards: equality and logical mutagens skip flips whose
