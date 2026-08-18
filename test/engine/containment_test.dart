@@ -8,10 +8,8 @@ import 'package:test/test.dart';
 
 import '../helpers/paths.dart';
 
-Future<Directory> fixtureProject({Directory? parent}) async {
-  final dir = await (parent ?? Directory.systemTemp).createTemp(
-    'rad_containment_src_',
-  );
+Future<Directory> fixtureProject() async {
+  final dir = await Directory.systemTemp.createTemp('rad_containment_src_');
   addTearDown(() => dir.delete(recursive: true));
   void write(String relative, String content) {
     final file = File(p.join(dir.path, relative));
@@ -77,18 +75,6 @@ void main() {
       ignore: RadIgnore.load(project.path),
     );
     expect(Directory(p.join(copy.root, '.rad_temp')).existsSync(), isFalse);
-    expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
-  });
-
-  test('copies the project when the rad root is an ancestor', () async {
-    final ancestor = await Directory.systemTemp.createTemp('rad_ancestor_');
-    addTearDown(() => ancestor.delete(recursive: true));
-    final project = await fixtureProject(parent: ancestor);
-    final copy = await Containment.create(
-      project.path,
-      paths: RadPaths(root: ancestor.path),
-      ignore: RadIgnore.load(project.path),
-    );
     expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
   });
 

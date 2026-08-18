@@ -191,7 +191,7 @@ void main() {
     final out = StringBuffer();
 
     final exit = await radMain(
-      ['--max-timeouts', '0', '--threshold', '0', dir.path],
+      ['--max-timeouts', '0', dir.path],
       out: out,
       paths: paths,
     );
@@ -200,6 +200,26 @@ void main() {
     expect(out.toString(), contains('timeout: 1'));
     expect(out.toString(), contains('MSI: none (no scoreable mutants)'));
     expect(out.toString(), contains('Timeout rate: 100.00%'));
+  });
+
+  test('fails the threshold closed when no mutant is scoreable', () async {
+    final dir = await createFixturePackage(calc: 'int add(int a, int b) => 5;');
+    final captured = _CapturedStderr();
+
+    final exit = await IOOverrides.runZoned(
+      () => radMain(
+        ['--threshold', '50', dir.path],
+        out: StringBuffer(),
+        paths: paths,
+      ),
+      stderr: () => captured,
+    );
+
+    expect(exit, 1);
+    expect(
+      captured.toString(),
+      contains('no scoreable mutants, so no MSI: the 50.00% threshold'),
+    );
   });
 
   test('rejects an invalid timeout ceiling with exit code 64', () async {
@@ -293,4 +313,18 @@ void main() {
     expect(out.toString(), contains('Usage: rad'));
     expect(out.toString(), contains('RAD_TEMP'));
   });
+}
+
+/// Collects what the CLI writes to `stderr` under [IOOverrides].
+final class _CapturedStderr implements Stdout {
+  final _buffer = StringBuffer();
+
+  @override
+  void writeln([Object? object = '']) => _buffer.writeln(object);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+
+  @override
+  String toString() => _buffer.toString();
 }
