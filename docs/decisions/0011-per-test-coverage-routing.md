@@ -13,6 +13,7 @@
 
 - v0.1: ingest `lcov.info`; mutants on uncovered lines become `NoCoverage`
   and are never executed.
+- v0.1: collect the report when none is supplied ([0020](0020-zero-setup-provisioning.md)).
 - v1.0: per-test tracer data; run only covering tests, fastest first,
   first-kill-wins.
 

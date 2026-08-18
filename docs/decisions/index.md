@@ -40,5 +40,6 @@ flowchart TD
 | [0017](0017-parallel-classification.md) | Parallel classification | accepted |
 | [0018](0018-run-workspace-lifecycle.md) | Run workspace lifecycle | accepted, staged v0.1–v0.2 |
 | [0019](0019-static-viability-filtering.md) | Static viability filtering | accepted |
+| [0020](0020-zero-setup-provisioning.md) | Zero-setup provisioning | accepted, planned v0.1 |
 
 Feature staging: [../roadmap/index.md](../roadmap/index.md).
