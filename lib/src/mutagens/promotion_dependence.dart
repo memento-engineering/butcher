@@ -130,16 +130,16 @@ final class PromotionDependence {
     if (tested.isEmpty) return tested;
     final body = node.thisOrAncestorOfType<FunctionBody>();
     if (body == null) return tested;
-    final finder = _OtherSourceFinder(tested, node);
+    final finder = _PromotionSourceFinder(targets: tested, excluded: node);
     body.accept(finder);
     return tested.difference(finder.found);
   }
 
   /// Promotable variables null- or is-tested within [expression].
   static Set<Element> _testsIn(Expression expression) {
-    final collector = _TestCollector();
-    expression.accept(collector);
-    return collector.tested;
+    final finder = _PromotionSourceFinder();
+    expression.accept(finder);
+    return finder.found;
   }
 
   static Element? _nullTestedVariable(BinaryExpression node) {
@@ -188,48 +188,34 @@ final class PromotionDependence {
   }
 }
 
-/// Collects promotable variables null- or is-tested within a subtree.
-final class _TestCollector extends RecursiveAstVisitor<void> {
-  final Set<Element> tested = {};
+/// Collects the promotable variables a subtree promotes by null- or is-test.
+///
+/// [excluded] — the flipped test — narrows the search to the promotion
+/// sources outside it, where an assignment counts as a source too, and
+/// [targets] limits which variables are collected.
+final class _PromotionSourceFinder extends RecursiveAstVisitor<void> {
+  _PromotionSourceFinder({this.targets, this.excluded});
 
-  @override
-  void visitBinaryExpression(BinaryExpression node) {
-    final operator = node.operator.lexeme;
-    if (operator == '==' || operator == '!=') {
-      final variable = PromotionDependence._nullTestedVariable(node);
-      if (variable != null) tested.add(variable);
-    }
-    super.visitBinaryExpression(node);
-  }
-
-  @override
-  void visitIsExpression(IsExpression node) {
-    final variable = PromotionDependence._promotable(node.expression);
-    if (variable != null) tested.add(variable);
-    super.visitIsExpression(node);
-  }
-}
-
-/// Collects [targets] variables with a promotion source outside [flipped]:
-/// another null/is test or an assignment.
-final class _OtherSourceFinder extends RecursiveAstVisitor<void> {
-  _OtherSourceFinder(this.targets, this.flipped);
-
-  final Set<Element> targets;
-  final AstNode flipped;
+  final Set<Element>? targets;
+  final AstNode? excluded;
   final found = <Element>{};
 
-  bool _outside(AstNode node) =>
-      node.end <= flipped.offset || node.offset >= flipped.end;
+  bool _counts(AstNode node) {
+    final flipped = excluded;
+    return flipped == null ||
+        node.end <= flipped.offset ||
+        node.offset >= flipped.end;
+  }
 
   void _record(Element? variable) {
-    if (variable != null && targets.contains(variable)) found.add(variable);
+    if (variable == null) return;
+    if (targets?.contains(variable) ?? true) found.add(variable);
   }
 
   @override
   void visitBinaryExpression(BinaryExpression node) {
     final operator = node.operator.lexeme;
-    if ((operator == '==' || operator == '!=') && _outside(node)) {
+    if ((operator == '==' || operator == '!=') && _counts(node)) {
       _record(PromotionDependence._nullTestedVariable(node));
     }
     super.visitBinaryExpression(node);
@@ -237,7 +223,7 @@ final class _OtherSourceFinder extends RecursiveAstVisitor<void> {
 
   @override
   void visitIsExpression(IsExpression node) {
-    if (_outside(node)) {
+    if (_counts(node)) {
       _record(PromotionDependence._promotable(node.expression));
     }
     super.visitIsExpression(node);
@@ -245,7 +231,7 @@ final class _OtherSourceFinder extends RecursiveAstVisitor<void> {
 
   @override
   void visitAssignmentExpression(AssignmentExpression node) {
-    if (_outside(node)) _record(node.writeElement);
+    if (excluded != null && _counts(node)) _record(node.writeElement);
     super.visitAssignmentExpression(node);
   }
 }

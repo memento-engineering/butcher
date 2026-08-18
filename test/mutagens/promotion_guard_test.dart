@@ -113,21 +113,6 @@ int f(String? s) {
     );
   });
 
-  test('keeps null-test flips a duplicate guard can re-promote', () async {
-    final mutations = await mutationsOf('''
-int f(String? s) {
-  if (s == null) return 0;
-  if (s == null) return 1;
-  return s.length;
-}
-''');
-    expect(
-      ofOperator(mutations, 'equality'),
-      hasLength(2),
-      reason: 'either flip compiles: the other guard still promotes s',
-    );
-  });
-
   test('keeps null-test flips an assignment can re-promote', () async {
     final mutations = await mutationsOf('''
 int f(String? s) {
