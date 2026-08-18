@@ -17,6 +17,7 @@ export 'src/model/mutant.dart';
 export 'src/model/mutant_result.dart';
 export 'src/model/mutation.dart';
 export 'src/model/outcome.dart';
+export 'src/model/test_events.dart';
 export 'src/model/test_run.dart';
 export 'src/mutagens/arithmetic_mutagen.dart';
 export 'src/mutagens/binary_expression_mutagen.dart';

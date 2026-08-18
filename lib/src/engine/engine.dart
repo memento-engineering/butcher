@@ -7,6 +7,7 @@ import '../log/rad_logger.dart';
 import '../model/mutant.dart';
 import '../model/mutant_result.dart';
 import '../model/outcome.dart';
+import '../model/test_events.dart';
 import '../model/test_run.dart';
 import '../mutagens/mutagen_registry.dart';
 import '../rad_paths.dart';
@@ -21,7 +22,6 @@ import 'pub_get.dart';
 import 'rad_ignore.dart';
 import 'run_aborted.dart';
 import 'run_result.dart';
-import 'test_events.dart';
 import 'test_runner.dart';
 import 'test_selector.dart';
 import 'test_version_check.dart';
@@ -143,7 +143,8 @@ final class Engine {
       suiteConcurrency,
     ).run();
     if (background.exitCode != 0) {
-      final summary = TestEvents.parse(background.output).summarize();
+      final summary = (background.events ?? TestEvents.parse(background.output))
+          .summarize();
       final evidence = summary.isEmpty
           ? '${background.output}${background.errorOutput}'
           : summary;
@@ -323,7 +324,7 @@ final class Engine {
       );
       // The whole stream is parsed once here and dropped afterwards; only an
       // excerpt outlives this classification (ADR 0016).
-      final events = TestEvents.parse(run.output);
+      final events = run.events ?? TestEvents.parse(run.output);
       final result = MutantResult(
         mutant: mutant,
         outcome: const OutcomeClassifier().classify(run, events),
@@ -414,17 +415,12 @@ final class Engine {
     );
   }
 
-  /// Resolves an unresolved project before it is copied or analysed: it would
-  /// otherwise yield only unviable mutants (ADR 0020).
+  /// Resolves the project before it is copied or analysed: a stale package
+  /// configuration would otherwise yield only unviable mutants (ADR 0020).
   Future<void> _provision() async {
-    bool has(List<String> parts) =>
-        File(p.joinAll([projectRoot, ...parts])).existsSync();
     // A missing or non-package root reports better from the copy and
     // containment stages than from `pub get` here.
-    if (!has(['pubspec.yaml'])) return;
-    if (has(['pubspec.lock']) && has(['.dart_tool', 'package_config.json'])) {
-      return;
-    }
+    if (!File(p.join(projectRoot, 'pubspec.yaml')).existsSync()) return;
     final watch = Stopwatch()..start();
     await pubGet(projectRoot, label: 'the project');
     logger?.info('provisioned {ProjectRoot} in {DurationMs} ms', {

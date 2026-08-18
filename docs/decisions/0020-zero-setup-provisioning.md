@@ -13,9 +13,8 @@
 
 ## Decision
 
-- Missing dependencies: when the project has no `pubspec.lock` or no
-  `.dart_tool/package_config.json`, rad runs `dart pub get` in the project
-  before analysis.
+- Dependencies: rad runs `dart pub get` in the project before analysis.
+  This provisions a new project and refreshes a stale package configuration.
 - Coverage resolution, in order:
 
 | Order | Condition | Source |

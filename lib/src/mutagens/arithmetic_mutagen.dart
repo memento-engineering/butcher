@@ -20,11 +20,11 @@ final class ArithmeticMutagen extends BinaryExpressionMutagen {
     '~/': ['*', '%'],
   };
 
-  /// Picks the division flavour whose result still fits the slot the
-  /// original expression filled: `/` always yields `double` and `~/` always
-  /// yields `int`, so the wrong one cannot compile and would only burn a
-  /// viability analysis (ADR 0019). Unresolved or `num`-typed expressions
-  /// keep the declared swap and let the viability check decide.
+  /// Adds truncating division when an integer expression may require it.
+  ///
+  /// The expression's own type does not reveal a wider contextual slot, so
+  /// the declared `/` swap stays: viability filtering rejects it where the
+  /// surrounding context truly requires `int` (ADR 0019).
   @override
   List<String> replacementsFor(BinaryExpression node) {
     final type = node.staticType;
@@ -37,9 +37,15 @@ final class ArithmeticMutagen extends BinaryExpressionMutagen {
         : null;
     final declared = super.replacementsFor(node);
     if (division == null) return declared;
+    if (division == '~/') {
+      return [
+        for (final replacement in declared) replacement,
+        if (declared.any((replacement) => replacement == '/')) division,
+      ];
+    }
     return [
       for (final replacement in declared)
-        replacement == '/' || replacement == '~/' ? division : replacement,
+        replacement == '~/' ? division : replacement,
     ];
   }
 }

@@ -8,7 +8,7 @@ How the decisions compose at runtime:
 
 ```mermaid
 flowchart TD
-    A[lock + startup cleanup] --> P[provisioning: pub get an unresolved project]
+    A[lock + startup cleanup] --> P[dependency resolution: pub get]
     P --> B[containment: filtered project or workspace copy]
     B --> C[background reading: verify suite green]
     C --> E[coverage: given or found lcov, else collected]

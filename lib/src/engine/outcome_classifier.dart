@@ -1,5 +1,5 @@
 import '../model/outcome.dart';
-import 'test_events.dart';
+import '../model/test_events.dart';
 import '../model/test_run.dart';
 
 /// Maps one finished test run onto the outcome taxonomy (ADR 0006).

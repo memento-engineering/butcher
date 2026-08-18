@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'package:radioactive_dart/radioactive_dart.dart';
 import 'package:radioactive_dart/src/engine/capped_output.dart';
 import 'package:radioactive_dart/src/engine/outcome_classifier.dart';
-import 'package:radioactive_dart/src/engine/test_events.dart';
 import 'package:test/test.dart';
 
 import '../helpers/fixtures.dart';
@@ -46,8 +45,10 @@ String reporterEvents({required int tests, required int failing}) {
   return events.toString();
 }
 
-Outcome classify(TestRun run) =>
-    const OutcomeClassifier().classify(run, TestEvents.parse(run.output));
+Outcome classify(TestRun run) => const OutcomeClassifier().classify(
+  run,
+  run.events ?? TestEvents.parse(run.output),
+);
 
 void main() {
   test('reports a green suite with exit code 0', () async {
@@ -68,6 +69,7 @@ void main() {
     expect(run.exitCode, 0);
     expect(run.timedOut, isFalse);
     expect(run.output, contains('"type":"done"'));
+    expect(run.events, isNotNull);
     expect(run.output, isNot(contains('noise on stderr')));
     expect(run.errorOutput, contains('noise on stderr'));
     expect(run.duration, greaterThan(Duration.zero));
@@ -131,24 +133,30 @@ void main() {
     expect(classify(run), Outcome.killed);
   });
 
-  test('keeps a mid-suite failure in a large event stream', () {
-    final events = reporterEvents(tests: 500, failing: 250);
-    expect(
-      events.length,
-      greaterThan(64 * 1024),
-      reason: 'a few hundred tests already exceed a small cap',
-    );
-
+  test('parses a mid-stream failure before capping its raw evidence', () {
     final buffer = CappedOutput(limit: DartTestRunner.stdoutLimit);
-    for (final line in const LineSplitter().convert(events)) {
-      buffer.write('$line\n');
+    final events = TestEvents();
+    void add(String chunk) {
+      events.add(chunk);
+      buffer.write(chunk);
     }
 
-    expect('$buffer', events, reason: 'a real suite must pass through whole');
+    final filler = '${'x' * 8192}\n';
+    for (var i = 0; i < 600; i++) {
+      add(filler);
+    }
+    add(reporterEvents(tests: 1, failing: 0));
+    for (var i = 0; i < 600; i++) {
+      add(filler);
+    }
+    events.close();
+    expect('$buffer', contains('[rad] truncated'));
+    expect('$buffer', isNot(contains('"result":"failure"')));
     final run = TestRun(
       exitCode: 1,
       timedOut: false,
       output: '$buffer',
+      events: events,
       duration: Duration.zero,
     );
     expect(classify(run), Outcome.killed);

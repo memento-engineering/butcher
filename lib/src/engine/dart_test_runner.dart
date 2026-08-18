@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import '../model/test_events.dart';
 import '../model/test_run.dart';
 import 'capped_output.dart';
 import 'test_runner.dart';
@@ -49,8 +50,12 @@ final class DartTestRunner implements TestRunner {
     const decoder = Utf8Decoder(allowMalformed: true);
     final output = CappedOutput(limit: stdoutLimit);
     final errors = CappedOutput(limit: stderrLimit);
+    final events = TestEvents();
     final drained = Future.wait([
-      process.stdout.transform(decoder).forEach(output.write),
+      process.stdout.transform(decoder).forEach((chunk) {
+        events.add(chunk);
+        output.write(chunk);
+      }),
       process.stderr.transform(decoder).forEach(errors.write),
     ]);
 
@@ -65,12 +70,14 @@ final class DartTestRunner implements TestRunner {
       await _killTree(process);
     }
     await drained.timeout(const Duration(seconds: 5), onTimeout: () => []);
+    events.close();
 
     return TestRun(
       exitCode: exitCode,
       timedOut: timedOut,
       output: output.toString(),
       errorOutput: errors.toString(),
+      events: events,
       duration: watch.elapsed,
     );
   }

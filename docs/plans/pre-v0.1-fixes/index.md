@@ -37,3 +37,14 @@ Two decisions deviate from the text above:
 - Item 12 kills the tree best effort from a `ps` snapshot, not a process
   group ([ADR 0006](../../decisions/0006-outcome-taxonomy.md)); `setsid` is
   absent from minimal images and Dart cannot spawn a process group.
+
+A final review of the complete fix range found five remaining defects:
+
+| Area | Defect |
+|---|---|
+| Mutagens | identity swaps escaped through extensions; numeric context lost `/` |
+| Output | the raw-output cap still preceded reporter-event parsing |
+| Provisioning | existing but stale package configuration skipped `pub get` |
+| Lifecycle | initial logging still ran outside lock-release protection |
+
+All five have regression coverage and are fixed.

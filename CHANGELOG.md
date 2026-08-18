@@ -6,6 +6,8 @@
   covered-code MSI, and writes a Stryker JSON report (`--output`).
 - AST mutant generation with `package:analyzer`; mutagens for arithmetic,
   relational, equality, and logical operators plus boolean literals.
+- Operator mutagens reject identity replacements and preserve valid division
+  replacements in wider numeric contexts.
 - Nullability mutagens: `a ?? b` mutates into always (`b`) and never (`a!`)
   falling back, `?.` access mutates into `!.`, and `null` is injected into
   declared-nullable returns, arguments, assignments, and initializers.
@@ -19,7 +21,7 @@
   run with no scoreable mutants reports no MSI and fails `--threshold`.
 - `--coverage` ingests an `lcov.info`: mutants on lines no test hits report as
   `noCoverage` and never run.
-- Zero setup: an unresolved project is `pub get`-ed first, a project's own
+- Zero setup: project dependencies are refreshed with `pub get`, a project's own
   `coverage/lcov.info` is picked up without `--coverage`, and otherwise
   coverage is collected in one extra suite run (`--no-collect-coverage`
   falls back to treating all code as covered).
@@ -31,9 +33,9 @@
   stranded promotions could never compile, instead of reporting them.
 - Parallel classification: `--jobs` workers, each with its own containment.
 - Wide-event CLEF logging: one tool log, one run log per containment, each
-  mutant's suite output kept as a capped excerpt; `--verbose` renders events to
-  the console, ANSI-colored when stdout is a terminal.
+  mutant's suite output kept as a capped excerpt while reporter events are
+  parsed before the cap; `--verbose` renders ANSI-colored events on a terminal.
 - Startup cleanup under an exclusive run lock; a held lock aborts the run,
-  and a failed run releases its own lock.
+  and every ordinary failure, including setup errors, releases its own lock.
 - Keep containments and logs until the next run's startup cleanup.
 - Allow `RAD_TEMP` to redirect the containment and log root.

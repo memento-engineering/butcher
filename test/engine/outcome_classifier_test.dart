@@ -1,6 +1,5 @@
 import 'package:radioactive_dart/radioactive_dart.dart';
 import 'package:radioactive_dart/src/engine/outcome_classifier.dart';
-import 'package:radioactive_dart/src/engine/test_events.dart';
 import 'package:test/test.dart';
 
 const _failedTest = '''
@@ -78,6 +77,23 @@ void main() {
       final events = TestEvents.parse('not json\n$_loadFailure\n42\n');
       expect(events.loadFailures, ['loading test/calc_test.dart']);
       expect(events.testFailures, isEmpty);
+    });
+
+    test('parses events split across stream chunks', () {
+      final events = TestEvents()
+        ..add(_failedTest.substring(0, 25))
+        ..add(_failedTest.substring(25))
+        ..close();
+      expect(events.testFailures, ['adds']);
+      expect(events.errors.single, contains('Expected: <5>'));
+    });
+
+    test('discards an oversized line without losing later events', () {
+      final events = TestEvents()
+        ..add('x' * (TestEvents.maxLineLength + 1))
+        ..add('\n$_failedTest')
+        ..close();
+      expect(events.testFailures, ['adds']);
     });
   });
 

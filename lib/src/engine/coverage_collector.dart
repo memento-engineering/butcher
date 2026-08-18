@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import '../model/test_events.dart';
 import 'lcov_coverage_provider.dart';
 import 'run_aborted.dart';
-import 'test_events.dart';
 import 'test_runner.dart';
 
 /// Collects per-line coverage from one instrumented suite run (ADR 0020).
@@ -26,7 +26,7 @@ final class CoverageCollector {
     final run = await runner.run(coverageDir: outputDir);
     if (run.exitCode != 0) {
       // Falling back to full coverage would inflate the score (ADR 0013).
-      final summary = TestEvents.parse(run.output).summarize();
+      final summary = (run.events ?? TestEvents.parse(run.output)).summarize();
       throw RunAborted(
         'coverage collection failed with exit ${run.exitCode}; rerun with '
         '--no-collect-coverage to treat all code as covered.\n'

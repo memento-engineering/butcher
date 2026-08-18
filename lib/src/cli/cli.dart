@@ -138,43 +138,51 @@ Future<int> radMain(
   }
   final verbose = options.flag('verbose');
   final watch = Stopwatch()..start();
-  final logger = RadLogger(
-    verbose: verbose,
-    path: resolvedPaths.toolLog,
-    console: sink,
-  );
-  logger.info('starting rad {ToolVersion} on {ProjectRoot} with {Jobs} jobs', {
-    'ToolVersion': packageVersion,
-    'ProjectRoot': projectRoot,
-    'Jobs': jobs ?? Engine.defaultJobs,
-    'Dart': Platform.version,
-    'Os': Platform.operatingSystem,
-    'Argv': arguments,
-  });
+  final RadLogger logger;
+  final Engine engine;
+  try {
+    logger = RadLogger(
+      verbose: verbose,
+      path: resolvedPaths.toolLog,
+      console: sink,
+    );
+    logger.info(
+      'starting rad {ToolVersion} on {ProjectRoot} with {Jobs} jobs',
+      {
+        'ToolVersion': packageVersion,
+        'ProjectRoot': projectRoot,
+        'Jobs': jobs ?? Engine.defaultJobs,
+        'Dart': Platform.version,
+        'Os': Platform.operatingSystem,
+        'Argv': arguments,
+      },
+    );
 
-  if (ingested != null) {
-    logger.info('ingested coverage for {FileCount} files from {Path}', {
-      'FileCount': ingested.hits.length,
-      'Path': found!.path,
-    });
+    if (ingested != null) {
+      logger.info('ingested coverage for {FileCount} files from {Path}', {
+        'FileCount': ingested.hits.length,
+        'Path': found!.path,
+      });
+    }
+
+    engine = Engine(
+      projectRoot: projectRoot,
+      paths: resolvedPaths,
+      jobs: jobs,
+      coverage: coverage,
+      logger: logger,
+      onProgress: verbose
+          // The rendered `classified` event already covers verbose progress.
+          ? null
+          : (done, total, result) => sink.writeln(
+              '[$done/$total] ${result.mutant.id} -> ${result.outcome.name}',
+            ),
+    );
+  } catch (_) {
+    workspace.release();
+    rethrow;
   }
 
-  final engine = Engine(
-    projectRoot: projectRoot,
-    paths: resolvedPaths,
-    jobs: jobs,
-    coverage: coverage,
-    logger: logger,
-    onProgress: verbose
-        // The rendered `classified` event already covers verbose progress.
-        ? null
-        : (done, total, result) => sink.writeln(
-            '[$done/$total] ${result.mutant.id} -> ${result.outcome.name}',
-          ),
-  );
-
-  // Set on every path below; the lock is released even when the run throws,
-  // since a stranded lock blocks every later run (ADR 0018).
   int exitCode;
   try {
     sink.writeln('irradiating $projectRoot');

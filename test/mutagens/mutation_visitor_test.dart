@@ -42,7 +42,7 @@ void main() {
   test('swaps int multiplication to truncating division', () async {
     final mutations = await mutationsOf('int f(int a, int b) => a * b;');
     final swaps = mutations.where((m) => m.operatorId == 'arithmetic');
-    expect(swaps.map((m) => m.replacement), unorderedEquals(['~/', '+']));
+    expect(swaps.map((m) => m.replacement), unorderedEquals(['/', '~/', '+']));
   });
 
   test('swaps double remainder to floating division', () async {
@@ -57,6 +57,12 @@ void main() {
     final mutations = await mutationsOf('num f(num a, num b) => a * b;');
     final swaps = mutations.where((m) => m.operatorId == 'arithmetic');
     expect(swaps.map((m) => m.replacement), unorderedEquals(['/', '+']));
+  });
+
+  test('keeps floating division valid in a wider num context', () async {
+    final mutations = await mutationsOf('num f(int a, int b) => a * b;');
+    final swaps = mutations.where((m) => m.operatorId == 'arithmetic');
+    expect(swaps.map((m) => m.replacement), unorderedEquals(['/', '~/', '+']));
   });
 
   test('guards string concatenation from arithmetic swaps', () async {

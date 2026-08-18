@@ -41,8 +41,8 @@ ones the tests kill.
 - A red test suite aborts the run; a green suite is a precondition.
 - The project must resolve `package:test` 1.24.6 or newer; older versions
   abort the run.
-- An unresolved project is provisioned first: rad runs `dart pub get` in it,
-  writing `pubspec.lock` and `.dart_tool/` into the project.
+- Project dependencies are resolved first: rad runs `dart pub get`, refreshing
+  stale configuration or writing `pubspec.lock` and `.dart_tool/` when absent.
 - `.radignore` (gitignore-style rules incl. negation and directory patterns,
   project root) excludes paths from the isolated project copy tests run in.
   An excluded directory is never descended into, so `!` cannot re-include a

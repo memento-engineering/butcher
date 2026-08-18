@@ -11,8 +11,7 @@ abstract class BinaryExpressionMutagen implements Mutagen {
   /// Allows subclasses to have const constructors.
   const BinaryExpressionMutagen();
 
-  /// Operator lexeme mapped to its replacement lexemes; a lexeme never maps
-  /// onto itself, since an identity replacement is no mutation.
+  /// Operator lexeme mapped to its replacement lexemes.
   Map<String, List<String>> get swaps;
 
   /// Replacement lexemes proposed for [node]; defaults to [swaps].
@@ -30,15 +29,16 @@ abstract class BinaryExpressionMutagen implements Mutagen {
     if (replacements.isEmpty || !guard(node)) return const [];
     return [
       for (final replacement in replacements)
-        Mutation(
-          filePath: filePath,
-          offset: operator.offset,
-          length: operator.length,
-          original: operator.lexeme,
-          replacement: replacement,
-          operatorId: id,
-          description: 'replace ${operator.lexeme} with $replacement',
-        ),
+        if (replacement != operator.lexeme)
+          Mutation(
+            filePath: filePath,
+            offset: operator.offset,
+            length: operator.length,
+            original: operator.lexeme,
+            replacement: replacement,
+            operatorId: id,
+            description: 'replace ${operator.lexeme} with $replacement',
+          ),
     ];
   }
 

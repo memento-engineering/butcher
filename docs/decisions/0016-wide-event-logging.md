@@ -41,16 +41,15 @@
   name is the filename; mutation IDs never participate in path construction.
 - Every executed mutant appends one wide event carrying its mutation context,
   suite output, containment name, and shared `RunId`.
-- Suite output is capped (head plus tail plus a marker naming the dropped
-  characters) twice: while a stream is read, so a runaway mutant cannot exhaust
-  memory before its half-life expires, and again once the mutant is classified,
-  since only that excerpt is retained in its result and embedded in its run
-  event. Parsing therefore always sees the live stream, never the excerpt:
+- Reporter events are parsed incrementally before raw suite output is capped.
+  Raw output is capped (head plus tail plus a marker naming the dropped
+  characters) while it is read, then excerpted again after classification.
 
 | Cap | Size | Lives | Why |
 | --- | --- | --- | --- |
-| live stdout | 8 MiB | one run | carries the parsed reporter events; must survive any real suite |
+| live stdout | 8 MiB | one run | bounded raw evidence; verdicts use the uncapped live parser |
 | live stderr | 256 KiB | one run | nothing is parsed from it |
+| reporter line | 1 MiB | one event | oversized print events are ignored by the parser |
 | retained excerpt, per stream | 32 KiB | whole run | every mutant's evidence is held until the report is written |
 
 - Peak memory is therefore bounded by `workers x live caps` plus

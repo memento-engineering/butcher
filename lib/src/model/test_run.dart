@@ -1,3 +1,5 @@
+import 'test_events.dart';
+
 /// Observable outcome of one test-suite process.
 final class TestRun {
   /// Creates a record of a finished (or killed) test process.
@@ -6,6 +8,7 @@ final class TestRun {
     required this.timedOut,
     required this.output,
     this.errorOutput = '',
+    this.events,
     required this.duration,
   });
 
@@ -23,6 +26,10 @@ final class TestRun {
   /// Suite stderr, buffered separately so it cannot split an event line,
   /// and capped tighter than [output] since nothing is parsed from it.
   final String errorOutput;
+
+  /// Reporter events parsed from the live stream before [output] was capped.
+  /// Custom runners may omit them; the engine then parses [output].
+  final TestEvents? events;
 
   /// Wall-clock duration of the run.
   final Duration duration;
