@@ -14,8 +14,7 @@ flowchart TD
     C --> E[coverage: given or found lcov, else collected]
     E --> D[analyzer: resolved AST → mutants]
     D --> V[viability check: non-compiling mutants filtered]
-    V --> F[compile schemata once]
-    F --> G[per mutant: covering tests, fastest first, first kill wins]
+    V --> G[per mutant: covering tests, fastest first, first kill wins]
     G --> H[TCE pass over survivors]
     H --> I[reports + criticality gate]
 ```
@@ -31,8 +30,8 @@ flowchart TD
 | [0007](0007-deterministic-execution.md) | Deterministic execution | accepted |
 | [0008](0008-composable-mutator-framework.md) | Composable mutagen framework | accepted |
 | [0009](0009-stryker-json-primary-report.md) | Stryker JSON as primary report | accepted |
-| [0010](0010-mutant-schemata.md) | Mutant schemata | accepted, planned v1.0 |
-| [0011](0011-per-test-coverage-routing.md) | Tracer coverage routing | accepted, planned v1.0 |
+| [0010](0010-mutant-schemata.md) | Mutant schemata | accepted, planned v2.0 |
+| [0011](0011-per-test-coverage-routing.md) | Tracer coverage routing | accepted, staged v0.1-v1.0 |
 | [0012](0012-tce-equivalent-detection.md) | TCE equivalent-mutant detection | accepted, planned v2.0 |
 | [0013](0013-score-and-honesty-metrics.md) | Score and honesty metrics | accepted |
 | [0014](0014-naming-and-vocabulary.md) | Naming and vocabulary | accepted |
