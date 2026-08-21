@@ -1,6 +1,6 @@
 name: radioactive_dart
 description: Mutation testing for Dart; irradiates source with mutants and scores which ones the tests kill.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/ricardoboss/radioactive_dart
 
 environment:

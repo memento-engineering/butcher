@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.2.0
+
 ## 0.1.0
 
 - `rad` CLI: irradiates `lib/`, prints per-outcome counts, MSI, and
