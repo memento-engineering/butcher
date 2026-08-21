@@ -15,6 +15,10 @@
   assignment: AST visit order (parent before child) is not source order.
 - Seeded ordering; isolated test processes.
 - Identical input always produces an identical report.
+- Determinism covers verdicts, mutant IDs, and report order. It does not
+  cover the test that killed a mutant or any measured duration: both are
+  recorded as evidence ([0021](0021-beamline-execution.md)) and both may
+  differ between runs of the same input.
 
 ## Rejected
 

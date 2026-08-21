@@ -38,6 +38,9 @@
   construction, apart from refreshing project dependencies
   ([0020](0020-zero-setup-provisioning.md)).
 - No restore logic to get wrong.
+- Under [0021](0021-beamline-execution.md) nothing is irradiated on disk
+  during a run: a mutant is a value, so a containment is read-only once its
+  beamline is built, apart from what the suite itself writes.
 - Workspace dependencies and cwd-relative test assets keep their layout.
 - Consumers can avoid copying large, project-specific directories.
 - Incorrect consumer exclusions fail the background reading before mutation.

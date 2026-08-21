@@ -54,6 +54,9 @@
 
 - Peak memory is therefore bounded by `workers x live caps` plus
   `mutants x excerpt`, not by `mutants x live caps`.
+- Exposures ([0021](0021-beamline-execution.md)) multiply runs per mutant, so
+  the excerpt budget stays per mutant: only the exposure that decided it keeps
+  its evidence, plus every abnormal one.
 - Abnormal outcomes (`Timeout`, `Unviable`, `RunError`, `MemoryError`) use error
   level. Parsed test failures remain structured nested-error events.
 - Mutants with no coverage do not execute and produce no containment event.

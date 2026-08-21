@@ -10,11 +10,12 @@ How the decisions compose at runtime:
 flowchart TD
     A[lock + startup cleanup] --> P[dependency resolution: pub get]
     P --> B[containment: filtered project or workspace copy]
-    B --> C[background reading: verify suite green]
-    C --> E[coverage: given or found lcov, else collected]
+    B --> C[calibration reading: green suite, coverage, per-test timing]
+    C --> E[routing: a given lcov overrides what was measured]
     E --> D[analyzer: resolved AST → mutants]
     D --> V[viability check: non-compiling mutants filtered]
-    V --> G[per mutant: covering tests, fastest first, first kill wins]
+    V --> F[schemata build, one per beamline]
+    F --> G[per exposure: mutant x test, cheapest first, first kill wins]
     G --> H[TCE pass over survivors]
     H --> I[reports + criticality gate]
 ```
@@ -30,7 +31,7 @@ flowchart TD
 | [0007](0007-deterministic-execution.md) | Deterministic execution | accepted |
 | [0008](0008-composable-mutator-framework.md) | Composable mutagen framework | accepted |
 | [0009](0009-stryker-json-primary-report.md) | Stryker JSON as primary report | accepted |
-| [0010](0010-mutant-schemata.md) | Mutant schemata | accepted, planned v2.0 |
+| [0010](0010-mutant-schemata.md) | Mutant schemata | accepted, planned v1.0 |
 | [0011](0011-per-test-coverage-routing.md) | Tracer coverage routing | accepted, staged v0.1-v1.0 |
 | [0012](0012-tce-equivalent-detection.md) | TCE equivalent-mutant detection | accepted, planned v2.0 |
 | [0013](0013-score-and-honesty-metrics.md) | Score and honesty metrics | accepted |
@@ -40,6 +41,7 @@ flowchart TD
 | [0017](0017-parallel-classification.md) | Parallel classification | accepted |
 | [0018](0018-run-workspace-lifecycle.md) | Run workspace lifecycle | accepted, staged v0.1–v0.2 |
 | [0019](0019-static-viability-filtering.md) | Static viability filtering | accepted |
-| [0020](0020-zero-setup-provisioning.md) | Zero-setup provisioning | accepted |
+| [0020](0020-zero-setup-provisioning.md) | Zero-setup provisioning | accepted, staged v0.1-v0.2 |
+| [0021](0021-beamline-execution.md) | Beamline execution | accepted, planned v1.0 |
 
 Feature staging: [../roadmap/index.md](../roadmap/index.md).

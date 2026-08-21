@@ -25,7 +25,9 @@
 | Applying mutants to source | irradiation |
 | Isolated project copy ([0004](0004-shadow-copy-isolation.md)) | containment |
 | Green-suite verification run ([0005](0005-mandatory-baseline-verification.md)) | background reading |
-| Per-mutant timeout budget ([0006](0006-outcome-taxonomy.md)) | half-life |
+| Per-exposure timeout budget ([0006](0006-outcome-taxonomy.md)) | half-life |
+| Worker process hosting the suite ([0021](0021-beamline-execution.md)) | beamline |
+| One mutant against one test ([0021](0021-beamline-execution.md)) | exposure |
 | Per-test coverage routing ([0011](0011-per-test-coverage-routing.md)) | tracer |
 | Surviving mutants of a run | fallout |
 | Score threshold gate | criticality gate |
@@ -48,6 +50,8 @@ Unthemed, for interop and clarity:
 
 - Reactor / control rods for schemata: rods throttle the whole core;
   schemata selects one branch of N. The name predicts the wrong mechanics.
+- Reactor for the hosted worker: a beamline is the apparatus samples pass
+  through one after another, which is the mechanic being named.
 - Hot cell for the isolated copy: containment is plainer.
 - Biological machinery terms (gene expression, silent mutation, apoptosis):
   the subject keeps only standard radiation-effect terms.

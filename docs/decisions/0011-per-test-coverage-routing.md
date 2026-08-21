@@ -29,14 +29,19 @@
 - v0.1: routing may never under-select. An ingested `lcov.info` carries no
   suite identity, and a file no report mentions has no covering suite; both
   fall back to the whole suite.
-- v1.0: per-test tracer data; same order and stop rule at test granularity.
+- v1.0: route at test granularity. The calibration run records a source
+  report per test ([0021](0021-beamline-execution.md)), and the unit of work
+  becomes one exposure: one mutant against one test, cheapest test first,
+  first kill wins.
+- v1.0: suite routing stays the fallback for the subprocess strategy, where
+  per-test data cannot be recorded.
 
 ## Consequences
 
 - Coverage data model is per-line from the start, extended to
   per-suite -> lines in v0.1 and per-test -> lines in v1.0.
-- The scheduler's unit of work changes from "mutant" to "mutant x covering
-  test"; the queue stays generic.
+- The scheduler's unit of work changes from "mutant" to one exposure; the
+  queue stays generic ([0017](0017-parallel-classification.md)).
 - Suite timings come from the collection run, so ordering costs no extra run.
 - Routing is only as good as the suite layout: one end-to-end file covering
   everything defeats it, so suite size becomes a performance property of the

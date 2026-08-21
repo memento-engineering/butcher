@@ -28,6 +28,10 @@
 - Determinism ([0007](0007-deterministic-execution.md)) is preserved:
   results are stored by mutant index, so completion order never changes the
   report. Progress output follows completion order.
+- Under [0021](0021-beamline-execution.md) a worker owns one beamline and
+  runs one exposure at a time, so jobs default to the core count and no suite
+  concurrency is divided. The `cores ~/ 2` default and the split below belong
+  to the subprocess strategy, where each suite parallelizes internally.
 - Suite concurrency is divided among the requested jobs
   (`dart test --concurrency = cores ~/ jobs`): the total stays near the
   core count instead of oversubscribing multiplicatively.

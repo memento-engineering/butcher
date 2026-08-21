@@ -23,9 +23,15 @@
 | 2 | `coverage/lcov.info` exists and records something | that file |
 | 3 | otherwise | rad collects it |
 
-- Collection is its own suite run inside a containment, separate from the
-  background reading, so half-lives stay calibrated on an uninstrumented run
-  ([0006](0006-outcome-taxonomy.md)).
+- v0.1: collection is its own suite run inside a containment, separate from
+  the background reading, so half-lives stay calibrated on an uninstrumented
+  run.
+- v0.2: the background reading is the calibration run. Green-suite
+  verification ([0005](0005-mandatory-baseline-verification.md)), coverage,
+  and per-suite timing come from one instrumented pass, which costs a run
+  one full suite instead of two. Silence-based half-lives
+  ([0006](0006-outcome-taxonomy.md)) are indifferent to the overhead that
+  ruled this out before.
 - Collection is the default and can be disabled by flag; disabling falls back
   to treating all code as covered.
 
@@ -46,6 +52,7 @@
 
 ## Rejected
 
-- Instrumenting the background reading: coverage overhead would inflate the
-  timing base every half-life derives from.
+- Instrumenting the background reading while half-lives were budgets of
+  elapsed time: the overhead inflated the base they derived from. Superseded
+  by [0006](0006-outcome-taxonomy.md).
 - Collecting when the user already supplied or generated a report.
