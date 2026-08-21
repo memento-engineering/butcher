@@ -108,8 +108,7 @@ reading (154 s to 120 s) shrank the half-life it calibrates.
   Removing that is the harness work in
   [0021](../decisions/0021-beamline-execution.md) and
   [0010](../decisions/0010-mutant-schemata.md).
-- Deliberately postponed: `--diff-base`, which shrinks what is measured rather
-  than what it costs, and the `cli_*` suites' own runtime, which belongs to
-  the project under test, not the harness.
 - `--diff-base` (v1.0) is what makes a per-commit self-run affordable; routing
-  makes the full run schedulable, not interactive.
+  makes the full run schedulable, not interactive. It shrinks what is measured
+  rather than what measuring costs, so it is not a harness fix and is not
+  pulled into v0.x.
