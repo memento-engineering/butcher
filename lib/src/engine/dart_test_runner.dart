@@ -82,41 +82,62 @@ final class DartTestRunner implements TestRunner {
     );
   }
 
-  /// Kills the suite and everything it spawned. Windows walks the tree with
-  /// `taskkill /T`; elsewhere the tree comes from a `ps` snapshot taken
-  /// before the kill, while the children are still attached, so processes
-  /// spawned after it survive.
+  /// Kills the suite and everything it spawned, in two sweeps.
+  ///
+  /// The tree comes from a process snapshot, so one sweep is not enough: a
+  /// process spawned while it ran is already detached by the time its parent
+  /// dies, and a suite that spawns processes of its own then leaves them
+  /// running for hours. A killed pid still names the parent of what it
+  /// spawned, so the second sweep finds those escapees.
   static Future<void> _killTree(Process process) async {
-    if (Platform.isWindows) {
-      await Process.run('taskkill', ['/PID', '${process.pid}', '/T', '/F']);
-    } else {
-      final pids = descendantPids(await processSnapshot(), process.pid);
-      process.kill(ProcessSignal.sigkill);
-      for (final pid in pids) {
+    final killed = {process.pid};
+    for (var sweep = 0; sweep < 2; sweep++) {
+      final spawned = descendantPids(await processSnapshot(), killed);
+      for (final pid in spawned) {
         Process.killPid(pid, ProcessSignal.sigkill);
       }
+      if (sweep == 0) process.kill(ProcessSignal.sigkill);
+      killed.addAll(spawned);
     }
     await process.exitCode;
   }
 
-  /// `ps -A -o pid=,ppid=` output, or empty when the image has no [ps]: a
-  /// missing helper costs the descendants, never the hung suite itself.
+  /// Every running process as `pid ppid`, one per line, or empty when the
+  /// image cannot list them: a missing helper costs the descendants, never
+  /// the hung suite itself.
   ///
-  /// [ps] is a seam for tests to cover the missing case on any platform.
-  static Future<String> processSnapshot([String ps = 'ps']) async {
+  /// [lister] overrides the executable, a seam for tests to cover the missing
+  /// case on any platform.
+  static Future<String> processSnapshot([String? lister]) async {
+    final executable = lister ?? (Platform.isWindows ? 'powershell' : 'ps');
     try {
-      return '${(await Process.run(ps, ['-A', '-o', 'pid=,ppid='])).stdout}';
+      final listed = await Process.run(executable, [
+        if (Platform.isWindows) ...[
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          'Get-CimInstance Win32_Process | '
+              'Select-Object ProcessId,ParentProcessId | '
+              'Format-Table -HideTableHeaders',
+        ] else ...[
+          '-A',
+          '-o',
+          'pid=,ppid=',
+        ],
+      ]);
+      return '${listed.stdout}';
     } on ProcessException {
       return '';
     }
   }
 
-  /// Transitive child pids of [rootPid] in `ps -A -o pid=,ppid=` output.
+  /// Transitive child pids of [roots] in a `pid ppid` [snapshot], [roots]
+  /// themselves excluded.
   ///
   /// Public so tests can cover it on any platform.
-  static List<int> descendantPids(String psOutput, int rootPid) {
+  static List<int> descendantPids(String snapshot, Set<int> roots) {
     final childrenOf = <int, List<int>>{};
-    for (final line in const LineSplitter().convert(psOutput)) {
+    for (final line in const LineSplitter().convert(snapshot)) {
       final fields = line.trim().split(RegExp(r'\s+'));
       if (fields.length < 2) continue;
       final pid = int.tryParse(fields[0]);
@@ -125,10 +146,10 @@ final class DartTestRunner implements TestRunner {
       childrenOf.putIfAbsent(ppid, () => []).add(pid);
     }
     final seen = <int>{};
-    final queue = [rootPid];
+    final queue = [...roots];
     while (queue.isNotEmpty) {
       for (final child in childrenOf[queue.removeLast()] ?? const <int>[]) {
-        if (seen.add(child)) queue.add(child);
+        if (!roots.contains(child) && seen.add(child)) queue.add(child);
       }
     }
     return seen.toList();
