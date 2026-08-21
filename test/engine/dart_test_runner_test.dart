@@ -2,7 +2,9 @@
 library;
 
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:radioactive_dart/radioactive_dart.dart';
 import 'package:radioactive_dart/src/engine/capped_output.dart';
 import 'package:radioactive_dart/src/engine/outcome_classifier.dart';
@@ -73,6 +75,22 @@ void main() {
     expect(run.output, isNot(contains('noise on stderr')));
     expect(run.errorOutput, contains('noise on stderr'));
     expect(run.duration, greaterThan(Duration.zero));
+  });
+
+  test('runs only the suites it is given', () async {
+    final dir = await createFixturePackage();
+    File(p.join(dir.path, 'test', 'other_test.dart')).writeAsStringSync('''
+import 'package:test/test.dart';
+
+void main() {
+  test('fails', () => fail('an unrouted suite ran'));
+}
+''');
+
+    final run = await DartTestRunner(dir.path)
+        .run(suites: ['test/calc_test.dart']);
+
+    expect(run.exitCode, 0, reason: run.output);
   });
 
   test('reports a failing suite with exit code 1', () async {

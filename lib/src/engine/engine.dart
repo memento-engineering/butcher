@@ -9,6 +9,7 @@ import '../model/mutant_result.dart';
 import '../model/outcome.dart';
 import '../model/test_events.dart';
 import '../model/test_run.dart';
+import '../model/test_suite.dart';
 import '../mutagens/mutagen_registry.dart';
 import '../rad_paths.dart';
 import 'containment.dart';
@@ -23,10 +24,8 @@ import 'rad_ignore.dart';
 import 'run_aborted.dart';
 import 'run_result.dart';
 import 'test_runner.dart';
-import 'test_selector.dart';
 import 'test_version_check.dart';
 import 'viability_checker.dart';
-import 'whole_suite_selector.dart';
 
 /// Called after each classified mutant with progress counters.
 typedef ProgressCallback = void Function(
@@ -47,7 +46,6 @@ final class Engine {
     required this.paths,
     MutagenRegistry? registry,
     this.coverage = const FullCoverageProvider(),
-    this.selector = const WholeSuiteSelector(),
     this.runnerFactory = _defaultRunnerFactory,
     this.onProgress,
     this.logger,
@@ -76,9 +74,6 @@ final class Engine {
 
   /// Coverage seam; `null` collects coverage during the run (ADR 0020).
   final CoverageProvider? coverage;
-
-  /// Test selection seam; MVP default runs the whole suite.
-  final TestSelector selector;
 
   /// Builds the runner for a containment root; seam for `flutter test`.
   final RunnerFactory runnerFactory;
@@ -316,9 +311,13 @@ final class Engine {
     }
     try {
       await containment.apply(mutant.mutation);
+      // Only the suites covering the mutant, cheapest first, in one
+      // fail-fast run: the first failure ends it, so an early kill costs the
+      // cheap suites only (ADR 0011). An unknown selection runs everything.
+      final suites = coverage.suitesFor(mutant);
       final run = await runner.run(
-        tests: selector.select(mutant),
-        timeout: halfLife,
+        suites: [for (final suite in suites ?? const <TestSuite>[]) suite.path],
+        timeout: suites == null ? halfLife : _routedHalfLife(suites, halfLife),
         // One failing test already kills the mutant; the rest is wasted work.
         failFast: true,
       );
@@ -330,7 +329,7 @@ final class Engine {
         outcome: const OutcomeClassifier().classify(run, events),
         testRun: _excerpt(run),
       );
-      _logMutantRun(runLog, containment.name, result, events.errors);
+      _logMutantRun(runLog, containment.name, result, events.errors, suites);
       return result;
       // Expected mutant-level failures are outcomes, never exceptions
       // (ADR 0006); their evidence lands in the run log (ADR 0016).
@@ -341,7 +340,7 @@ final class Engine {
         outcome: Outcome.runError,
         error: '$error\n$stackTrace',
       );
-      _logMutantRun(runLog, containment.name, result, const []);
+      _logMutantRun(runLog, containment.name, result, const [], null);
       return result;
     } finally {
       await containment.restore(mutant.mutation.filePath);
@@ -375,6 +374,7 @@ final class Engine {
     String containment,
     MutantResult result,
     List<String> nestedErrors,
+    List<TestSuite>? suites,
   ) {
     final run = result.testRun;
     final mutation = result.mutant.mutation;
@@ -387,6 +387,7 @@ final class Engine {
       'Offset': mutation.offset,
       'Operator': mutation.operatorId,
       'Replacement': mutation.replacement,
+      'Suites': [for (final suite in suites ?? const <TestSuite>[]) suite.path],
       if (result.error != null) 'Error': result.error,
       if (run != null) ...{
         'ExitCode': run.exitCode,
@@ -404,6 +405,17 @@ final class Engine {
     for (final error in nestedErrors) {
       runLog.error('nested test error: {Error}', {'Error': error});
     }
+  }
+
+  /// Half-life of a routed run: the selection's own cost on the same
+  /// `max(× 3, 10 s floor)` rule, so a mutant hanging in a small suite is
+  /// killed in seconds instead of the whole suite's half-life (ADR 0011).
+  /// A selection is a subset, so [wholeSuite] caps it.
+  static Duration _routedHalfLife(List<TestSuite> suites, Duration wholeSuite) {
+    final routed = halfLifeFor(
+      suites.fold(Duration.zero, (total, suite) => total + suite.duration),
+    );
+    return routed < wholeSuite ? routed : wholeSuite;
   }
 
   /// Per-mutant timeout: `max(background × 3, 10 s floor)` (ADR 0006).
@@ -446,7 +458,7 @@ final class Engine {
     logger?.info(
       'collected coverage for {FileCount} files in {DurationMs} ms',
       {
-        'FileCount': collected.hits.length,
+        'FileCount': collected.merged.hits.length,
         'DurationMs': watch.elapsedMilliseconds,
       },
     );

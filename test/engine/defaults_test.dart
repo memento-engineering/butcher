@@ -17,7 +17,7 @@ void main() {
     expect(const FullCoverageProvider().isCovered(mutant), isTrue);
   });
 
-  test('WholeSuiteSelector selects the whole suite', () {
-    expect(const WholeSuiteSelector().select(mutant), isNull);
+  test('FullCoverageProvider routes every mutant to the whole suite', () {
+    expect(const FullCoverageProvider().suitesFor(mutant), isNull);
   });
 }

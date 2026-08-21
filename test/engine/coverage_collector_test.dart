@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:radioactive_dart/src/engine/coverage_collector.dart';
-import 'package:radioactive_dart/src/engine/lcov_coverage_provider.dart';
+import 'package:radioactive_dart/src/engine/suite_coverage_provider.dart';
 import 'package:radioactive_dart/src/engine/run_aborted.dart';
 import 'package:radioactive_dart/src/engine/test_runner.dart';
 import 'package:radioactive_dart/src/model/test_run.dart';
@@ -21,7 +21,7 @@ final class _ReportingRunner implements TestRunner {
 
   @override
   Future<TestRun> run({
-    List<String>? tests,
+    List<String> suites = const [],
     Duration? timeout,
     bool failFast = false,
     String? coverageDir,
@@ -52,7 +52,7 @@ void main() {
   late Directory containment;
   late String coverageDir;
 
-  Future<LcovCoverageProvider> collect(
+  Future<SuiteCoverageProvider> collect(
     Map<String, List<Map<String, Object?>>> reports,
   ) => CoverageCollector(
     root: containment.path,
@@ -94,7 +94,7 @@ void main() {
       ],
     });
 
-    expect(provider.hits, {
+    expect(provider.merged.hits, {
       'lib/calc.dart': {1: 3, 2: 0},
     });
   });
@@ -109,7 +109,7 @@ void main() {
       ],
     });
 
-    expect(provider.hits, {
+    expect(provider.merged.hits, {
       'test/calc_test.dart': {4: 1},
     });
   });
@@ -124,7 +124,7 @@ void main() {
       ],
     });
 
-    expect(provider.hits, {
+    expect(provider.merged.hits, {
       'lib/calc.dart': {1: 7, 2: 0, 3: 1},
     });
   });
@@ -144,7 +144,7 @@ void main() {
       ],
     });
 
-    expect(provider.hits, {
+    expect(provider.merged.hits, {
       'lib/other.dart': {1: 1},
     });
   });
@@ -156,7 +156,7 @@ void main() {
       ],
     });
 
-    expect(provider.hits, {
+    expect(provider.merged.hits, {
       'lib/calc.dart': {1: 2},
     });
   });

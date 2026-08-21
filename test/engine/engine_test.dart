@@ -19,6 +19,7 @@ final class FakeRunner implements TestRunner {
     this.mutantExitCode = 1,
     this.mutantOutput = _killedOutput,
     this.delays = const [],
+    this.reported = const Duration(seconds: 1),
   });
 
   final int baselineExitCode;
@@ -28,20 +29,27 @@ final class FakeRunner implements TestRunner {
   /// Per-call delays after the baseline; missing entries mean no delay.
   final List<Duration> delays;
 
+  /// Duration every run reports; the background reading's sets the half-life.
+  final Duration reported;
+
   final List<Duration?> timeouts = [];
+
+  /// One entry per call: the suites it was routed to, empty for the whole one.
+  final List<List<String>> selections = [];
 
   /// One entry per call: whether it asked the suite to stop at first failure.
   final List<bool> failFasts = [];
 
   @override
   Future<TestRun> run({
-    List<String>? tests,
+    List<String> suites = const [],
     Duration? timeout,
     bool failFast = false,
     String? coverageDir,
   }) async {
     timeouts.add(timeout);
     failFasts.add(failFast);
+    selections.add(suites);
     final baseline = timeouts.length == 1;
     final call = timeouts.length - 2;
     if (!baseline && call < delays.length) {
@@ -51,7 +59,7 @@ final class FakeRunner implements TestRunner {
       exitCode: baseline ? baselineExitCode : mutantExitCode,
       timedOut: false,
       output: baseline ? '' : mutantOutput,
-      duration: const Duration(seconds: 1),
+      duration: reported,
     );
   }
 }
@@ -64,7 +72,7 @@ final class CrashingRunner implements TestRunner {
 
   @override
   Future<TestRun> run({
-    List<String>? tests,
+    List<String> suites = const [],
     Duration? timeout,
     bool failFast = false,
     String? coverageDir,
@@ -96,7 +104,7 @@ final class SuiteWritingRunner implements TestRunner {
 
   @override
   Future<TestRun> run({
-    List<String>? tests,
+    List<String> suites = const [],
     Duration? timeout,
     bool failFast = false,
     String? coverageDir,
@@ -120,14 +128,25 @@ final class NothingCovered implements CoverageProvider {
   bool isCovered(Mutant mutant) => false;
 
   @override
+  List<TestSuite>? suitesFor(Mutant mutant) => null;
+
+  @override
   void indexSources(Map<String, String> sources) {}
 }
 
 final class RecordingCoverage implements CoverageProvider {
+  RecordingCoverage([this.routed]);
+
+  /// Selection every mutant routes to; `null` runs the whole suite.
+  final List<TestSuite>? routed;
+
   var indexed = false;
 
   @override
   bool isCovered(Mutant mutant) => true;
+
+  @override
+  List<TestSuite>? suitesFor(Mutant mutant) => routed;
 
   @override
   void indexSources(Map<String, String> sources) => indexed = true;
@@ -179,6 +198,49 @@ void main() {
       ], reason: 'mutant runs stop at the first failure, the reading does not');
     },
   );
+
+  test('routes a mutant to its covering suites only', () async {
+    final runner = FakeRunner(reported: const Duration(seconds: 60));
+    final result = await Engine(
+      projectRoot: await miniProject(),
+      paths: await isolatedRadPaths('rad_engine_state_'),
+      runnerFactory: (_, _) => runner,
+      coverage: RecordingCoverage(const [
+        TestSuite(path: 'test/fast_test.dart', duration: Duration(seconds: 2)),
+        TestSuite(path: 'test/slow_test.dart', duration: Duration(seconds: 3)),
+      ]),
+    ).run();
+
+    expect(result.results.map((r) => r.outcome).toSet(), {Outcome.killed});
+    expect(runner.selections, [
+      const <String>[],
+      const ['test/fast_test.dart', 'test/slow_test.dart'],
+      const ['test/fast_test.dart', 'test/slow_test.dart'],
+    ], reason: 'the reading runs everything, the mutants only their suites');
+    expect(
+      runner.timeouts.skip(1),
+      everyElement(const Duration(seconds: 15)),
+      reason: 'the selection costs 5 s, so its half-life is three times that',
+    );
+  });
+
+  test('never gives a selection more half-life than the whole suite', () async {
+    final runner = FakeRunner(reported: const Duration(seconds: 60));
+    await Engine(
+      projectRoot: await miniProject(),
+      paths: await isolatedRadPaths('rad_engine_state_'),
+      runnerFactory: (_, _) => runner,
+      coverage: RecordingCoverage(const [
+        TestSuite(path: 'test/heavy_test.dart', duration: Duration(minutes: 5)),
+      ]),
+    ).run();
+
+    expect(
+      runner.timeouts.skip(1),
+      everyElement(const Duration(seconds: 180)),
+      reason: 'a subset cannot outlast the whole suite it is taken from',
+    );
+  });
 
   test('skips uncovered mutants without running tests', () async {
     final root = await miniProject();

@@ -20,6 +20,9 @@ final class TestEvents {
   static const maxLineLength = 1024 * 1024;
 
   final Map<int, String> _names = {};
+  final Map<int, String> _suitePaths = {};
+  final Map<int, String> _testSuites = {};
+  final Map<String, ({int first, int last})> _spans = {};
   final _pending = StringBuffer();
   var _closed = false;
   var _discardingLine = false;
@@ -74,10 +77,23 @@ final class TestEvents {
     }
     if (decoded is! Map<String, dynamic>) return;
     switch (decoded['type']) {
+      case 'suite':
+        final suite = decoded['suite'];
+        if (suite is Map<String, dynamic>) {
+          _suitePaths[suite['id'] as int? ?? -1] = _posix(
+            suite['path'] as String? ?? '',
+          );
+        }
       case 'testStart':
         final test = decoded['test'];
         if (test is Map<String, dynamic>) {
-          _names[test['id'] as int? ?? -1] = test['name'] as String? ?? '';
+          final id = test['id'] as int? ?? -1;
+          _names[id] = test['name'] as String? ?? '';
+          final path = _suitePaths[test['suiteID']];
+          if (path != null) {
+            _testSuites[id] = path;
+            _mark(path, decoded['time']);
+          }
         }
       case 'testDone':
         if (decoded['result'] != 'success' &&
@@ -87,11 +103,30 @@ final class TestEvents {
           (name.startsWith('loading ') ? loadFailures : testFailures).add(name);
         }
         _names.remove(decoded['testID']);
+        final path = _testSuites.remove(decoded['testID']);
+        if (path != null) _mark(path, decoded['time']);
       case 'error':
         final name = _names[decoded['testID']] ?? '';
         errors.add('$name: ${decoded['error']}');
     }
   }
+
+  void _mark(String path, Object? time) {
+    if (time is! int) return;
+    final span = _spans[path];
+    _spans[path] = span == null
+        ? (first: time, last: time)
+        : (first: span.first, last: time > span.last ? time : span.last);
+  }
+
+  static String _posix(String path) => path.replaceAll(r'\', '/');
+
+  /// Wall-clock span of each suite that reported timing, by project-relative
+  /// posix path. Ordering routed runs by it costs no extra run (ADR 0011).
+  Map<String, Duration> get suiteDurations => {
+    for (final entry in _spans.entries)
+      entry.key: Duration(milliseconds: entry.value.last - entry.value.first),
+  };
 
   /// Names of failed tests: assertion failures and in-test errors.
   final List<String> testFailures = [];

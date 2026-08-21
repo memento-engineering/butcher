@@ -27,6 +27,10 @@
   falls back to treating all code as covered).
 - Mutant runs stop at the first failing test (`dart test --fail-fast`), so the
   project must resolve `package:test` 1.24.6 or newer.
+- Collected coverage routes each mutant to the test files that cover it,
+  cheapest first, with its half-life scaled to that selection: a self-run of
+  this package fell from hours to under two. A supplied `lcov.info` names no
+  test files, so it still runs the whole suite per mutant.
 - Static viability check: mutants that fail analysis (e.g. a flipped null
   check breaking type promotion) report as unviable without a test run.
 - Promotion-aware guards: equality and logical mutagens skip flips whose

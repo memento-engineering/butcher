@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import '../model/test_events.dart';
 import 'lcov_coverage_provider.dart';
 import 'run_aborted.dart';
+import 'suite_coverage_provider.dart';
 import 'test_runner.dart';
 
 /// Collects per-line coverage from one instrumented suite run (ADR 0020).
@@ -21,8 +22,8 @@ final class CoverageCollector {
   final String outputDir;
 
   /// Runs the whole suite through [runner] and returns what it recorded,
-  /// keyed by project-relative posix path.
-  Future<LcovCoverageProvider> collect(TestRunner runner) async {
+  /// keyed by project-relative posix path and by the suite that recorded it.
+  Future<SuiteCoverageProvider> collect(TestRunner runner) async {
     final run = await runner.run(coverageDir: outputDir);
     if (run.exitCode != 0) {
       // Falling back to full coverage would inflate the score (ADR 0013).
@@ -33,7 +34,17 @@ final class CoverageCollector {
         '${summary.isEmpty ? run.errorOutput : summary}',
       );
     }
-    final hits = _read();
+    final perSuite = _read();
+    final hits = <String, Map<int, int>>{};
+    for (final files in perSuite.values) {
+      files.forEach((file, lines) {
+        final merged = hits.putIfAbsent(file, () => {});
+        lines.forEach(
+          (line, count) =>
+              merged.update(line, (sum) => sum + count, ifAbsent: () => count),
+        );
+      });
+    }
     if (hits.isEmpty) {
       // A green suite always records the sources it loaded, so an empty
       // result means the measurement failed, not that nothing is covered;
@@ -43,14 +54,29 @@ final class CoverageCollector {
         '--no-collect-coverage to treat all code as covered.',
       );
     }
-    return LcovCoverageProvider(hits: hits);
+    return SuiteCoverageProvider(
+      merged: LcovCoverageProvider(hits: hits),
+      perSuite: {
+        for (final entry in perSuite.entries)
+          entry.key: {
+            for (final file in entry.value.entries)
+              file.key: {
+                for (final line in file.value.entries)
+                  if (line.value > 0) line.key,
+              },
+          },
+      },
+      durations: (run.events ?? TestEvents.parse(run.output)).suiteDurations,
+      wholeRun: run.duration,
+    );
   }
 
-  /// Merges every emitted report; one file can be recorded by several suites.
-  Map<String, Map<int, int>> _read() {
-    final hits = <String, Map<int, int>>{};
+  /// Every emitted report, by the suite that wrote it: one file can be
+  /// recorded by several suites (ADR 0011).
+  Map<String, Map<String, Map<int, int>>> _read() {
+    final perSuite = <String, Map<String, Map<int, int>>>{};
     final reports = Directory(outputDir);
-    if (!reports.existsSync()) return hits;
+    if (!reports.existsSync()) return perSuite;
     final packages = _packageLibraries();
     final realRoot = Directory(root).resolveSymbolicLinksSync();
     for (final file in reports.listSync(recursive: true).whereType<File>()) {
@@ -59,6 +85,7 @@ final class CoverageCollector {
       if (!file.path.endsWith('.json')) continue;
       final report = jsonDecode(file.readAsStringSync());
       if (report is! Map<String, dynamic>) continue;
+      final hits = perSuite.putIfAbsent(_suiteOf(file.path), () => {});
       for (final entry in report['coverage'] as List<dynamic>? ?? const []) {
         if (entry is! Map<String, dynamic>) continue;
         final source = entry['source'];
@@ -78,8 +105,16 @@ final class CoverageCollector {
         }
       }
     }
-    return hits;
+    return perSuite;
   }
+
+  /// Suite a report belongs to: `dart test` names each `<suite>.<runtime>.json`
+  /// under the coverage directory.
+  String _suiteOf(String reportPath) => p
+      .withoutExtension(
+        p.withoutExtension(p.relative(reportPath, from: outputDir)),
+      )
+      .replaceAll(r'\', '/');
 
   /// Containment-relative posix path of [source], or `null` when it is not a
   /// file inside the containment. Both sides are resolved through the

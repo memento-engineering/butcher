@@ -21,6 +21,10 @@ ones the tests kill.
 | 2 | `coverage/lcov.info` records something | that report |
 | 3 | otherwise | rad collects it in one extra suite run |
 
+- Coverage rad collects itself also routes: a mutant runs only against the
+  test files that cover its line, cheapest first, in one `--fail-fast` run.
+  An `lcov.info` names no test files, so rows 1 and 2 run the whole suite per
+  mutant.
 - `--no-collect-coverage` drops step 3 and treats all code as covered.
 - A collection that fails or measures nothing aborts the run instead of
   guessing; rerun with `--no-collect-coverage`.

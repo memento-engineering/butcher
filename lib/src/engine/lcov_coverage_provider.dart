@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 
 import '../model/line_index.dart';
 import '../model/mutant.dart';
+import '../model/test_suite.dart';
 import 'coverage_provider.dart';
 
 /// Per-line coverage ingested from an `lcov.info` report (ADR 0011).
@@ -55,10 +56,17 @@ final class LcovCoverageProvider implements CoverageProvider {
   bool isCovered(Mutant mutant) {
     final file = hits[mutant.mutation.filePath];
     if (file == null) return false;
-    final index = _indexes[mutant.mutation.filePath]!;
-    final count = file[index.lineAt(mutant.mutation.offset)];
+    final count = file[lineOf(mutant)];
     return count == null || count > 0;
   }
+
+  /// An lcov report names no suites, so routing falls back to the whole one.
+  @override
+  List<TestSuite>? suitesFor(Mutant mutant) => null;
+
+  /// 1-based line [mutant] sits on, per the indexed sources.
+  int lineOf(Mutant mutant) =>
+      _indexes[mutant.mutation.filePath]!.lineAt(mutant.mutation.offset);
 
   /// Project-relative posix path of an `SF:` entry, absolute or relative.
   static String _relative(String source, String root) {
