@@ -74,18 +74,21 @@ end_of_record
     expect(provider.isCovered(mutantAt(1)), isTrue);
   });
 
-  test('maps offsets with the captured sources, not the working tree', () async {
-    final dir = await Directory.systemTemp.createTemp('rad_lcov_');
-    addTearDown(() => dir.delete(recursive: true));
-    File(p.join(dir.path, 'lib', 'calc.dart'))
-      ..parent.createSync(recursive: true)
-      // A mid-run edit prepends a line, shifting every offset one line down.
-      ..writeAsStringSync('// edited\n$_source');
-    final provider = LcovCoverageProvider.parse(
-      'SF:lib/calc.dart\nDA:1,1\nDA:2,0\nend_of_record\n',
-      projectRoot: dir.path,
-    )..indexSources(sources);
+  test(
+    'maps offsets with the captured sources, not the working tree',
+    () async {
+      final dir = await Directory.systemTemp.createTemp('rad_lcov_');
+      addTearDown(() => dir.delete(recursive: true));
+      File(p.join(dir.path, 'lib', 'calc.dart'))
+        ..parent.createSync(recursive: true)
+        // A mid-run edit prepends a line, shifting every offset one line down.
+        ..writeAsStringSync('// edited\n$_source');
+      final provider = LcovCoverageProvider.parse(
+        'SF:lib/calc.dart\nDA:1,1\nDA:2,0\nend_of_record\n',
+        projectRoot: dir.path,
+      )..indexSources(sources);
 
-    expect(provider.isCovered(mutantAt(2)), isFalse);
-  });
+      expect(provider.isCovered(mutantAt(2)), isFalse);
+    },
+  );
 }
