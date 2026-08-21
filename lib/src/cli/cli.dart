@@ -35,7 +35,7 @@ Future<int> radMain(
     ..addOption(
       'threshold',
       abbr: 't',
-      help: 'Criticality gate: exit 1 when the MSI is below this percentage.',
+      help: 'Exit 1 when the MSI is below this percentage.',
     )
     ..addOption(
       'output',
@@ -53,7 +53,7 @@ Future<int> radMain(
     ..addOption(
       'max-timeouts',
       help:
-          'Honesty gate: exit 1 when more mutants than this time out. '
+          'Exit 1 when more mutants than this time out. '
           'Timeouts are inconclusive and score as neither killed nor survived.',
     )
     ..addOption(

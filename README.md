@@ -31,15 +31,15 @@ ones the tests kill.
 - Writes a Stryker JSON report (`mutation-report.json`); view it with the
   [Stryker report viewer](https://microsoft.github.io/mutation-testing-elements/).
 
-| Flag | Effect |
-|---|---|
-| `-c, --coverage` | `lcov.info` to route from; unhit lines are not run |
-| `--[no-]collect-coverage` | Collect coverage when no report is given or found |
-| `-t, --threshold` | Exit 1 when the MSI is below this percentage |
-| `--max-timeouts` | Exit 1 when more mutants than this time out |
-| `-o, --output` | Report path, relative to the project root |
-| `-j, --jobs` | Parallel workers; defaults to half the CPU cores |
-| `-v, --verbose` | Also stream structured log events to the console |
+| Flag | Effect | Default |
+|---|---|---|
+| `-c, --coverage` | `lcov.info` to route from; unhit lines are not run | None |
+| `--[no-]collect-coverage` | Collect coverage when no report is given or found | `true` |
+| `-t, --threshold` | Exit 1 when the MSI is below this percentage (0-100) | None |
+| `--max-timeouts` | Exit 1 when more mutants than this time out | None |
+| `-o, --output` | Report path, relative to the project root | `mutation-report.json` |
+| `-j, --jobs` | Parallel workers, each with its own containment copy | Half the CPU cores |
+| `-v, --verbose` | Also stream structured log events to the console | Off |
 
 - Exit codes: 0 success, 1 gate failed, 64 usage, 70 aborted run.
 - A red test suite aborts the run; a green suite is a precondition.
