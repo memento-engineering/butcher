@@ -6,6 +6,12 @@ import 'package:test/test.dart';
 /// Default library source of the fixture package.
 const fixtureCalc = 'int add(int a, int b) => a + b;\n';
 
+/// Library source whose second function no fixture test reaches.
+const fixturePartiallyTestedCalc = '''
+int add(int a, int b) => a + b;
+bool isEven(int n) => n % 2 == 0;
+''';
+
 /// Default suite of the fixture package: kills the `+ → -` mutant.
 const fixtureTest = '''
 import 'package:fixture/calc.dart';
