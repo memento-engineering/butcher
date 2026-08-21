@@ -98,6 +98,33 @@ and the reading, both times three.
 Splitting the suite made this worse before it made it better: the faster
 reading (154 s to 120 s) shrank the half-life it calibrates.
 
+## Both terms, and what the leak cost
+
+Sizing the half-life as the longer of the two (2026-08-21, 713 mutants) fixed
+the timeouts: 75 down to 16, a 2.41% rate, each given 830 s median before being
+called inconclusive.
+
+The same run leaked 127 processes across 24 trees. Their creation times run to
+2.5 hours past the last timeout, so they were not 24 escapes: one leaked nested
+`rad` kept classifying mutants and spawning children on its own. The leak, not
+the engine, is the wall clock:
+
+| | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| Half-life | selection only | reading only | longer of the two |
+| Wall clock | 1 h 46 | 2 h 13 | 3 h 05 |
+| Timeouts | 17 | 75 | 16 |
+| Leaked processes | 2 | 69 | 127 |
+| Killed median | 9.9 s | 9.9 s | 26.5 s |
+
+Every duration inflated by the same ~2.5x, which is contention from the leak
+rather than anything the engine changed. Killing a suite by listing its tree
+was retired for [0022](../decisions/0022-process-interlock.md) after this run.
+
+Scores are not comparable across these three: the report is overwritten each
+run and the code under test changed between them. Runs are archived from now
+on.
+
 ## What is left
 
 - The `cli_*` suites remain the cost: they are nested `rad` runs, and most

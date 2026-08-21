@@ -31,9 +31,9 @@
   cheapest first, in one run: a self-run of this package fell from hours to
   under two. A supplied `lcov.info` names no test files, so it still runs the
   whole suite per mutant.
-- A timed-out suite is listed before it is killed and then swept until nothing
-  new appears, so a test that spawns processes of its own cannot leave them
-  running once its mutant is classified.
+- A timed-out suite is killed through a Windows job object, so everything it
+  spawned dies with it in one call, detached processes included. Other
+  platforms list the tree and sweep it until nothing new appears.
 - A routed mutant is given the longer of its selection's own cost and the
   background reading, times three: workers contend, so a selection that runs
   serially is not a timed-out mutant.

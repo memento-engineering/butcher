@@ -5,6 +5,7 @@ import 'dart:io';
 import '../model/test_events.dart';
 import '../model/test_run.dart';
 import 'capped_output.dart';
+import 'process_interlock.dart';
 import 'test_runner.dart';
 
 /// Runs `dart test` via [Platform.resolvedExecutable] (ADR 0003).
@@ -46,6 +47,10 @@ final class DartTestRunner implements TestRunner {
       if (concurrency != null) '--concurrency=$concurrency',
       ...suites,
     ], workingDirectory: root);
+    // Admitted before the suite can start anything of its own: what it
+    // spawns afterwards joins the job and dies with it (ADR 0022).
+    final interlock = ProcessInterlock.create();
+    interlock?.admit(process.pid);
 
     const decoder = Utf8Decoder(allowMalformed: true);
     final output = CappedOutput(limit: stdoutLimit);
@@ -67,10 +72,11 @@ final class DartTestRunner implements TestRunner {
           : await process.exitCode.timeout(timeout);
     } on TimeoutException {
       timedOut = true;
-      await _killTree(process);
+      await _killTree(process, interlock);
     }
     await drained.timeout(const Duration(seconds: 5), onTimeout: () => []);
     events.close();
+    interlock?.dispose();
 
     return TestRun(
       exitCode: exitCode,
@@ -87,13 +93,25 @@ final class DartTestRunner implements TestRunner {
 
   /// Kills the suite and everything it spawned.
   ///
-  /// The tree is listed before anything dies: a suite process that exits with
-  /// its parent takes the link to its own children with it, and they are then
-  /// unreachable from any later snapshot. Sweeping continues until nothing
-  /// new appears, since a killed pid still names the parent of what it
-  /// spawned meanwhile; one pass left 7 trees of 69 processes running
-  /// (2026-08-21).
-  static Future<void> _killTree(Process process) async {
+  /// An [interlock] kills the whole tree in one call, and is the only
+  /// reliable way to do it: listing processes needs a helper that can fail or
+  /// lag exactly when a loaded machine is hunting a hung suite, and 24 trees
+  /// of 127 processes outlived the sweep below (2026-08-21, ADR 0022).
+  ///
+  /// Without one, the tree is listed before anything dies: a suite process
+  /// that exits with its parent takes the link to its own children with it,
+  /// and they are then unreachable from any later snapshot. Sweeping
+  /// continues until nothing new appears, since a killed pid still names the
+  /// parent of what it spawned meanwhile.
+  static Future<void> _killTree(
+    Process process,
+    ProcessInterlock? interlock,
+  ) async {
+    if (interlock != null) {
+      interlock.terminate();
+      await process.exitCode;
+      return;
+    }
     final killed = {process.pid};
     for (var sweep = 0; sweep < killSweeps; sweep++) {
       final spawned = descendantPids(await processSnapshot(), killed);

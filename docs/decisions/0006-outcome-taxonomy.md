@@ -32,12 +32,10 @@
 - `Killed`, `Survived`, and `Timeout` remain separate peer outcomes in results.
 - Timeouts are inconclusive. They count as neither killed nor survived.
 - `--max-timeouts` fails a run when its timeout ceiling is exceeded.
-- A timed-out run is killed with everything it spawned. The tree is listed
-  while it is still attached, because a process whose parent dies first is
-  unreachable from every later snapshot, and then swept until a sweep finds
-  nothing new: a killed pid still names the parent of what it spawned
-  meanwhile. Killing in one pass left 7 trees of 69 processes running
-  (2026-08-21).
+- A timed-out run is killed with everything it spawned, through the interlock
+  it was admitted to ([0022](0022-process-interlock.md)). Where none exists,
+  the tree is listed while still attached and swept until nothing new appears;
+  that fallback is best-effort and has leaked at every scale.
 
 ## Rejected
 

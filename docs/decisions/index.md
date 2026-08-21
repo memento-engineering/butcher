@@ -43,5 +43,6 @@ flowchart TD
 | [0019](0019-static-viability-filtering.md) | Static viability filtering | accepted |
 | [0020](0020-zero-setup-provisioning.md) | Zero-setup provisioning | accepted, staged v0.1-v0.2 |
 | [0021](0021-beamline-execution.md) | Beamline execution | accepted, planned v1.0 |
+| [0022](0022-process-interlock.md) | Process interlock | accepted |
 
 Feature staging: [../roadmap/index.md](../roadmap/index.md).

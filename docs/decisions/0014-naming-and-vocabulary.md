@@ -28,6 +28,7 @@
 | Per-exposure timeout budget ([0006](0006-outcome-taxonomy.md)) | half-life |
 | Worker process hosting the suite ([0021](0021-beamline-execution.md)) | beamline |
 | One mutant against one test ([0021](0021-beamline-execution.md)) | exposure |
+| OS-enforced process group for a suite ([0022](0022-process-interlock.md)) | interlock |
 | Per-test coverage routing ([0011](0011-per-test-coverage-routing.md)) | tracer |
 | Surviving mutants of a run | fallout |
 | Score threshold gate | criticality gate |
