@@ -219,26 +219,10 @@ void main() {
     ], reason: 'the reading runs everything, the mutants only their suites');
     expect(
       runner.timeouts.skip(1),
-      everyElement(const Duration(seconds: 15)),
-      reason: 'the selection costs 5 s, so its half-life is three times that',
-    );
-  });
-
-  test('never gives a selection more half-life than the whole suite', () async {
-    final runner = FakeRunner(reported: const Duration(seconds: 60));
-    await Engine(
-      projectRoot: await miniProject(),
-      paths: await isolatedRadPaths('rad_engine_state_'),
-      runnerFactory: (_, _) => runner,
-      coverage: RecordingCoverage(const [
-        TestSuite(path: 'test/heavy_test.dart', duration: Duration(minutes: 5)),
-      ]),
-    ).run();
-
-    expect(
-      runner.timeouts.skip(1),
       everyElement(const Duration(seconds: 180)),
-      reason: 'a subset cannot outlast the whole suite it is taken from',
+      reason:
+          'the half-life stays the background reading, the only cost '
+          'measured under the load the run itself creates',
     );
   });
 

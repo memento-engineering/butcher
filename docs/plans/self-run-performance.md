@@ -75,10 +75,13 @@ Where the 13.1 h of summed suite time went, over 8 workers:
 | timeout | 17 | 10 221 s | 651.1 s |
 | noCoverage / unviable | 50 | 0 s | - |
 
-The 17 timeouts cost 22% of the run: a selection of heavy suites summed to a
-half-life above the whole suite's, so the cap in
-[0011](../decisions/0011-per-test-coverage-routing.md) now bounds them at the
-whole-suite half-life (363 s in that run).
+The 17 timeouts cost 22% of the run. That run scaled each mutant's half-life
+to its selection, which is wrong in both directions: a selection of heavy
+suites earned up to 1003 s, while a selection of cheap ones fell to the 10 s
+floor and timed healthy mutants out under load. The half-life is back to the
+background reading's (363 s in that run), the only cost measured under the
+load the run itself creates, which also bounds those 17 timeouts below what
+they cost here.
 
 ## What is left
 

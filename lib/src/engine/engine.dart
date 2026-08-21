@@ -314,10 +314,13 @@ final class Engine {
       // Only the suites covering the mutant, cheapest first, in one
       // fail-fast run: the first failure ends it, so an early kill costs the
       // cheap suites only (ADR 0011). An unknown selection runs everything.
+      // The half-life stays the background reading's: a suite's own span
+      // excludes process startup and was not measured under the run's load,
+      // so scaling it to the selection times out healthy mutants.
       final suites = coverage.suitesFor(mutant);
       final run = await runner.run(
         suites: [for (final suite in suites ?? const <TestSuite>[]) suite.path],
-        timeout: suites == null ? halfLife : _routedHalfLife(suites, halfLife),
+        timeout: halfLife,
         // One failing test already kills the mutant; the rest is wasted work.
         failFast: true,
       );
@@ -405,17 +408,6 @@ final class Engine {
     for (final error in nestedErrors) {
       runLog.error('nested test error: {Error}', {'Error': error});
     }
-  }
-
-  /// Half-life of a routed run: the selection's own cost on the same
-  /// `max(× 3, 10 s floor)` rule, so a mutant hanging in a small suite is
-  /// killed in seconds instead of the whole suite's half-life (ADR 0011).
-  /// A selection is a subset, so [wholeSuite] caps it.
-  static Duration _routedHalfLife(List<TestSuite> suites, Duration wholeSuite) {
-    final routed = halfLifeFor(
-      suites.fold(Duration.zero, (total, suite) => total + suite.duration),
-    );
-    return routed < wholeSuite ? routed : wholeSuite;
   }
 
   /// Per-mutant timeout: `max(background × 3, 10 s floor)` (ADR 0006).

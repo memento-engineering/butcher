@@ -19,8 +19,11 @@
 - v0.1: collect the report when none is supplied
   ([0020](0020-zero-setup-provisioning.md)).
 - v0.1: route at suite granularity; one fail-fast run over the covering test
-  files, cheapest first, so the first failure ends it. The half-life scales to
-  the selection, capped by the whole suite's.
+  files, cheapest first, so the first failure ends it.
+- v0.1: the half-life stays the background reading's. A suite's own span
+  excludes process startup and is not measured under the load the run itself
+  creates, so scaling the half-life to the selection times healthy mutants out
+  ([../plans/self-run-performance.md](../plans/self-run-performance.md)).
 - v0.1: routing may never under-select. An ingested `lcov.info` carries no
   suite identity, and a file no report mentions has no covering suite; both
   fall back to the whole suite.
