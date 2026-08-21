@@ -314,13 +314,10 @@ final class Engine {
       // Only the suites covering the mutant, cheapest first, in one
       // fail-fast run: the first failure ends it, so an early kill costs the
       // cheap suites only (ADR 0011). An unknown selection runs everything.
-      // The half-life stays the background reading's: a suite's own span
-      // excludes process startup and was not measured under the run's load,
-      // so scaling it to the selection times out healthy mutants.
       final suites = coverage.suitesFor(mutant);
       final run = await runner.run(
         suites: [for (final suite in suites ?? const <TestSuite>[]) suite.path],
-        timeout: halfLife,
+        timeout: _halfLifeFor(suites, halfLife),
         // One failing test already kills the mutant; the rest is wasted work.
         failFast: true,
       );
@@ -391,6 +388,10 @@ final class Engine {
       'Operator': mutation.operatorId,
       'Replacement': mutation.replacement,
       'Suites': [for (final suite in suites ?? const <TestSuite>[]) suite.path],
+      'SuiteMs': suites?.fold(
+        0,
+        (total, s) => total + s.duration.inMilliseconds,
+      ),
       if (result.error != null) 'Error': result.error,
       if (run != null) ...{
         'ExitCode': run.exitCode,
@@ -408,6 +409,21 @@ final class Engine {
     for (final error in nestedErrors) {
       runLog.error('nested test error: {Error}', {'Error': error});
     }
+  }
+
+  /// Half-life of a routed run: whichever of the selection's own serial cost
+  /// and the [wholeSuite] reading is longer, both on the `× 3` rule.
+  ///
+  /// Workers contend for the machine, so a routed run cannot count on the
+  /// parallelism the background reading measured; its suites effectively run
+  /// one after another. Taking the reading alone timed out 75 of 709 healthy
+  /// mutants (2026-08-21), 31 of them routed to the whole suite.
+  static Duration _halfLifeFor(List<TestSuite>? suites, Duration wholeSuite) {
+    if (suites == null) return wholeSuite;
+    final selected = halfLifeFor(
+      suites.fold(Duration.zero, (total, suite) => total + suite.duration),
+    );
+    return selected > wholeSuite ? selected : wholeSuite;
   }
 
   /// Per-mutant timeout: `max(background × 3, 10 s floor)` (ADR 0006).

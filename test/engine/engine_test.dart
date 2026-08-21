@@ -220,11 +220,35 @@ void main() {
     expect(
       runner.timeouts.skip(1),
       everyElement(const Duration(seconds: 180)),
-      reason:
-          'the half-life stays the background reading, the only cost '
-          'measured under the load the run itself creates',
+      reason: 'a selection cheaper than the reading keeps its half-life',
     );
   });
+
+  test(
+    'gives a selection costlier than the reading its own half-life',
+    () async {
+      final runner = FakeRunner(reported: const Duration(seconds: 60));
+      await Engine(
+        projectRoot: await miniProject(),
+        paths: await isolatedRadPaths('rad_engine_state_'),
+        runnerFactory: (_, _) => runner,
+        coverage: RecordingCoverage(const [
+          TestSuite(
+            path: 'test/heavy_test.dart',
+            duration: Duration(minutes: 5),
+          ),
+        ]),
+      ).run();
+
+      expect(
+        runner.timeouts.skip(1),
+        everyElement(const Duration(minutes: 15)),
+        reason:
+            'workers contend, so the selection runs serially and earns three '
+            'times its own cost',
+      );
+    },
+  );
 
   test('skips uncovered mutants without running tests', () async {
     final root = await miniProject();

@@ -82,21 +82,26 @@ final class DartTestRunner implements TestRunner {
     );
   }
 
-  /// Kills the suite and everything it spawned, in two sweeps.
+  /// How often a kill re-lists the processes before giving up on stragglers.
+  static const killSweeps = 5;
+
+  /// Kills the suite and everything it spawned.
   ///
-  /// The tree comes from a process snapshot, so one sweep is not enough: a
-  /// process spawned while it ran is already detached by the time its parent
-  /// dies, and a suite that spawns processes of its own then leaves them
-  /// running for hours. A killed pid still names the parent of what it
-  /// spawned, so the second sweep finds those escapees.
+  /// The tree is listed before anything dies: a suite process that exits with
+  /// its parent takes the link to its own children with it, and they are then
+  /// unreachable from any later snapshot. Sweeping continues until nothing
+  /// new appears, since a killed pid still names the parent of what it
+  /// spawned meanwhile; one pass left 7 trees of 69 processes running
+  /// (2026-08-21).
   static Future<void> _killTree(Process process) async {
     final killed = {process.pid};
-    for (var sweep = 0; sweep < 2; sweep++) {
+    for (var sweep = 0; sweep < killSweeps; sweep++) {
       final spawned = descendantPids(await processSnapshot(), killed);
+      if (sweep == 0) process.kill(ProcessSignal.sigkill);
+      if (spawned.isEmpty) break;
       for (final pid in spawned) {
         Process.killPid(pid, ProcessSignal.sigkill);
       }
-      if (sweep == 0) process.kill(ProcessSignal.sigkill);
       killed.addAll(spawned);
     }
     await process.exitCode;

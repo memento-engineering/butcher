@@ -31,8 +31,12 @@
   cheapest first, in one run: a self-run of this package fell from hours to
   under two. A supplied `lcov.info` names no test files, so it still runs the
   whole suite per mutant.
-- A timed-out suite is killed in two sweeps: a test that spawns processes of
-  its own cannot leave them running once its mutant is classified.
+- A timed-out suite is listed before it is killed and then swept until nothing
+  new appears, so a test that spawns processes of its own cannot leave them
+  running once its mutant is classified.
+- A routed mutant is given the longer of its selection's own cost and the
+  background reading, times three: workers contend, so a selection that runs
+  serially is not a timed-out mutant.
 - Static viability check: mutants that fail analysis (e.g. a flipped null
   check breaking type promotion) report as unviable without a test run.
 - Promotion-aware guards: equality and logical mutagens skip flips whose

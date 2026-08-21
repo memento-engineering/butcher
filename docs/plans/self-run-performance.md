@@ -75,17 +75,35 @@ Where the 13.1 h of summed suite time went, over 8 workers:
 | timeout | 17 | 10 221 s | 651.1 s |
 | noCoverage / unviable | 50 | 0 s | - |
 
-The 17 timeouts cost 22% of the run. That run scaled each mutant's half-life
-to its selection, which is wrong in both directions: a selection of heavy
-suites earned up to 1003 s, while a selection of cheap ones fell to the 10 s
-floor and timed healthy mutants out under load. The half-life is back to the
-background reading's (363 s in that run), the only cost measured under the
-load the run itself creates, which also bounds those 17 timeouts below what
-they cost here.
+That run scaled each mutant's half-life to its selection alone, so a cheap
+selection fell to the 10 s floor and timed healthy mutants out under load.
+
+## The half-life needs both terms
+
+Taking only the background reading instead (2 h 13 min, 709 mutants) was
+worse: 75 timeouts, MSI down to 76.18%.
+
+| Outcome | Mutants | Sum | Median |
+|---|---|---|---|
+| killed | 467 | 15 423 s | 9.9 s |
+| survived | 117 | 14 354 s | 97.1 s |
+| timeout | 75 | 31 452 s | 411.6 s |
+
+The reading is measured on an idle machine; mutant runs happen eight at a
+time, and rad's own suite spawns processes inside each. Survivors ran to
+359.5 s against a 361 s half-life, and 31 of the 75 timeouts were routed to
+all 29 suites. A run therefore gets the longer of its selection's serial cost
+and the reading, both times three.
+
+Splitting the suite made this worse before it made it better: the faster
+reading (154 s to 120 s) shrank the half-life it calibrates.
 
 ## What is left
 
 - The `cli_*` suites remain the cost: they are nested `rad` runs, and most
   mutants are covered by one of them.
+- Half-lives are calibrated on an idle reading and spent under contention.
+  Measuring the reading under the run's own load, or timing out on reporter
+  silence instead of total duration, would remove the guesswork.
 - `--diff-base` (v1.0) is what makes a per-commit self-run affordable; routing
   makes the full run schedulable, not interactive.
