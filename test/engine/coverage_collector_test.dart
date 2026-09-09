@@ -100,8 +100,9 @@ void main() {
   });
 
   test('resolves file: sources directly', () async {
-    final source = Uri.file(p.join(containment.path, 'test', 'calc_test.dart'))
-        .toString();
+    final source = Uri.file(
+      p.join(containment.path, 'test', 'calc_test.dart'),
+    ).toString();
 
     final provider = await collect({
       'calc_test.vm.json': [
@@ -160,6 +161,53 @@ void main() {
       'lib/calc.dart': {1: 2},
     });
   });
+
+  test(
+    'resolves a member package through a workspace package config',
+    () async {
+      final workspace = await Directory.systemTemp.createTemp(
+        'rad_collect_workspace_',
+      );
+      addTearDown(() => workspace.delete(recursive: true));
+      final member = Directory(p.join(workspace.path, 'packages', 'member'))
+        ..createSync(recursive: true);
+      File(p.join(member.path, 'lib', 'calc.dart'))
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('int get value => 1;\n');
+      File(p.join(workspace.path, '.dart_tool', 'package_config.json'))
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(
+          jsonEncode({
+            'configVersion': 2,
+            'packages': [
+              {
+                'name': 'fixture',
+                'rootUri': '../packages/member',
+                'packageUri': 'lib/',
+              },
+            ],
+          }),
+        );
+      final output = p.join(member.path, 'coverage');
+
+      final provider =
+          await CoverageCollector(
+            root: member.path,
+            packageConfigRoot: workspace.path,
+            outputDir: output,
+          ).collect(
+            _ReportingRunner({
+              'calc_test.vm.json': [
+                _entry('package:fixture/calc.dart', [1, 2]),
+              ],
+            }),
+          );
+
+      expect(provider.merged.hits, {
+        'lib/calc.dart': {1: 2},
+      });
+    },
+  );
 
   test('aborts when a green run records nothing', () async {
     await expectLater(
