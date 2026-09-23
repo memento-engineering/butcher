@@ -1,4 +1,5 @@
 import 'package:butcher/butcher.dart';
+import 'package:butcher/src/engine/capped_output.dart';
 import 'package:test/test.dart';
 
 const _mutation = Mutation(
@@ -477,6 +478,18 @@ void main() {
 
       expect(text, contains('lib/a.dart:12:arithmetic'));
       expect(text, contains('killed'));
+    });
+  });
+
+  group('the mechanism classes stay identity-compared', () {
+    test('two capped buffers holding the same content are not equal', () {
+      final one = CappedOutput(limit: 64)..write('same content');
+      final other = CappedOutput(limit: 64)..write('same content');
+
+      expect(one.toString(), other.toString());
+      expect(one, isNot(other));
+      expect({one}, isNot(contains(other)));
+      expect(one, same(one));
     });
   });
 }
