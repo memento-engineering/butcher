@@ -1,11 +1,10 @@
-/// The Stryker mutation-report schema for the butcher mutation engine.
+/// The mutation-testing report schema as Dart types, with no file or network
+/// I/O.
 ///
-/// The typed schema models move here with the report work; this barrel exists
-/// so the member resolves, analyzes and tests from the change that creates it.
+/// The schema is the Stryker `mutation-testing-report-schema`, draft-07,
+/// titled `MutationTestResult`. Reading and writing the bytes is the caller's
+/// job, which is what lets a dashboard or a CI gate depend on this package
+/// without depending on the mutation engine.
 library;
 
-/// The name this package publishes under.
-///
-/// A placeholder so the barrel carries one documented, testable declaration
-/// until the report schema lands here.
-const butcherReportPackageName = 'butcher_report';
+export 'src/mutant_status.dart';
