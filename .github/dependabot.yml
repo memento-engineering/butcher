@@ -1,7 +1,26 @@
 version: 2
+
+# A pub entry points at a directory holding a pubspec, and after the
+# restructure the only pubspec at the root is the workspace's own, which
+# declares nothing to update. Each member is listed instead, so a constraint
+# bump lands in the member that carries the constraint.
 updates:
   - package-ecosystem: pub
-    directory: /
+    directory: /packages/butcher
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: pub
+    directory: /packages/butcher_process
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: pub
+    directory: /packages/butcher_report
     schedule:
       interval: monthly
     commit-message:

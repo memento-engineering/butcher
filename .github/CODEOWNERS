@@ -1,1 +1,8 @@
-* @ricardoboss
+# Who GitHub asks to review a change here.
+#
+# The owner has to be a handle that resolves inside this organisation, or the
+# review request is routed nowhere and nothing fails to say so. The org carries
+# no teams at all -- listing them returns an empty set -- so there is no
+# engineering team to name and the organisation itself owns the tree. Name a
+# team handle here the day one exists.
+* @memento-engineering
