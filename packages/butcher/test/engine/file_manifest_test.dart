@@ -2,16 +2,16 @@
 //
 //   git ls-files --cached --others --exclude-standard --deduplicate -z \
 //     | xargs -0 stat -f%z | awk '{n++; b+=$1} END {print n, b}'
-//   -> 179 files, 473620 bytes
+//   -> 218 files, 663910 bytes
 //
 //   find . \( -name .git -o -name .dart_tool -o -path ./build \
 //     -o -path ./coverage \) -prune -o -type f -print0 \
 //     | xargs -0 stat -f%z | awk '{n++; b+=$1} END {print n, b}'
-//   -> 180 files, 484807 bytes
+//   -> 219 files, 675097 bytes
 //
 // The one file between them is the gitignored `pubspec.lock`, which the
 // always-include rule puts back, so butcher's own sandbox copies the same
-// 180 files either way: this repository gitignores nothing but tooling
+// 219 files either way: this repository gitignores nothing but tooling
 // output, which the walk already excluded. The reduction the manifest buys
 // scales with what a project gitignores, not with its source.
 import 'dart:io';
