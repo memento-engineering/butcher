@@ -1,4 +1,5 @@
 @Timeout(Duration(minutes: 5))
+@Tags(['slow'])
 library;
 
 import 'dart:convert';

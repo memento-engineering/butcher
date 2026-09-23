@@ -1,0 +1,24 @@
+# package:test has no glob-to-tag mapping: a tag reaches a suite only through a
+# library-level `@Tags` annotation in that suite's own source. Declaring it here
+# is what stops `dart test -x slow` failing on an unrecognised tag name.
+#
+# `slow` marks the suites that spawn real subprocesses -- a real `dart test`
+# run, a real `dart pub get`, a real process tree to kill. Wall time for one
+# suite on its own, measured on macOS (Dart 3.12, 10 cores) at the commit that
+# introduced this file:
+#
+#   test/cli/cli_run_test.dart            33s
+#   test/cli/cli_coverage_test.dart       30s
+#   test/engine/kill_tree_test.dart       26s
+#   test/engine/dart_test_runner_test.dart 26s
+#   test/cli/cli_workspace_test.dart      17s
+#   test/cli/cli_provisioning_test.dart   16s
+#   test/cli/cli_abort_test.dart           5s
+#
+# Every other suite in this package measured 8s or less, and most measured 1s.
+# `dart test -x slow` runs them all in a couple of seconds.
+#
+# A selection that names test files explicitly must NOT also pass `-x slow`, or
+# a tagged file silently selects nothing.
+tags:
+  slow:
