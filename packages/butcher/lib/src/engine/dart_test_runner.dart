@@ -1,11 +1,11 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:butcher_process/butcher_process.dart';
 
 import '../model/test_events.dart';
 import '../model/test_run.dart';
 import 'capped_output.dart';
-import 'process_interlock.dart';
 import 'test_runner.dart';
 
 /// Runs `dart test` via [Platform.resolvedExecutable] (ADR 0003).
@@ -38,143 +38,47 @@ final class DartTestRunner implements TestRunner {
     String? coverageDir,
   }) async {
     final watch = Stopwatch()..start();
-    final process = await Process.start(Platform.resolvedExecutable, [
-      'test',
-      '--reporter',
-      'json',
-      if (failFast) '--fail-fast',
-      if (coverageDir != null) '--coverage=$coverageDir',
-      if (concurrency != null) '--concurrency=$concurrency',
-      ...suites,
-    ], workingDirectory: root);
-    // Admitted before the suite can start anything of its own: what it
-    // spawns afterwards joins the job and dies with it (ADR 0022).
-    final interlock = ProcessInterlock.create();
-    interlock?.admit(process.pid);
+    // The suite is a kill boundary from the moment it exists, so what it
+    // spawns afterwards dies with it in one call (ADR 0022).
+    final process = await SupervisedProcess.start(
+      Platform.resolvedExecutable,
+      [
+        'test',
+        '--reporter',
+        'json',
+        if (failFast) '--fail-fast',
+        if (coverageDir != null) '--coverage=$coverageDir',
+        if (concurrency != null) '--concurrency=$concurrency',
+        ...suites,
+      ],
+      workingDirectory: root,
+    );
 
     const decoder = Utf8Decoder(allowMalformed: true);
     final output = CappedOutput(limit: stdoutLimit);
     final errors = CappedOutput(limit: stderrLimit);
     final events = TestEvents();
     final drained = Future.wait([
-      process.stdout.transform(decoder).forEach((chunk) {
+      process.output.transform(decoder).forEach((chunk) {
         events.add(chunk);
         output.write(chunk);
       }),
-      process.stderr.transform(decoder).forEach(errors.write),
+      process.errorOutput.transform(decoder).forEach(errors.write),
     ]);
 
-    var exitCode = -1;
-    var timedOut = false;
-    try {
-      exitCode = timeout == null
-          ? await process.exitCode
-          : await process.exitCode.timeout(timeout);
-    } on TimeoutException {
-      timedOut = true;
-      await _killTree(process, interlock);
-    }
+    final code = await process.wait(deadline: timeout);
     await drained.timeout(const Duration(seconds: 5), onTimeout: () => []);
     events.close();
-    interlock?.dispose();
 
     return TestRun(
-      exitCode: exitCode,
-      timedOut: timedOut,
+      // A deadline leaves no exit code to report; the classifier reads the
+      // timeout marker instead.
+      exitCode: code ?? -1,
+      timedOut: code == null,
       output: output.toString(),
       errorOutput: errors.toString(),
       events: events,
       duration: watch.elapsed,
     );
-  }
-
-  /// How often a kill re-lists the processes before giving up on stragglers.
-  static const killSweeps = 5;
-
-  /// Kills the suite and everything it spawned.
-  ///
-  /// An [interlock] kills the whole tree in one call, and is the only
-  /// reliable way to do it: listing processes needs a helper that can fail or
-  /// lag exactly when a loaded machine is hunting a hung suite, and 24 trees
-  /// of 127 processes outlived the sweep below (2026-08-21, ADR 0022).
-  ///
-  /// Without one, the tree is listed before anything dies: a suite process
-  /// that exits with its parent takes the link to its own children with it,
-  /// and they are then unreachable from any later snapshot. Sweeping
-  /// continues until nothing new appears, since a killed pid still names the
-  /// parent of what it spawned meanwhile.
-  static Future<void> _killTree(
-    Process process,
-    ProcessInterlock? interlock,
-  ) async {
-    if (interlock != null) {
-      interlock.terminate();
-      await process.exitCode;
-      return;
-    }
-    final killed = {process.pid};
-    for (var sweep = 0; sweep < killSweeps; sweep++) {
-      final spawned = descendantPids(await processSnapshot(), killed);
-      if (sweep == 0) process.kill(ProcessSignal.sigkill);
-      if (spawned.isEmpty) break;
-      for (final pid in spawned) {
-        Process.killPid(pid, ProcessSignal.sigkill);
-      }
-      killed.addAll(spawned);
-    }
-    await process.exitCode;
-  }
-
-  /// Every running process as `pid ppid`, one per line, or empty when the
-  /// image cannot list them: a missing helper costs the descendants, never
-  /// the hung suite itself.
-  ///
-  /// [lister] overrides the executable, a seam for tests to cover the missing
-  /// case on any platform.
-  static Future<String> processSnapshot([String? lister]) async {
-    final executable = lister ?? (Platform.isWindows ? 'powershell' : 'ps');
-    try {
-      final listed = await Process.run(executable, [
-        if (Platform.isWindows) ...[
-          '-NoProfile',
-          '-NonInteractive',
-          '-Command',
-          'Get-CimInstance Win32_Process | '
-              'Select-Object ProcessId,ParentProcessId | '
-              'Format-Table -HideTableHeaders',
-        ] else ...[
-          '-A',
-          '-o',
-          'pid=,ppid=',
-        ],
-      ]);
-      return '${listed.stdout}';
-    } on ProcessException {
-      return '';
-    }
-  }
-
-  /// Transitive child pids of [roots] in a `pid ppid` [snapshot], [roots]
-  /// themselves excluded.
-  ///
-  /// Public so tests can cover it on any platform.
-  static List<int> descendantPids(String snapshot, Set<int> roots) {
-    final childrenOf = <int, List<int>>{};
-    for (final line in const LineSplitter().convert(snapshot)) {
-      final fields = line.trim().split(RegExp(r'\s+'));
-      if (fields.length < 2) continue;
-      final pid = int.tryParse(fields[0]);
-      final ppid = int.tryParse(fields[1]);
-      if (pid == null || ppid == null) continue;
-      childrenOf.putIfAbsent(ppid, () => []).add(pid);
-    }
-    final seen = <int>{};
-    final queue = [...roots];
-    while (queue.isNotEmpty) {
-      for (final child in childrenOf[queue.removeLast()] ?? const <int>[]) {
-        if (!roots.contains(child) && seen.add(child)) queue.add(child);
-      }
-    }
-    return seen.toList();
   }
 }

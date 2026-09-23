@@ -30,7 +30,8 @@
 - A red baseline aborts the run before generation; the green baseline's
   duration sets each mutant's deadline, so a slow selection is not a timeout.
 - `--jobs` classifies in parallel, one sandbox per worker. A timed-out suite
-  is killed with everything it spawned.
+  is killed with everything it spawned, and interrupting a run reaps every
+  suite still in flight.
 - `--threshold` gates on the MSI and `--max-timeouts` on timed-out mutants.
   Exit codes are 0 success, 1 gate failed, 64 usage, 70 aborted run.
 - Wide-event CLEF logging: one tool log plus one log per sandbox, each

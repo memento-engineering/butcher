@@ -14,6 +14,7 @@ import '../report/metrics.dart';
 import '../report/stryker_json_sink.dart';
 import '../run_workspace.dart';
 import '../version.dart';
+import 'signal_watcher.dart';
 
 /// Default path of the Stryker JSON report, relative to the project root.
 const defaultReportPath = 'mutation-report.json';
@@ -24,11 +25,13 @@ const defaultReportPath = 'mutation-report.json';
 /// 70 aborted run (locked workspace, red baseline, failed pub get
 /// or coverage collection).
 ///
-/// [paths] overrides every filesystem location used by the invocation.
+/// [paths] overrides every filesystem location used by the invocation, and
+/// [signals] the watcher that reaps the run's suites when it is signalled.
 Future<int> butcherMain(
   List<String> arguments, {
   StringSink? out,
   ButcherPaths? paths,
+  SignalWatcher? signals,
 }) async {
   final sink = out ?? stdout;
   final parser = ArgParser()
@@ -136,6 +139,9 @@ Future<int> butcherMain(
     stderr.writeln(abort.message);
     return 70;
   }
+  // From here the run owns suites that lead process groups of their own, so
+  // an interrupt has to reap them instead of leaking them.
+  final watcher = (signals ?? SignalWatcher())..start();
   final verbose = options.flag('verbose');
   final watch = Stopwatch()..start();
   final ButcherLogger logger;
@@ -179,6 +185,7 @@ Future<int> butcherMain(
             ),
     );
   } catch (_) {
+    watcher.stop();
     workspace.release();
     rethrow;
   }
@@ -247,6 +254,7 @@ Future<int> butcherMain(
     stderr.writeln(abort.message);
     exitCode = 70;
   } finally {
+    watcher.stop();
     workspace.release();
   }
   return exitCode;
