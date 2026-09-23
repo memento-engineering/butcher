@@ -1,26 +1,13 @@
 version: 2
 
-# A pub entry points at a directory holding a pubspec, and after the
-# restructure the only pubspec at the root is the workspace's own, which
-# declares nothing to update. Each member is listed instead, so a constraint
-# bump lands in the member that carries the constraint.
+# This is a pub workspace: Dependabot's pub updater refuses a per-member
+# directory ("dependency_services failed: Only apply dependency_services to
+# the root of the workspace"). One entry at the workspace root drives the
+# dependency_services run that reads every member's pubspec and updates each
+# member's own constraints from there.
 updates:
   - package-ecosystem: pub
-    directory: /packages/butcher
-    schedule:
-      interval: monthly
-    commit-message:
-      prefix: chore
-
-  - package-ecosystem: pub
-    directory: /packages/butcher_process
-    schedule:
-      interval: monthly
-    commit-message:
-      prefix: chore
-
-  - package-ecosystem: pub
-    directory: /packages/butcher_report
+    directory: /
     schedule:
       interval: monthly
     commit-message:

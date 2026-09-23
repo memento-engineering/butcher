@@ -115,7 +115,9 @@ void main() {
       run: _checkCodeowners,
     ),
     (
-      name: 'dependabot covers every member and the actions ecosystem',
+      name:
+          'dependabot updates pub at the workspace root and the actions '
+          'ecosystem',
       run: _checkDependabot,
     ),
     (name: 'ci pins the Dart SDK to the workspace floor', run: _checkSdkPin),
@@ -805,7 +807,9 @@ void _checkCodeowners() {
 }
 
 void _checkDependabot() {
-  const check = 'dependabot covers every member and the actions ecosystem';
+  const check =
+      'dependabot updates pub at the workspace root and the actions '
+      'ecosystem';
 
   final updates = _load(_dependabotPath, check)['updates'];
   if (updates is! YamlList) {
@@ -845,26 +849,42 @@ void _checkDependabot() {
     }
   }
 
-  for (final member in _members(check)) {
-    final entry = entryFor('pub', '/${member.directory}');
-    if (entry == null) {
-      throw CheckFailure(
-        check,
-        '$_dependabotPath watches no pub directory /${member.directory}, so '
-        'that member\'s constraints are never updated',
-      );
-    }
-
-    checkCadence(entry, 'chore', '/${member.directory}');
-  }
-
-  if (entryFor('pub', '/') != null) {
+  final pubEntries = entries
+      .where((entry) => '${entry['package-ecosystem']}' == 'pub')
+      .toList();
+  if (pubEntries.isEmpty) {
     throw CheckFailure(
       check,
-      '$_dependabotPath still watches the pub directory /, which after the '
-      'restructure holds only the workspace pubspec and nothing to update',
+      '$_dependabotPath declares no pub entry; a pub workspace is updated '
+      'from one entry at the root, not from a member directory',
     );
   }
+
+  if (pubEntries.length > 1) {
+    final directories = pubEntries
+        .map((entry) => '${entry['directory']}')
+        .join(', ');
+    throw CheckFailure(
+      check,
+      '$_dependabotPath declares ${pubEntries.length} pub entries '
+      '($directories); a pub workspace\'s dependency_services run refuses '
+      'anything but the root ("Only apply dependency_services to the root '
+      'of the workspace"), so one root entry is what updates every '
+      'member\'s constraints',
+    );
+  }
+
+  final pub = entryFor('pub', '/');
+  if (pub == null) {
+    throw CheckFailure(
+      check,
+      '$_dependabotPath\'s pub entry does not watch directory /; a pub '
+      'workspace\'s dependency_services run refuses anything but the root '
+      'directory',
+    );
+  }
+
+  checkCadence(pub, 'chore', 'pub');
 
   final actions = entryFor('github-actions', '/');
   if (actions == null) {
