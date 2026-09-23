@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1-dev.1
+
+- Automation proof: first tag-driven publish. No library change.
+
 ## 0.1.0
 
 - Initial release: butcher's process-tree lifetime and kill primitives.
