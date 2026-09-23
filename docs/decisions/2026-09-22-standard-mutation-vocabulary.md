@@ -12,7 +12,8 @@ register:
     - "packages/butcher/lib/src/butcher_paths.dart"
     - "packages/butcher/lib/src/log/butcher_logger.dart"
     - "packages/butcher/lib/src/engine/run_result.dart"
-  obsoletes: []
+  obsoletes:
+    - "naming-and-vocabulary"
   updates: []
   obsoleted-by: null
   updated-by: []

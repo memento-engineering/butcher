@@ -91,6 +91,6 @@ register:
   during a crash.
 - Copying only the mutated package's `lib/`: works for simple packages, but
   workspace resolution and arbitrary test asset paths require more context.
-- A per-project ignore file in butcher's own gitignore-style dialect: a second
+- A per-project exclusion file in a dialect of butcher's own: a second
   implementation of a syntax git already implements, kept correct forever, to
   express what the project's own `.gitignore` already expresses.
