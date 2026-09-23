@@ -110,6 +110,13 @@ void main() {
     expect({
       for (final event in classified) event.result,
     }, result.results.toSet());
+    expect(
+      {for (final event in classified) event.result.mutant.id},
+      {
+        for (final file in report.files.values)
+          for (final mutant in file.mutants) mutant.id,
+      },
+    );
 
     await _expectSandboxIsFiltered(paths.root, workspaceRoot);
 
@@ -134,12 +141,13 @@ const _censusTolerance = 2;
 /// How long the census is given to come back down before a rise counts as a
 /// leak.
 ///
-/// The census counts the whole host, so a sibling suite spawning its own
-/// processes raises it too: running this file inside the package's full
-/// `dart test` put it 12 above its starting point while the kill-tree and CLI
-/// suites were running. That rise is transient and a leak is not, which is
-/// what this window separates. It only ever costs time when something else is
-/// running: on a quiet host the first reading already settles.
+/// The census counts the whole host, so anything else spawning processes
+/// raises it too: running this file inside the package's full `dart test` put
+/// it 12 above its starting point while the kill-tree and CLI suites were
+/// running, and even on its own it took up to 55 s to come back down on a
+/// developer machine. That rise is transient and a leak is not, which is what
+/// this window separates. Measured over five runs: three settled on the first
+/// reading, two inside a minute, and none of them left anything behind.
 const _censusSettleWindow = Duration(minutes: 2);
 
 /// The host process count once it is at or below [ceiling], or its last
