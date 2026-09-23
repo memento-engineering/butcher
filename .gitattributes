@@ -1,0 +1,3 @@
+# Tests compare documentation text byte-for-byte across OSes, so every
+# checkout must produce the same bytes regardless of core.autocrlf.
+* text=auto eol=lf
