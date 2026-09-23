@@ -66,7 +66,8 @@ void main() {
     watch.stop();
     final events = await published;
 
-    final processesAfter = await hostProcessCount();
+    final processCeiling = processesBefore + _censusTolerance;
+    final processesAfter = await _settledHostProcessCount(processCeiling);
 
     printOnFailure(
       'self run took ${watch.elapsed} over ${result.results.length} mutants',
@@ -112,17 +113,13 @@ void main() {
 
     await _expectSandboxIsFiltered(paths.root, workspaceRoot);
 
-    // A leaked suite descendant outlives the run and shows up here. The
-    // census counts every process on the host, not just this run's, so an
-    // exact equality is not assertable: unrelated processes come and go. The
-    // tolerance is smaller than any leak this run could produce, since one
-    // leaked `dart test` leaves its own tree behind.
+    // A leaked suite descendant outlives the run and shows up here.
     expect(
       processesAfter,
-      lessThanOrEqualTo(processesBefore + _censusTolerance),
+      lessThanOrEqualTo(processCeiling),
       reason:
-          'host process count went from $processesBefore to $processesAfter; '
-          'the run leaked descendants',
+          'host process count went from $processesBefore to $processesAfter '
+          'and stayed there; the run leaked descendants',
     );
   });
 }
@@ -131,9 +128,31 @@ void main() {
 /// leak.
 ///
 /// Measured on an idle macOS host: `ps -A` moved by at most one over six
-/// consecutive readings a second apart. Two leaves room for that churn and
-/// still fails on a leaked suite, which leaves a whole `dart test` tree.
+/// consecutive readings a second apart.
 const _censusTolerance = 2;
+
+/// How long the census is given to come back down before a rise counts as a
+/// leak.
+///
+/// The census counts the whole host, so a sibling suite spawning its own
+/// processes raises it too: running this file inside the package's full
+/// `dart test` put it 12 above its starting point while the kill-tree and CLI
+/// suites were running. That rise is transient and a leak is not, which is
+/// what this window separates. It only ever costs time when something else is
+/// running: on a quiet host the first reading already settles.
+const _censusSettleWindow = Duration(minutes: 2);
+
+/// The host process count once it is at or below [ceiling], or its last
+/// reading when it never gets there within [_censusSettleWindow].
+Future<int> _settledHostProcessCount(int ceiling) async {
+  final waited = Stopwatch()..start();
+  var reading = await hostProcessCount();
+  while (reading > ceiling && waited.elapsed < _censusSettleWindow) {
+    await Future<void>.delayed(const Duration(seconds: 1));
+    reading = await hostProcessCount();
+  }
+  return reading;
+}
 
 /// The workspace root, found by walking up from the directory the suite runs
 /// in until the manifest declaring the `workspace` is found.
