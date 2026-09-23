@@ -186,6 +186,20 @@ void main() {
     );
   });
 
+  test(
+    'StrykerJsonSink writes the version and thresholds it declares',
+    () async {
+      final report =
+          jsonDecode(await writeReport([result(Outcome.killed, offset: 37)]))
+              as Map<String, dynamic>;
+      expect(report['schemaVersion'], strykerSchemaVersion);
+      expect(report['thresholds'], {
+        'high': strykerHighThreshold,
+        'low': strykerLowThreshold,
+      });
+    },
+  );
+
   test('StrykerJsonSink explains the failures a status cannot', () async {
     // Two outcomes collapse onto RuntimeError and a third, unviable, has a
     // status nobody can read; all three get a reason. The memory error is

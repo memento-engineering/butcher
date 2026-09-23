@@ -8,6 +8,23 @@ import '../model/mutant_result.dart';
 import '../model/outcome.dart';
 import 'report_sink.dart';
 
+/// The `schemaVersion` every document [StrykerJsonSink] writes declares.
+///
+/// Hoisted out of the document body so the configuration surface that will
+/// one day let a run declare these values has a named knob to replace, rather
+/// than a literal buried in the write path.
+const strykerSchemaVersion = '1';
+
+/// The mutation-score percentage at or above which a run counts as good.
+///
+/// Hoisted for the same reason as [strykerSchemaVersion].
+const strykerHighThreshold = 80;
+
+/// The mutation-score percentage below which a run counts as bad.
+///
+/// Hoisted for the same reason as [strykerSchemaVersion].
+const strykerLowThreshold = 60;
+
 /// Writes the Stryker `mutation-testing-report-schema` JSON (ADR 0009).
 ///
 /// The document is built as `butcher_report`'s typed [MutationTestResult] and
@@ -115,8 +132,11 @@ final class StrykerJsonSink implements ReportSink {
     }
 
     final document = MutationTestResult(
-      schemaVersion: '1',
-      thresholds: const Thresholds(high: 80, low: 60),
+      schemaVersion: strykerSchemaVersion,
+      thresholds: const Thresholds(
+        high: strykerHighThreshold,
+        low: strykerLowThreshold,
+      ),
       files: {
         for (final entry in mutantsOf.entries)
           entry.key: FileResult(
