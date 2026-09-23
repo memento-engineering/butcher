@@ -28,7 +28,7 @@ The three chains are independent and can run in any order or at once.
 
 | Edge | Why |
 |---|---|
-| 1 → 2 | [0020](../../decisions/0020-zero-setup-provisioning.md) rejected instrumenting the reading while half-lives were elapsed-time budgets. A silence budget is what unblocks it |
+| 1 → 2 | [0020](../../decisions/2026-08-18-zero-setup-provisioning.md) rejected instrumenting the reading while half-lives were elapsed-time budgets. A silence budget is what unblocks it |
 | 3 → 4 | `--non-interactive` is a name in a public schema; adding the flag first fixes it by accident |
 | 5 → 6 | the census says which node kinds have no mutagen; choosing operators without it is guesswork |
 

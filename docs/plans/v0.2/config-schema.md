@@ -14,7 +14,7 @@ what gets mutants.
    breaks every consumer.
 2. What happens to `.radignore`? Copy exclusions and mutation include/exclude
    are different questions
-   ([0004](../../decisions/0004-shadow-copy-isolation.md)) — decide whether
+   ([0004](../../decisions/2026-08-14-shadow-copy-isolation.md)) — decide whether
    they stay separate or the config subsumes both.
 3. Precedence is CLI over config over defaults. What does a negatable flag
    mean when the config disagrees, and can the CLI turn something back on?

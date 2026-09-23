@@ -37,23 +37,23 @@ register:
 | Concept | Term |
 |---|---|
 | Mutated code variant | mutant |
-| Mutation operator ([0008](0008-composable-mutator-framework.md)) | mutagen |
+| Mutation operator ([0008](2026-08-14-composable-mutator-framework.md)) | mutagen |
 | Applying mutants to source | irradiation |
-| Isolated project copy ([0004](0004-shadow-copy-isolation.md)) | containment |
-| Green-suite verification run ([0005](0005-mandatory-baseline-verification.md)) | background reading |
-| Per-exposure timeout budget ([0006](0006-outcome-taxonomy.md)) | half-life |
-| Worker process hosting the suite ([0021](0021-beamline-execution.md)) | beamline |
-| One mutant against one test ([0021](0021-beamline-execution.md)) | exposure |
-| OS-enforced process group for a suite ([0022](0022-process-interlock.md)) | interlock |
-| Per-test coverage routing ([0011](0011-per-test-coverage-routing.md)) | tracer |
+| Isolated project copy ([0004](2026-08-14-shadow-copy-isolation.md)) | containment |
+| Green-suite verification run ([0005](2026-08-14-mandatory-baseline-verification.md)) | background reading |
+| Per-exposure timeout budget ([0006](2026-08-14-outcome-taxonomy.md)) | half-life |
+| Worker process hosting the suite ([0021](2026-08-21-beamline-execution.md)) | beamline |
+| One mutant against one test ([0021](2026-08-21-beamline-execution.md)) | exposure |
+| OS-enforced process group for a suite ([0022](2026-08-21-process-interlock.md)) | interlock |
+| Per-test coverage routing ([0011](2026-08-14-per-test-coverage-routing.md)) | tracer |
 | Surviving mutants of a run | fallout |
 | Score threshold gate | criticality gate |
 
 Unthemed, for interop and clarity:
 
-- Outcome enum ([0006](0006-outcome-taxonomy.md)): `Killed` … `Equivalent`.
-- Stryker JSON field names ([0009](0009-stryker-json-primary-report.md)).
-- "Schemata" ([0010](0010-mutant-schemata.md)), "mutation score" / MSI.
+- Outcome enum ([0006](2026-08-14-outcome-taxonomy.md)): `Killed` … `Equivalent`.
+- Stryker JSON field names ([0009](2026-08-14-stryker-json-primary-report.md)).
+- "Schemata" ([0010](2026-08-14-mutant-schemata.md)), "mutation score" / MSI.
 - CLI flag names (`--threshold`, `--with-timeouts`).
 
 `rad` collision check (2026-08):

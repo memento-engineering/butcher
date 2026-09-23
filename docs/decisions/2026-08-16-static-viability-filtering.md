@@ -50,10 +50,10 @@ register:
 - The check reuses generation's analysis state and processes a file's
   mutants as one batch, so a file is resolved once per mutant instead of
   twice. Both stages scope that state, so the resolved units are collectible
-  before the first worker runs ([0016](0016-wide-event-logging.md)).
-- Schemata ([0010](0010-mutant-schemata.md)) requires every injected mutant
+  before the first worker runs ([0016](2026-08-15-wide-event-logging.md)).
+- Schemata ([0010](2026-08-14-mutant-schemata.md)) requires every injected mutant
   to compile; this filter is its prerequisite.
-- The TCE pass ([0012](0012-tce-equivalent-detection.md)) becomes a peer
+- The TCE pass ([0012](2026-08-14-tce-equivalent-detection.md)) becomes a peer
   filter stage on the same infrastructure.
 
 ## Rejected

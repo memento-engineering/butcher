@@ -3,7 +3,7 @@
 Goal: validate the mutator API reads as intended before writing many
 operators. Timebox: ~1 h. Throwaway code; only findings are kept.
 
-Historical record; predates [0014](../decisions/0014-naming-and-vocabulary.md):
+Historical record; predates [0014](../decisions/2026-08-14-naming-and-vocabulary.md):
 "mutator" is now "mutagen".
 
 ## Questions to answer
@@ -34,9 +34,9 @@ Historical record; predates [0014](../decisions/0014-naming-and-vocabulary.md):
 
 Verdict: the shape holds; all success criteria met. Friction points below
 folded into ADRs
-[0002](../decisions/0002-parse-with-official-analyzer.md),
-[0007](../decisions/0007-deterministic-execution.md) and
-[0008](../decisions/0008-composable-mutator-framework.md).
+[0002](../decisions/2026-08-14-parse-with-official-analyzer.md),
+[0007](../decisions/2026-08-14-deterministic-execution.md) and
+[0008](../decisions/2026-08-14-composable-mutator-framework.md).
 
 ### Answers
 

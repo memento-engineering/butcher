@@ -37,7 +37,7 @@ register:
   timestamp, `@mt` message template whose `{Property}` holes name the
   event's properties, and `@l` only on errors (absent means info).
 - Tool log at `<system temp>/rad/rad.log`. Startup cleanup removes the previous
-  file ([0018](0018-run-workspace-lifecycle.md)). Events flush immediately.
+  file ([0018](2026-08-15-run-workspace-lifecycle.md)). Events flush immediately.
 - Wide events, each carrying a per-run `RunId` property:
 
 | Message template | Extra properties |
@@ -52,7 +52,7 @@ register:
   interpolated properties, ANSI-colored when the terminal supports it.
 - Mutated-run suite output is kept under `<system temp>/rad/runs/`.
 - The run directory is never removed. Startup cleanup removes only its
-  immediate children ([0018](0018-run-workspace-lifecycle.md)).
+  immediate children ([0018](2026-08-15-run-workspace-lifecycle.md)).
 - Each worker writes one `<containment-name>.log` file. The random containment
   name is the filename; mutation IDs never participate in path construction.
 - Every executed mutant appends one wide event carrying its mutation context,
@@ -70,7 +70,7 @@ register:
 
 - Peak memory is therefore bounded by `workers x live caps` plus
   `mutants x excerpt`, not by `mutants x live caps`.
-- Exposures ([0021](0021-beamline-execution.md)) multiply runs per mutant, so
+- Exposures ([0021](2026-08-21-beamline-execution.md)) multiply runs per mutant, so
   the excerpt budget stays per mutant: only the exposure that decided it keeps
   its evidence, plus every abnormal one.
 - Abnormal outcomes (`Timeout`, `Unviable`, `RunError`, `MemoryError`) use error

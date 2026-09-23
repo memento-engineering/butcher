@@ -32,7 +32,7 @@ register:
 - A non-empty `RAD_TEMP` sets the exact production root.
 - The fallback root is `<system temp>/rad/`.
 - The run workspace is locked and cleaned only at the start of the next run
-  ([0018](0018-run-workspace-lifecycle.md)).
+  ([0018](2026-08-15-run-workspace-lifecycle.md)).
 - Resolve the root, tool log, and run-log folder once in `RadPaths`; pass that
   context through the CLI, engine, containment, and logger seams.
 - Tests inject an isolated `RadPaths` root and never touch production paths.
@@ -53,9 +53,9 @@ register:
 
 - Killing the tool at any point leaves the working tree pristine by
   construction, apart from refreshing project dependencies
-  ([0020](0020-zero-setup-provisioning.md)).
+  ([0020](2026-08-18-zero-setup-provisioning.md)).
 - No restore logic to get wrong.
-- Under [0021](0021-beamline-execution.md) nothing is irradiated on disk
+- Under [0021](2026-08-21-beamline-execution.md) nothing is irradiated on disk
   during a run: a mutant is a value, so a containment is read-only once its
   beamline is built, apart from what the suite itself writes.
 - Workspace dependencies and cwd-relative test assets keep their layout.

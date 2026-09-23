@@ -8,7 +8,7 @@ Ordered by severity. Part of [index.md](index.md).
 
 - Files: `lib/src/mutagens/promotion_dependence.dart` (`flipStrands`),
   consumers `equality_mutagen.dart`, `logical_mutagen.dart`.
-- ADR: [0019](../../decisions/0019-static-viability-filtering.md) says guards
+- ADR: [0019](../../decisions/2026-08-16-static-viability-filtering.md) says guards
   err toward keeping a mutant.
 - Problem: the guard scans the whole function for any promotion-dependent use.
   It does not check whether the flipped test provides that promotion.
@@ -27,7 +27,7 @@ Ordered by severity. Part of [index.md](index.md).
 ## 3. MSI is 100% when nothing is scoreable
 
 - Files: `lib/src/report/metrics.dart`, `lib/src/cli/cli.dart`.
-- ADR: [0013](../../decisions/0013-score-and-honesty-metrics.md) requires honest
+- ADR: [0013](../../decisions/2026-08-14-score-and-honesty-metrics.md) requires honest
   scores and a timeout gate.
 - Problem: `_percent` returns 100 when its denominator is zero.
 - Effect: zero-mutant, all-timeout, and all-error runs pass `--threshold`.
@@ -44,8 +44,8 @@ Ordered by severity. Part of [index.md](index.md).
 ## 5. Mutant exceptions lose their evidence
 
 - File: `lib/src/engine/engine.dart` (`_classify`).
-- ADRs: [0006](../../decisions/0006-outcome-taxonomy.md),
-  [0016](../../decisions/0016-wide-event-logging.md).
+- ADRs: [0006](../../decisions/2026-08-14-outcome-taxonomy.md),
+  [0016](../../decisions/2026-08-15-wide-event-logging.md).
 - Problem: `catch (_)` converts every exception into `runError` and discards
   the exception and stack trace. Results without `testRun` get no run log.
 - Effect: engine bugs inflate MSI and cannot be diagnosed from retained logs.
@@ -54,7 +54,7 @@ Ordered by severity. Part of [index.md](index.md).
 ## 6. An in-project `RAD_TEMP` copies itself
 
 - Files: `lib/src/rad_paths.dart`, `lib/src/engine/containment.dart`.
-- ADR: [0004](../../decisions/0004-shadow-copy-isolation.md) allows `RAD_TEMP`
+- ADR: [0004](../../decisions/2026-08-14-shadow-copy-isolation.md) allows `RAD_TEMP`
   to set the exact production root.
 - Problem: containment creates its target before recursively listing the
   project. A target below the project can enter its own source walk.
@@ -72,7 +72,7 @@ Ordered by severity. Part of [index.md](index.md).
 ## 8. `.radignore` is not gitignore-style
 
 - File: `lib/src/engine/containment.dart` (`_consumerGlobs`).
-- ADR: [0004](../../decisions/0004-shadow-copy-isolation.md) requires
+- ADR: [0004](../../decisions/2026-08-14-shadow-copy-isolation.md) requires
   gitignore-style consumer exclusions.
 - Problem: each line is passed directly to `Glob`. Negation and gitignore
   directory rules are not implemented.

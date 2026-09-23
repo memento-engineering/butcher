@@ -30,7 +30,7 @@ register:
 - What schemata buys in Dart is a different thing: with every mutant in one
   build, selecting one is a value rather than a file write, which is what lets
   one process serve more than one mutant
-  ([0021](0021-beamline-execution.md)).
+  ([0021](2026-08-21-beamline-execution.md)).
 
 ## Decision
 
@@ -38,22 +38,22 @@ register:
   once, expose many times.
 - That value is read at runtime, once per isolate, not fixed by a `-D`
   define: a beamline switches mutants without rebuilding
-  ([0021](0021-beamline-execution.md)).
+  ([0021](2026-08-21-beamline-execution.md)).
 - Analyzer-backed rewriting keeps schemata compilable in const contexts.
 - A const context cannot read a runtime value, so a mutant inside one is
   built per exposure, like a load-time mutant.
 - Static-mutant fallback: load-time code (top-level and const initializers)
   runs per mutant on the subprocess strategy.
 - Every injected mutant has to compile, so static viability filtering
-  ([0019](0019-static-viability-filtering.md)) is a prerequisite, not an
+  ([0019](2026-08-16-static-viability-filtering.md)) is a prerequisite, not an
   optimization.
 
 ## Consequences
 
 - Implemented as an engine rewriting strategy; mutagens and reports untouched
-  ([0008](0008-composable-mutator-framework.md)).
+  ([0008](2026-08-14-composable-mutator-framework.md)).
 - Every mutation site costs a branch and a read in the hot path of the code
   under test. The calibration run measures that overhead, since it runs on
   the schemata build, and every exposure is charged with it.
 - Alone, this ADR buys nothing measurable in Dart. It ships with
-  [0021](0021-beamline-execution.md) or not at all.
+  [0021](2026-08-21-beamline-execution.md) or not at all.

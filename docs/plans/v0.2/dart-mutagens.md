@@ -1,8 +1,8 @@
 # 6. Dart-specific mutagens
 
 - Status: pending
-- Decisions: [0008](../../decisions/0008-composable-mutator-framework.md),
-  [0019](../../decisions/0019-static-viability-filtering.md)
+- Decisions: [0008](../../decisions/2026-08-14-composable-mutator-framework.md),
+  [0019](../../decisions/2026-08-16-static-viability-filtering.md)
 - Needs: [syntax-census.md](syntax-census.md)
 
 Goal: mutate the parts of Dart the operator families miss. Which families,
@@ -28,8 +28,8 @@ the census decides.
    mostly non-compiling costs analysis time and reports nothing, even though
    0019 drops it before a suite runs.
 3. Which families produce equivalent mutants often enough to hurt the score's
-   honesty ([0013](../../decisions/0013-score-and-honesty-metrics.md)) before
-   TCE lands in v2.0 ([0012](../../decisions/0012-tce-equivalent-detection.md))?
+   honesty ([0013](../../decisions/2026-08-14-score-and-honesty-metrics.md)) before
+   TCE lands in v2.0 ([0012](../../decisions/2026-08-14-tce-equivalent-detection.md))?
 4. Which need guards beyond `promotion_dependence.dart`?
 
 ## Steps
@@ -49,7 +49,7 @@ the census decides.
 
 - One file per mutagen, registered in `MutagenRegistry`; the framework shape
   does not change.
-- Schemata ([0010](../../decisions/0010-mutant-schemata.md)) need a mutation
+- Schemata ([0010](../../decisions/2026-08-14-mutant-schemata.md)) need a mutation
   to be selectable by a runtime value, so the mutated and original code must
   coexist in one build. A family that only works by rewriting a file will not
   survive the beamline: record, per family, whether it is expressible as a

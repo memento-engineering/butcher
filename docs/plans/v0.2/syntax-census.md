@@ -1,8 +1,8 @@
 # 5. Unhandled-syntax census
 
 - Status: pending
-- Decisions: [0016](../../decisions/0016-wide-event-logging.md),
-  [0008](../../decisions/0008-composable-mutator-framework.md)
+- Decisions: [0016](../../decisions/2026-08-15-wide-event-logging.md),
+  [0008](../../decisions/2026-08-14-composable-mutator-framework.md)
 
 Goal: log which AST node kinds no mutagen handles, and keep the census in the
 run result so v1.0 can turn it into the syntax-coverage metric.
@@ -36,7 +36,7 @@ cannot see.
 ## Success criteria
 
 - Deterministic across runs
-  ([0007](../../decisions/0007-deterministic-execution.md)).
+  ([0007](../../decisions/2026-08-14-deterministic-execution.md)).
 - The census names, unprompted, at least the families
   [dart-mutagens.md](dart-mutagens.md) goes on to implement.
 - No measurable slowdown of generation.

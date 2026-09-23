@@ -1,7 +1,7 @@
 # 1. Half-life as a budget of silence
 
 - Status: pending
-- Decision: [0006](../../decisions/0006-outcome-taxonomy.md)
+- Decision: [0006](../../decisions/2026-08-14-outcome-taxonomy.md)
 
 Goal: a run is timed out when its reporter goes quiet, not when it takes long.
 A hung run is silent under any load; a slow one keeps streaming events.
@@ -61,10 +61,10 @@ inconclusive.
 ## Seams for later
 
 - v1.0 makes the budget per exposure and measured
-  ([0021](../../decisions/0021-beamline-execution.md)): the type must read its
+  ([0021](../../decisions/2026-08-21-beamline-execution.md)): the type must read its
   budget from the unit of work, never from a run-wide field.
 - Killing stays the interlock's job
-  ([0022](../../decisions/0022-process-interlock.md)). This item changes when
+  ([0022](../../decisions/2026-08-21-process-interlock.md)). This item changes when
   to kill, never how.
 - Record which limit fired, silence or ceiling. v1.0's beamline rebuild policy
   has to tell a hung exposure from a hung host.

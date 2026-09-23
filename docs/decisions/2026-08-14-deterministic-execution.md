@@ -33,7 +33,7 @@ register:
 - Identical input always produces an identical report.
 - Determinism covers verdicts, mutant IDs, and report order. It does not
   cover the test that killed a mutant or any measured duration: both are
-  recorded as evidence ([0021](0021-beamline-execution.md)) and both may
+  recorded as evidence ([0021](2026-08-21-beamline-execution.md)) and both may
   differ between runs of the same input.
 
 ## Rejected

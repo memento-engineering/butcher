@@ -1,7 +1,7 @@
 # 4. Stale-lock handling
 
 - Status: pending
-- Decision: [0018](../../decisions/0018-run-workspace-lifecycle.md)
+- Decision: [0018](../../decisions/2026-08-15-run-workspace-lifecycle.md)
 - Needs: [config-schema.md](config-schema.md) for the `non-interactive` name
 
 Goal: a lock left by a crashed run stops being a dead end, and CI never waits

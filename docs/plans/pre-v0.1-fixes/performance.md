@@ -18,7 +18,7 @@ Part of [index.md](index.md).
 ## 2. Containment copying wastes the walk and workers
 
 - File: `lib/src/engine/containment.dart` (`create`, `_excluded`).
-- ADR: [0004](../../decisions/0004-shadow-copy-isolation.md) targets workspaces.
+- ADR: [0004](../../decisions/2026-08-14-shadow-copy-isolation.md) targets workspaces.
 - Problems:
   - recursive listing enters excluded directories before filtering;
   - default exclusions only check the first path segment;
@@ -30,7 +30,7 @@ Part of [index.md](index.md).
 ## 3. Arithmetic swaps generate predictable compile failures
 
 - File: `lib/src/mutagens/arithmetic_mutagen.dart` (`swaps`).
-- ADR: [0019](../../decisions/0019-static-viability-filtering.md) assigns guards
+- ADR: [0019](../../decisions/2026-08-16-static-viability-filtering.md) assigns guards
   the job of minimizing unviable mutants.
 - Problem: `/` always yields `double`, so swaps such as `*` to `/` cannot fill
   an `int` result slot.

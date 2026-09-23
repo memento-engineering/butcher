@@ -35,7 +35,7 @@ Two decisions deviate from the text above:
 
 - Item 8's matcher stayed hand-written: `package:ignore` does not exist.
 - Item 12 kills the tree best effort from a `ps` snapshot, not a process
-  group ([ADR 0006](../../decisions/0006-outcome-taxonomy.md)); `setsid` is
+  group ([ADR 0006](../../decisions/2026-08-14-outcome-taxonomy.md)); `setsid` is
   absent from minimal images and Dart cannot spawn a process group.
 
 A final review of the complete fix range found five remaining defects:

@@ -35,7 +35,7 @@ suite's span.
 
 The containment keeps `dart test`'s incremental kernel cache, so what remains
 per mutant is process startup, not compilation
-([0010](../decisions/0010-mutant-schemata.md)).
+([0010](../decisions/2026-08-14-mutant-schemata.md)).
 
 ## Routing headroom
 
@@ -52,7 +52,7 @@ that identity away. Joining those reports against the report's mutants:
 A mutant's line is covered by 2.7 of 23 suites on average, but 70% of mutants
 are covered by `cli_e2e_test.dart`, which costs the whole 143 s. Routing and
 splitting that file only pay off together
-([0011](../decisions/0011-per-test-coverage-routing.md)).
+([0011](../decisions/2026-08-14-per-test-coverage-routing.md)).
 
 ## Result
 
@@ -119,7 +119,7 @@ the engine, is the wall clock:
 
 Every duration inflated by the same ~2.5x, which is contention from the leak
 rather than anything the engine changed. Killing a suite by listing its tree
-was retired for [0022](../decisions/0022-process-interlock.md) after this run.
+was retired for [0022](../decisions/2026-08-21-process-interlock.md) after this run.
 
 Scores are not comparable across these three: the report is overwritten each
 run and the code under test changed between them. Runs are archived from now
@@ -130,11 +130,11 @@ on.
 - The `cli_*` suites remain the cost: they are nested `rad` runs, and most
   mutants are covered by one of them.
 - Half-lives are calibrated on an idle reading and spent under contention;
-  silence budgets replace them ([0006](../decisions/0006-outcome-taxonomy.md)).
+  silence budgets replace them ([0006](../decisions/2026-08-14-outcome-taxonomy.md)).
 - A killed mutant still costs ~2.3 s of process startup before its code runs.
   Removing that is the harness work in
-  [0021](../decisions/0021-beamline-execution.md) and
-  [0010](../decisions/0010-mutant-schemata.md).
+  [0021](../decisions/2026-08-21-beamline-execution.md) and
+  [0010](../decisions/2026-08-14-mutant-schemata.md).
 - `--diff-base` (v1.0) is what makes a per-commit self-run affordable; routing
   makes the full run schedulable, not interactive. It shrinks what is measured
   rather than what measuring costs, so it is not a harness fix and is not

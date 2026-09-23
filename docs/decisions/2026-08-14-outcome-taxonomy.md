@@ -43,14 +43,14 @@ register:
 - A generous total ceiling stays as a backstop against a run that is hung
   but noisy. It no longer has to tell slow from hung, so it does not have
   to be tight.
-- Under [0021](0021-beamline-execution.md) the budget is per exposure: the
+- Under [0021](2026-08-21-beamline-execution.md) the budget is per exposure: the
   calibration run measures every test, so a hung exposure is one that
   outlasts its own measured cost by a factor.
 - `Killed`, `Survived`, and `Timeout` remain separate peer outcomes in results.
 - Timeouts are inconclusive. They count as neither killed nor survived.
 - `--max-timeouts` fails a run when its timeout ceiling is exceeded.
 - A timed-out run is killed with everything it spawned, through the interlock
-  it was admitted to ([0022](0022-process-interlock.md)). Where none exists,
+  it was admitted to ([0022](2026-08-21-process-interlock.md)). Where none exists,
   the tree is listed while still attached and swept until nothing new appears;
   that fallback is best-effort and has leaked at every scale.
 

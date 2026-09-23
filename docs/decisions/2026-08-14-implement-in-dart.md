@@ -30,9 +30,9 @@ register:
 
 ## Consequences
 
-- Direct access to `package:analyzer` ([0002](0002-parse-with-official-analyzer.md)).
-- Ships via pub.dev ([0003](0003-distribution-and-sdk-resolution.md)).
-- No performance loss: speed comes from architecture ([0010](0010-mutant-schemata.md), [0011](0011-per-test-coverage-routing.md)).
+- Direct access to `package:analyzer` ([0002](2026-08-14-parse-with-official-analyzer.md)).
+- Ships via pub.dev ([0003](2026-08-14-distribution-and-sdk-resolution.md)).
+- No performance loss: speed comes from architecture ([0010](2026-08-14-mutant-schemata.md), [0011](2026-08-14-per-test-coverage-routing.md)).
 
 ## Rejected
 

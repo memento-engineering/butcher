@@ -43,7 +43,7 @@ register:
 
 ## Consequences
 
-- The schemata switch ([0010](0010-mutant-schemata.md)) touches zero mutagens.
+- The schemata switch ([0010](2026-08-14-mutant-schemata.md)) touches zero mutagens.
 - Operator profiles (e.g. a coarse function-body set) are registry
   selections, not features.
 

@@ -30,7 +30,7 @@ register:
 
 - A green suite is a precondition for every run; a red background reading
   aborts with a clear message.
-- Background timing is recorded for half-life derivation ([0006](0006-outcome-taxonomy.md)).
+- Background timing is recorded for half-life derivation ([0006](2026-08-14-outcome-taxonomy.md)).
 
 ## Rejected
 
