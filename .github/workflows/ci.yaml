@@ -30,7 +30,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+      # The format check must run under one known SDK: `dart format`'s
+      # canonical layout differs between SDK minors (3.12.2 and 3.13.4
+      # disagree on engine_test.dart, and neither is idempotent on the
+      # other's output). 3.12.2 is the SDK the org's contributors run
+      # (Flutter stable's Dart); bump it together with the `environment:
+      # sdk:` floor.
       - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
       # One resolution at the workspace root covers every member.
       - run: dart pub get
       - run: dart format --output=none --set-exit-if-changed .
@@ -63,6 +71,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
       - run: dart pub get
       # Only `butcher` tags suites slow; the other members have none, and a
       # selection that finds no suite is an error rather than a pass.

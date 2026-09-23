@@ -118,6 +118,7 @@ void main() {
       name: 'dependabot covers every member and the actions ecosystem',
       run: _checkDependabot,
     ),
+    (name: 'ci pins the Dart SDK to the workspace floor', run: _checkSdkPin),
   ];
 
   for (final check in checks) {
@@ -875,4 +876,87 @@ void _checkDependabot() {
   }
 
   checkCadence(actions, 'ci', 'github-actions');
+}
+
+/// The `major.minor` of [_rootPubspecPath]'s `environment.sdk` lower bound,
+/// e.g. `^3.12.0` -> `3.12`.
+String _sdkFloor(String check) {
+  final root = _load(_rootPubspecPath, check);
+  final environment = root['environment'];
+  final constraint = environment is YamlMap ? environment['sdk'] : null;
+  if (constraint is! String) {
+    throw CheckFailure(
+      check,
+      '$_rootPubspecPath declares no environment.sdk constraint, so there is '
+      'no floor to pin CI to',
+    );
+  }
+
+  final match = RegExp(r'(\d+)\.(\d+)').firstMatch(constraint);
+  if (match == null) {
+    throw CheckFailure(
+      check,
+      '$_rootPubspecPath\'s environment.sdk constraint "$constraint" names no '
+      'major.minor lower bound',
+    );
+  }
+
+  return '${match[1]}.${match[2]}';
+}
+
+void _checkSdkPin() {
+  const check = 'ci pins the Dart SDK to the workspace floor';
+
+  final floor = _sdkFloor(check);
+  final jobs = _jobsOf(_ciPath, check);
+
+  var sawSetupDart = false;
+  for (final entry in jobs.entries) {
+    final job = entry.value;
+    if (job is! YamlMap) continue;
+
+    final steps = job['steps'];
+    if (steps is! YamlList) continue;
+
+    for (final step in steps) {
+      if (step is! YamlMap) continue;
+
+      final uses = step['uses'];
+      if (uses is! String || !uses.startsWith('dart-lang/setup-dart@')) {
+        continue;
+      }
+      sawSetupDart = true;
+
+      final with_ = step['with'];
+      final sdk = with_ is YamlMap ? with_['sdk'] : null;
+      if (sdk == null) {
+        throw CheckFailure(
+          check,
+          'the ${entry.key} job\'s dart-lang/setup-dart@v1 step declares no '
+          'with.sdk, so it floats to whatever the default channel resolves '
+          'to on the day it runs; dart format\'s canonical layout differs '
+          'between SDK minors, so the format check needs one pinned SDK',
+        );
+      }
+
+      final pinned = '$sdk';
+      if (pinned != floor && !pinned.startsWith('$floor.')) {
+        throw CheckFailure(
+          check,
+          'the ${entry.key} job pins dart-lang/setup-dart@v1 to $pinned, '
+          'which is not $floor or $floor.x -- the major.minor of the '
+          'workspace\'s environment.sdk floor in $_rootPubspecPath; bump the '
+          'pin together with that floor',
+        );
+      }
+    }
+  }
+
+  if (!sawSetupDart) {
+    throw CheckFailure(
+      check,
+      '$_ciPath uses no dart-lang/setup-dart@v1 step, so there is nothing to '
+      'pin',
+    );
+  }
 }
