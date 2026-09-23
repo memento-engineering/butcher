@@ -26,6 +26,13 @@ const _run = TestRun(
   duration: Duration(seconds: 2),
 );
 
+const _result = MutantResult(
+  mutant: _mutant,
+  outcome: Outcome.killed,
+  testRun: _run,
+  error: null,
+);
+
 void main() {
   group('Mutation', () {
     test('equals a separately built mutation with the same fields', () {
@@ -395,6 +402,81 @@ void main() {
 
       expect(text, contains('0'));
       expect(text, contains('false'));
+    });
+  });
+
+  group('MutantResult', () {
+    test('equals a separately built result with the same fields', () {
+      const other = MutantResult(
+        mutant: Mutant(id: 'lib/a.dart:12:arithmetic', mutation: _mutation),
+        outcome: Outcome.killed,
+        testRun: TestRun(
+          exitCode: 0,
+          timedOut: false,
+          output: 'suite output',
+          errorOutput: 'suite stderr',
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      expect(_result, other);
+      expect(_result.hashCode, other.hashCode);
+    });
+
+    test('differs when any single field differs', () {
+      expect(
+        _result,
+        isNot(
+          const MutantResult(
+            mutant: Mutant(id: 'lib/a.dart:99:arithmetic', mutation: _mutation),
+            outcome: Outcome.killed,
+            testRun: _run,
+          ),
+        ),
+      );
+      expect(
+        _result,
+        isNot(
+          const MutantResult(
+            mutant: _mutant,
+            outcome: Outcome.survived,
+            testRun: _run,
+          ),
+        ),
+      );
+      expect(
+        _result,
+        isNot(const MutantResult(mutant: _mutant, outcome: Outcome.killed)),
+      );
+      expect(
+        _result,
+        isNot(
+          const MutantResult(
+            mutant: _mutant,
+            outcome: Outcome.killed,
+            testRun: _run,
+            error: 'boom',
+          ),
+        ),
+      );
+    });
+
+    test('carries value semantics into a set and a map key', () {
+      const twin = MutantResult(
+        mutant: _mutant,
+        outcome: Outcome.killed,
+        testRun: _run,
+      );
+
+      expect({_result}, contains(twin));
+      expect({_result: 'seen'}[twin], 'seen');
+    });
+
+    test('names the mutant id and the outcome', () {
+      final text = _result.toString();
+
+      expect(text, contains('lib/a.dart:12:arithmetic'));
+      expect(text, contains('killed'));
     });
   });
 }
