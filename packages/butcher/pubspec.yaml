@@ -16,7 +16,9 @@ dependencies:
   args: ^2.7.0
   butcher_process: ^0.1.0
   butcher_report: ^0.1.0
+  glob: ^2.2.0
   path: ^1.9.1
+  yaml: ^3.1.2
 
 dev_dependencies:
   lints: ^6.0.0
