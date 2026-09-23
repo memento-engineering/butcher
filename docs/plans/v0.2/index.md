@@ -13,7 +13,7 @@ one document each. Every item records what it must leave behind for v1.0
 | 3 | [config-schema.md](config-schema.md) | spike, then ADR | - |
 | 4 | [lock-handling.md](lock-handling.md) | spike, then build | 3 |
 | 5 | [syntax-census.md](syntax-census.md) | build | - |
-| 6 | [dart-mutagens.md](dart-mutagens.md) | build | 5 |
+| 6 | [dart-mutators.md](dart-mutators.md) | build | 5 |
 
 ## Order
 
@@ -21,16 +21,16 @@ one document each. Every item records what it must leave behind for v1.0
 graph LR
   1[1 silence budget] --> 2[2 calibration reading]
   3[3 config schema] --> 4[4 lock handling]
-  5[5 syntax census] --> 6[6 dart mutagens]
+  5[5 syntax census] --> 6[6 dart mutators]
 ```
 
 The three chains are independent and can run in any order or at once.
 
 | Edge | Why |
 |---|---|
-| 1 → 2 | [0020](../../decisions/0020-zero-setup-provisioning.md) rejected instrumenting the reading while half-lives were elapsed-time budgets. A silence budget is what unblocks it |
+| 1 → 2 | [0020](../../decisions/2026-08-18-zero-setup-provisioning.md) rejected instrumenting the reading while deadlines were elapsed-time budgets. A silence budget is what unblocks it |
 | 3 → 4 | `--non-interactive` is a name in a public schema; adding the flag first fixes it by accident |
-| 5 → 6 | the census says which node kinds have no mutagen; choosing operators without it is guesswork |
+| 5 → 6 | the census says which node kinds have no mutator; choosing operators without it is guesswork |
 
 ## Not in v0.2
 

@@ -14,7 +14,7 @@ picked up without re-deriving the analysis.
 | [performance.md](performance.md) | Wasted time or memory | 4 |
 | [polish.md](polish.md) | Release, lifecycle, and logging gaps | 4 |
 
-Review verdict outside these items: taxonomy, half-life formulas,
+Review verdict outside these items: taxonomy, deadline formulas,
 deterministic IDs, and worker result ordering match their ADRs.
 
 ## Resolution
@@ -35,14 +35,14 @@ Two decisions deviate from the text above:
 
 - Item 8's matcher stayed hand-written: `package:ignore` does not exist.
 - Item 12 kills the tree best effort from a `ps` snapshot, not a process
-  group ([ADR 0006](../../decisions/0006-outcome-taxonomy.md)); `setsid` is
+  group ([ADR 0006](../../decisions/2026-08-14-outcome-taxonomy.md)); `setsid` is
   absent from minimal images and Dart cannot spawn a process group.
 
 A final review of the complete fix range found five remaining defects:
 
 | Area | Defect |
 |---|---|
-| Mutagens | identity swaps escaped through extensions; numeric context lost `/` |
+| Mutators | identity swaps escaped through extensions; numeric context lost `/` |
 | Output | the raw-output cap still preceded reporter-event parsing |
 | Provisioning | existing but stale package configuration skipped `pub get` |
 | Lifecycle | initial logging still ran outside lock-release protection |

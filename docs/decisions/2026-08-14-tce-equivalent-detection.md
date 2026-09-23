@@ -32,4 +32,4 @@ register:
 ## Consequences
 
 - The `Equivalent` enum value exists since the MVP
-  ([0006](0006-outcome-taxonomy.md)); reports need no schema change.
+  ([0006](2026-08-14-outcome-taxonomy.md)); reports need no schema change.

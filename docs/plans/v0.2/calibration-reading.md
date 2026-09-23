@@ -1,7 +1,7 @@
 # 2. Calibration reading
 
 - Status: pending
-- Decision: [0020](../../decisions/0020-zero-setup-provisioning.md)
+- Decision: [0020](../../decisions/2026-08-18-zero-setup-provisioning.md)
 - Needs: [silence-budget.md](silence-budget.md)
 
 Goal: one instrumented pass verifies the suite, records coverage, and times
@@ -11,7 +11,7 @@ every suite. A run pays for one full suite instead of two.
 
 | Pass | Instrumented | Produces |
 |---|---|---|
-| Background reading | no | green verdict, half-life base |
+| Baseline | no | green verdict, deadline base |
 | Coverage collection | yes | per-line hits, per-suite hits, suite timings |
 
 Both run the whole suite. On this package that is ~73 s spent twice.
@@ -34,7 +34,7 @@ Both run the whole suite. On this package that is ~73 s spent twice.
 - Return one calibration record: verdict, coverage provider, suite timings,
   silence budget.
 - Keep the abort semantics: a red reading aborts
-  ([0005](../../decisions/0005-mandatory-baseline-verification.md)), coverage
+  ([0005](../../decisions/2026-08-14-mandatory-baseline-verification.md)), coverage
   that records nothing aborts (0020).
 
 ## Success criteria
@@ -47,8 +47,8 @@ Both run the whole suite. On this package that is ~73 s spent twice.
 ## Seams for later
 
 - The calibration record is the v1.0 seam: per-test source reports replace
-  per-suite ones ([0011](../../decisions/0011-per-test-coverage-routing.md),
-  [0021](../../decisions/0021-beamline-execution.md)) without the engine
+  per-suite ones ([0011](../../decisions/2026-08-14-per-test-coverage-routing.md),
+  [0021](../../decisions/2026-08-21-beamline-execution.md)) without the engine
   changing shape.
 - Timings stay addressable by suite path; v1.0 keys the same map by test.
 - Granularity belongs to the record, not the engine. The engine asks what

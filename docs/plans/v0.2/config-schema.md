@@ -3,18 +3,18 @@
 - Status: pending
 - Decision: needs a new ADR; the schema is public API from the moment it ships
 
-Goal: a project states its rad settings once. Include/exclude globs decide
+Goal: a project states its butcher settings once. Include/exclude globs decide
 what gets mutants.
 
 ## Questions to answer
 
-1. Where does it live? A `rad.yaml` at the project root, a
+1. Where does it live? A `butcher.yaml` at the project root, a
    `radioactive_dart:` section in `pubspec.yaml`, or an
    `analysis_options`-style file with includes. Pick one; renaming it later
    breaks every consumer.
-2. What happens to `.radignore`? Copy exclusions and mutation include/exclude
+2. What happens to `.butcherignore`? Copy exclusions and mutation include/exclude
    are different questions
-   ([0004](../../decisions/0004-shadow-copy-isolation.md)) — decide whether
+   ([0004](../../decisions/2026-08-14-shadow-copy-isolation.md)) — decide whether
    they stay separate or the config subsumes both.
 3. Precedence is CLI over config over defaults. What does a negatable flag
    mean when the config disagrees, and can the CLI turn something back on?
@@ -34,7 +34,7 @@ what gets mutants.
 | `diff-base` | v1.0 | incremental selection at line granularity |
 | `strategy` | v1.0 | beamline or subprocess |
 | `report` | v1.0 | sinks: Stryker JSON, HTML, Markdown |
-| `mutagens` | later | which operators are active |
+| `mutators` | later | which operators are active |
 
 Reserving costs nothing; the last two are named, not implemented.
 
@@ -42,7 +42,7 @@ Reserving costs nothing; the last two are named, not implemented.
 
 - ADR first: location, precedence, unknown-key handling, compatibility rule.
 - Parse and validate before anything else runs, so a bad config fails before a
-  containment is copied.
+  sandbox is copied.
 - Document the keys in README for users and the ADR for maintainers, without
   either leaking into the other.
 

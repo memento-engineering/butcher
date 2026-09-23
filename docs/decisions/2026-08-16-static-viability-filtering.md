@@ -32,33 +32,33 @@ register:
 ## Decision
 
 - Mutants must compile; the engine verifies this statically instead of
-  trusting mutagen guards.
+  trusting mutator guards.
 - After generation, each covered mutant's file is re-resolved through an
   in-memory analyzer overlay; error diagnostics classify the mutant
   `unviable` with no test run.
 - Only `COMPILE_TIME_ERROR` and `SYNTACTIC_ERROR` diagnostics deny
   viability; warnings and lints escalated to error severity do not.
-- Only the mutated file is re-analyzed: mutagens rewrite expressions inside
-  bodies, which cannot change a file's API. Declaration-changing mutagens
+- Only the mutated file is re-analyzed: mutators rewrite expressions inside
+  bodies, which cannot change a file's API. Declaration-changing mutators
   must widen the check first.
 
 ## Consequences
 
-- Division of labor: mutagen guards minimize unviable mutants by reading
+- Division of labor: mutator guards minimize unviable mutants by reading
   promotion facts off the resolved AST (`PromotionDependence`); this filter
   eliminates the remainder. Guards err toward keeping a mutant.
 - The check reuses generation's analysis state and processes a file's
   mutants as one batch, so a file is resolved once per mutant instead of
   twice. Both stages scope that state, so the resolved units are collectible
-  before the first worker runs ([0016](0016-wide-event-logging.md)).
-- Schemata ([0010](0010-mutant-schemata.md)) requires every injected mutant
+  before the first worker runs ([0016](2026-08-15-wide-event-logging.md)).
+- Schemata ([0010](2026-08-14-mutant-schemata.md)) requires every injected mutant
   to compile; this filter is its prerequisite.
-- The TCE pass ([0012](0012-tce-equivalent-detection.md)) becomes a peer
+- The TCE pass ([0012](2026-08-14-tce-equivalent-detection.md)) becomes a peer
   filter stage on the same infrastructure.
 
 ## Rejected
 
-- Blanket null-comparison gates in mutagens: drop viable mutants and stay
+- Blanket null-comparison gates in mutators: drop viable mutants and stay
   unsound (`is` checks, definite assignment).
 - Reimplementing flow analysis at generation time: fragile duplication of
   the compiler.

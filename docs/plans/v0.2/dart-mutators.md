@@ -1,8 +1,8 @@
-# 6. Dart-specific mutagens
+# 6. Dart-specific mutators
 
 - Status: pending
-- Decisions: [0008](../../decisions/0008-composable-mutator-framework.md),
-  [0019](../../decisions/0019-static-viability-filtering.md)
+- Decisions: [0008](../../decisions/2026-08-14-composable-mutator-framework.md),
+  [0019](../../decisions/2026-08-16-static-viability-filtering.md)
 - Needs: [syntax-census.md](syntax-census.md)
 
 Goal: mutate the parts of Dart the operator families miss. Which families,
@@ -14,7 +14,7 @@ the census decides.
 |---|---|---|
 | Collection elements | drop a spread, negate an `if` element, drop a `for` element | low; span replacement, usually viable |
 | Type test | `is` → `is!` | strands promotions; reuse `promotion_dependence.dart` |
-| Assignment | `+=` → `-=`, and peers | mirrors the arithmetic mutagen |
+| Assignment | `+=` → `-=`, and peers | mirrors the arithmetic mutator |
 | Increment | `++` → `--` | prefix/postfix swaps are often equivalent |
 | Conditional | swap `?:` branches, force one | overlaps null injection |
 | Cascade | drop a cascade section | `..` → `.` changes the expression type |
@@ -28,13 +28,13 @@ the census decides.
    mostly non-compiling costs analysis time and reports nothing, even though
    0019 drops it before a suite runs.
 3. Which families produce equivalent mutants often enough to hurt the score's
-   honesty ([0013](../../decisions/0013-score-and-honesty-metrics.md)) before
-   TCE lands in v2.0 ([0012](../../decisions/0012-tce-equivalent-detection.md))?
+   honesty ([0013](../../decisions/2026-08-14-score-and-honesty-metrics.md)) before
+   TCE lands in v2.0 ([0012](../../decisions/2026-08-14-tce-equivalent-detection.md))?
 4. Which need guards beyond `promotion_dependence.dart`?
 
 ## Steps
 
-- One family per commit: mutagen, guard, unit tests.
+- One family per commit: mutator, guard, unit tests.
 - After each, a self-run: mutant count, unviable rate, survivors, MSI change.
 - Fill the table above with measurements, and drop families that fail
   question 2.
@@ -47,9 +47,9 @@ the census decides.
 
 ## Seams for later
 
-- One file per mutagen, registered in `MutagenRegistry`; the framework shape
+- One file per mutator, registered in `MutatorRegistry`; the framework shape
   does not change.
-- Schemata ([0010](../../decisions/0010-mutant-schemata.md)) need a mutation
+- Schemata ([0010](../../decisions/2026-08-14-mutant-schemata.md)) need a mutation
   to be selectable by a runtime value, so the mutated and original code must
   coexist in one build. A family that only works by rewriting a file will not
   survive the beamline: record, per family, whether it is expressible as a

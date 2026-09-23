@@ -6,8 +6,8 @@ register:
   spec: 1
   slug: shadow-copy-isolation
   surfaces:
-    - "lib/src/engine/containment.dart"
-    - ".radignore"
+    - "lib/src/engine/sandbox.dart"
+    - ".butcherignore"
   obsoletes: []
   updates: []
   obsoleted-by: null
@@ -15,7 +15,7 @@ register:
   bead: null
   legacy-id: "0004"
 ---
-# 0004: Containment isolation
+# 0004: Sandbox isolation
 
 - Status: accepted
 
@@ -26,16 +26,16 @@ register:
 
 ## Decision
 
-- Copy the project or workspace into a temp dir (the containment) and mutate
+- Copy the project or workspace into a temp dir (the sandbox) and mutate
   `lib/` there.
-- All rad temp data (containments, logs) lives under one root.
-- A non-empty `RAD_TEMP` sets the exact production root.
-- The fallback root is `<system temp>/rad/`.
+- All butcher temp data (sandboxes, logs) lives under one root.
+- A non-empty `BUTCHER_TEMP` sets the exact production root.
+- The fallback root is `<system temp>/butcher/`.
 - The run workspace is locked and cleaned only at the start of the next run
-  ([0018](0018-run-workspace-lifecycle.md)).
-- Resolve the root, tool log, and run-log folder once in `RadPaths`; pass that
-  context through the CLI, engine, containment, and logger seams.
-- Tests inject an isolated `RadPaths` root and never touch production paths.
+  ([0018](2026-08-15-run-workspace-lifecycle.md)).
+- Resolve the root, tool log, and run-log folder once in `ButcherPaths`; pass that
+  context through the CLI, engine, sandbox, and logger seams.
+- Tests inject an isolated `ButcherPaths` root and never touch production paths.
 - Skip well-known metadata and generated output, pruning those directories
   instead of walking them:
 
@@ -44,7 +44,7 @@ register:
 | `.git`, `.dart_tool` | at any depth; never mutable source |
 | `build`, `coverage` | top level only; deeper ones may hold mutable source |
 - Support a gitignore-style file for consumer-defined copy exclusions:
-  `.radignore` at the project root. A directory rule prunes the walk, so a
+  `.butcherignore` at the project root. A directory rule prunes the walk, so a
   negation cannot re-include anything below it, as git documents.
 - Run tests from the copied package root.
 - Mechanics validated by [../plans/spike-shadow-copy.md](../plans/spike-shadow-copy.md).
@@ -53,14 +53,14 @@ register:
 
 - Killing the tool at any point leaves the working tree pristine by
   construction, apart from refreshing project dependencies
-  ([0020](0020-zero-setup-provisioning.md)).
+  ([0020](2026-08-18-zero-setup-provisioning.md)).
 - No restore logic to get wrong.
-- Under [0021](0021-beamline-execution.md) nothing is irradiated on disk
-  during a run: a mutant is a value, so a containment is read-only once its
+- Under [0021](2026-08-21-beamline-execution.md) nothing is mutated on disk
+  during a run: a mutant is a value, so a sandbox is read-only once its
   beamline is built, apart from what the suite itself writes.
 - Workspace dependencies and cwd-relative test assets keep their layout.
 - Consumers can avoid copying large, project-specific directories.
-- Incorrect consumer exclusions fail the background reading before mutation.
+- Incorrect consumer exclusions fail the baseline before mutation.
 
 ## Rejected
 

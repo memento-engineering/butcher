@@ -1,6 +1,6 @@
 # Self-run performance
 
-Where the hours of a `rad` run on this repository go. Measured 2026-08-21
+Where the hours of a `butcher` run on this repository go. Measured 2026-08-21
 against the 2026-08-18 self-run report and a fresh `dart test` of `main`.
 
 ## Baseline
@@ -21,8 +21,8 @@ against the 2026-08-18 self-run report and a fresh `dart test` of `main`.
 | `test/engine/engine_test.dart` | 24.4 s | 13 |
 | the other 20 suites | 0.3-11.6 s each | 106 |
 
-Every e2e test is a nested `rad` run: fixture `pub get`, containment,
-background reading, coverage collection, per-mutant suites. `dart test`
+Every e2e test is a nested `butcher` run: fixture `pub get`, sandbox,
+baseline, coverage collection, per-mutant suites. `dart test`
 parallelizes across files but not within one, so the file's span is the
 suite's span.
 
@@ -33,9 +33,9 @@ suite's span.
 | warm | 2.34 s |
 | after a real edit to a `lib/` file | 2.36 s |
 
-The containment keeps `dart test`'s incremental kernel cache, so what remains
+The sandbox keeps `dart test`'s incremental kernel cache, so what remains
 per mutant is process startup, not compilation
-([0010](../decisions/0010-mutant-schemata.md)).
+([0010](../decisions/2026-08-14-mutant-schemata.md)).
 
 ## Routing headroom
 
@@ -52,7 +52,7 @@ that identity away. Joining those reports against the report's mutants:
 A mutant's line is covered by 2.7 of 23 suites on average, but 70% of mutants
 are covered by `cli_e2e_test.dart`, which costs the whole 143 s. Routing and
 splitting that file only pay off together
-([0011](../decisions/0011-per-test-coverage-routing.md)).
+([0011](../decisions/2026-08-14-per-test-coverage-routing.md)).
 
 ## Result
 
@@ -75,12 +75,12 @@ Where the 13.1 h of summed suite time went, over 8 workers:
 | timeout | 17 | 10 221 s | 651.1 s |
 | noCoverage / unviable | 50 | 0 s | - |
 
-That run scaled each mutant's half-life to its selection alone, so a cheap
+That run scaled each mutant's deadline to its selection alone, so a cheap
 selection fell to the 10 s floor and timed healthy mutants out under load.
 
-## The half-life needs both terms
+## The deadline needs both terms
 
-Taking only the background reading instead (2 h 13 min, 709 mutants) was
+Taking only the baseline instead (2 h 13 min, 709 mutants) was
 worse: 75 timeouts, MSI down to 76.18%.
 
 | Outcome | Mutants | Sum | Median |
@@ -90,28 +90,28 @@ worse: 75 timeouts, MSI down to 76.18%.
 | timeout | 75 | 31 452 s | 411.6 s |
 
 The reading is measured on an idle machine; mutant runs happen eight at a
-time, and rad's own suite spawns processes inside each. Survivors ran to
-359.5 s against a 361 s half-life, and 31 of the 75 timeouts were routed to
+time, and butcher's own suite spawns processes inside each. Survivors ran to
+359.5 s against a 361 s deadline, and 31 of the 75 timeouts were routed to
 all 29 suites. A run therefore gets the longer of its selection's serial cost
 and the reading, both times three.
 
 Splitting the suite made this worse before it made it better: the faster
-reading (154 s to 120 s) shrank the half-life it calibrates.
+reading (154 s to 120 s) shrank the deadline it calibrates.
 
 ## Both terms, and what the leak cost
 
-Sizing the half-life as the longer of the two (2026-08-21, 713 mutants) fixed
+Sizing the deadline as the longer of the two (2026-08-21, 713 mutants) fixed
 the timeouts: 75 down to 16, a 2.41% rate, each given 830 s median before being
 called inconclusive.
 
 The same run leaked 127 processes across 24 trees. Their creation times run to
 2.5 hours past the last timeout, so they were not 24 escapes: one leaked nested
-`rad` kept classifying mutants and spawning children on its own. The leak, not
+`butcher` kept classifying mutants and spawning children on its own. The leak, not
 the engine, is the wall clock:
 
 | | Run 1 | Run 2 | Run 3 |
 |---|---|---|---|
-| Half-life | selection only | reading only | longer of the two |
+| Deadline | selection only | reading only | longer of the two |
 | Wall clock | 1 h 46 | 2 h 13 | 3 h 05 |
 | Timeouts | 17 | 75 | 16 |
 | Leaked processes | 2 | 69 | 127 |
@@ -119,7 +119,7 @@ the engine, is the wall clock:
 
 Every duration inflated by the same ~2.5x, which is contention from the leak
 rather than anything the engine changed. Killing a suite by listing its tree
-was retired for [0022](../decisions/0022-process-interlock.md) after this run.
+was retired for [0022](../decisions/2026-08-21-process-interlock.md) after this run.
 
 Scores are not comparable across these three: the report is overwritten each
 run and the code under test changed between them. Runs are archived from now
@@ -127,14 +127,14 @@ on.
 
 ## What is left
 
-- The `cli_*` suites remain the cost: they are nested `rad` runs, and most
+- The `cli_*` suites remain the cost: they are nested `butcher` runs, and most
   mutants are covered by one of them.
-- Half-lives are calibrated on an idle reading and spent under contention;
-  silence budgets replace them ([0006](../decisions/0006-outcome-taxonomy.md)).
+- Deadlines are calibrated on an idle reading and spent under contention;
+  silence budgets replace them ([0006](../decisions/2026-08-14-outcome-taxonomy.md)).
 - A killed mutant still costs ~2.3 s of process startup before its code runs.
   Removing that is the harness work in
-  [0021](../decisions/0021-beamline-execution.md) and
-  [0010](../decisions/0010-mutant-schemata.md).
+  [0021](../decisions/2026-08-21-beamline-execution.md) and
+  [0010](../decisions/2026-08-14-mutant-schemata.md).
 - `--diff-base` (v1.0) is what makes a per-commit self-run affordable; routing
   makes the full run schedulable, not interactive. It shrinks what is measured
   rather than what measuring costs, so it is not a harness fix and is not

@@ -7,7 +7,7 @@ Release, lifecycle, and logging gaps. Part of [index.md](index.md).
 ## 1. Pana verification currently fails
 
 - Files: `CHANGELOG.md`, `.github/workflows/publish.yml`.
-- ADR: [0015](../../decisions/0015-full-pana-score.md) requires full points at
+- ADR: [0015](../../decisions/2026-08-14-full-pana-score.md) requires full points at
   all times.
 - Problem: pana gives 155/160 because the changelog has no `0.1.0` heading.
   The workflow uses `--exit-code-threshold 0`, so verification exits 1.
@@ -26,15 +26,15 @@ Release, lifecycle, and logging gaps. Part of [index.md](index.md).
 ## 3. `classified` events omit required properties
 
 - File: `lib/src/engine/engine.dart` (worker-loop logging).
-- ADR: [0016](../../decisions/0016-wide-event-logging.md) lists file, offset,
+- ADR: [0016](../../decisions/2026-08-15-wide-event-logging.md) lists file, offset,
   operator, and replacement on the event.
 - Problem: the tool event carries those values only inside the mutant id.
 - Fix: add the four structured properties to the event.
 
 ## 4. `--verbose` is never colored
 
-- Files: `lib/src/log/rad_logger.dart`, `lib/src/cli/cli.dart`.
-- ADR: [0016](../../decisions/0016-wide-event-logging.md) requires ANSI color
+- Files: `lib/src/log/butcher_logger.dart`, `lib/src/cli/cli.dart`.
+- ADR: [0016](../../decisions/2026-08-15-wide-event-logging.md) requires ANSI color
   when the terminal supports it.
 - Problem: auto-detection requires `console == null`, but the CLI always passes
   a non-null sink.
