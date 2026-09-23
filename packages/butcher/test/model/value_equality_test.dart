@@ -18,6 +18,14 @@ const _suite = TestSuite(
 
 const _mutant = Mutant(id: 'lib/a.dart:12:arithmetic', mutation: _mutation);
 
+const _run = TestRun(
+  exitCode: 0,
+  timedOut: false,
+  output: 'suite output',
+  errorOutput: 'suite stderr',
+  duration: Duration(seconds: 2),
+);
+
 void main() {
   group('Mutation', () {
     test('equals a separately built mutation with the same fields', () {
@@ -261,6 +269,132 @@ void main() {
 
     test('names the mutant id', () {
       expect(_mutant.toString(), contains('lib/a.dart:12:arithmetic'));
+    });
+  });
+
+  group('TestRun', () {
+    test('equals a separately built run with the same observable fields', () {
+      const other = TestRun(
+        exitCode: 0,
+        timedOut: false,
+        output: 'suite output',
+        errorOutput: 'suite stderr',
+        duration: Duration(seconds: 2),
+      );
+
+      expect(_run, other);
+      expect(_run.hashCode, other.hashCode);
+    });
+
+    test('ignores the parsed events, which are a view of the output', () {
+      final withEvents = TestRun(
+        exitCode: 0,
+        timedOut: false,
+        output: 'suite output',
+        errorOutput: 'suite stderr',
+        events: TestEvents.parse(
+          '{"type":"suite","suite":{"id":0,"path":"test/a_test.dart"}}\n',
+        ),
+        duration: const Duration(seconds: 2),
+      );
+      final withOtherEvents = TestRun(
+        exitCode: 0,
+        timedOut: false,
+        output: 'suite output',
+        errorOutput: 'suite stderr',
+        events: TestEvents.parse(
+          '{"type":"suite","suite":{"id":0,"path":"test/b_test.dart"}}\n',
+        ),
+        duration: const Duration(seconds: 2),
+      );
+
+      expect(withEvents, withOtherEvents);
+      expect(withEvents.hashCode, withOtherEvents.hashCode);
+      expect(withEvents, _run);
+      expect(withEvents.hashCode, _run.hashCode);
+    });
+
+    test('differs when any single observable field differs', () {
+      expect(
+        _run,
+        isNot(
+          const TestRun(
+            exitCode: 1,
+            timedOut: false,
+            output: 'suite output',
+            errorOutput: 'suite stderr',
+            duration: Duration(seconds: 2),
+          ),
+        ),
+      );
+      expect(
+        _run,
+        isNot(
+          const TestRun(
+            exitCode: 0,
+            timedOut: true,
+            output: 'suite output',
+            errorOutput: 'suite stderr',
+            duration: Duration(seconds: 2),
+          ),
+        ),
+      );
+      expect(
+        _run,
+        isNot(
+          const TestRun(
+            exitCode: 0,
+            timedOut: false,
+            output: 'other output',
+            errorOutput: 'suite stderr',
+            duration: Duration(seconds: 2),
+          ),
+        ),
+      );
+      expect(
+        _run,
+        isNot(
+          const TestRun(
+            exitCode: 0,
+            timedOut: false,
+            output: 'suite output',
+            errorOutput: 'other stderr',
+            duration: Duration(seconds: 2),
+          ),
+        ),
+      );
+      expect(
+        _run,
+        isNot(
+          const TestRun(
+            exitCode: 0,
+            timedOut: false,
+            output: 'suite output',
+            errorOutput: 'suite stderr',
+            duration: Duration(seconds: 3),
+          ),
+        ),
+      );
+    });
+
+    test('carries value semantics into a set and a map key', () {
+      const twin = TestRun(
+        exitCode: 0,
+        timedOut: false,
+        output: 'suite output',
+        errorOutput: 'suite stderr',
+        duration: Duration(seconds: 2),
+      );
+
+      expect({_run}, contains(twin));
+      expect({_run: 'seen'}[twin], 'seen');
+    });
+
+    test('names the exit code and the timed-out flag', () {
+      final text = _run.toString();
+
+      expect(text, contains('0'));
+      expect(text, contains('false'));
     });
   });
 }
