@@ -133,9 +133,7 @@ String _resolve(String fromFile, String target) {
   final base = Uri.file(fromFile).resolve(withoutAnchor);
   final resolved = base.toFilePath();
   final root = '${Directory.current.path}${Platform.pathSeparator}';
-  return resolved.startsWith(root)
-      ? resolved.substring(root.length)
-      : resolved;
+  return resolved.startsWith(root) ? resolved.substring(root.length) : resolved;
 }
 
 void _checkLinks() {
@@ -192,7 +190,7 @@ void _checkIndex() {
   if (!index.existsSync()) {
     throw CheckFailure(check, [
       'no such file: $_decisionsIndex; the index is the tree\'s destination '
-      'for the register and both READMEs link to it',
+          'for the register and both READMEs link to it',
     ]);
   }
 
@@ -233,7 +231,7 @@ void _checkRetiredEntry() {
   if (names.isEmpty) {
     throw CheckFailure(check, [
       'no entry file ending in $_retiredEntrySuffix under $_decisionsDir; the '
-      'register keeps retired entries so inbound links keep resolving',
+          'register keeps retired entries so inbound links keep resolving',
     ]);
   }
 

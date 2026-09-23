@@ -40,19 +40,15 @@ final class DartTestRunner implements TestRunner {
     final watch = Stopwatch()..start();
     // The suite is a kill boundary from the moment it exists, so what it
     // spawns afterwards dies with it in one call (ADR 0022).
-    final process = await SupervisedProcess.start(
-      Platform.resolvedExecutable,
-      [
-        'test',
-        '--reporter',
-        'json',
-        if (failFast) '--fail-fast',
-        if (coverageDir != null) '--coverage=$coverageDir',
-        if (concurrency != null) '--concurrency=$concurrency',
-        ...suites,
-      ],
-      workingDirectory: root,
-    );
+    final process = await SupervisedProcess.start(Platform.resolvedExecutable, [
+      'test',
+      '--reporter',
+      'json',
+      if (failFast) '--fail-fast',
+      if (coverageDir != null) '--coverage=$coverageDir',
+      if (concurrency != null) '--concurrency=$concurrency',
+      ...suites,
+    ], workingDirectory: root);
 
     const decoder = Utf8Decoder(allowMalformed: true);
     final output = CappedOutput(limit: stdoutLimit);

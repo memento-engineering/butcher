@@ -176,8 +176,7 @@ void main() {
       logger: logger,
     );
 
-    bool has(String relative) =>
-        File(p.join(copy.root, relative)).existsSync();
+    bool has(String relative) => File(p.join(copy.root, relative)).existsSync();
     expect(has('lib/a.dart'), isTrue);
     expect(has('deep/nested/trace.log'), isTrue);
     expect(has('build/out.txt'), isFalse);

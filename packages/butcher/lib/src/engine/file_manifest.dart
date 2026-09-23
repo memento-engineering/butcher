@@ -61,11 +61,12 @@ final class FileManifest {
       ...listed,
       // A project that gitignores its generated layer would otherwise copy
       // none of it and go red on the baseline.
-      ...await _list(lister, workspaceRoot, const [
-        '--others',
-        '--ignored',
-        '--exclude-standard',
-      ], [for (final suffix in generatedFileSuffixes) '*$suffix']),
+      ...await _list(
+        lister,
+        workspaceRoot,
+        const ['--others', '--ignored', '--exclude-standard'],
+        [for (final suffix in generatedFileSuffixes) '*$suffix'],
+      ),
     };
     for (final path in listed) {
       if (p.posix.basename(path) != packageManifestName) continue;

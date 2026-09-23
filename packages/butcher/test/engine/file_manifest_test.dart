@@ -68,7 +68,8 @@ void main() {
     final git = recorded(
       '',
       exitCode: 128,
-      stderr: 'fatal: not a git repository (or any of the parent '
+      stderr:
+          'fatal: not a git repository (or any of the parent '
           'directories): .git\n',
     );
 
