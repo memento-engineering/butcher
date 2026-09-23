@@ -9,6 +9,7 @@ export 'src/engine/engine.dart';
 export 'src/engine/full_coverage_provider.dart';
 export 'src/engine/lcov_coverage_provider.dart';
 export 'src/engine/run_aborted.dart';
+export 'src/engine/run_events.dart';
 export 'src/engine/run_result.dart';
 export 'src/engine/suite_coverage_provider.dart';
 export 'src/engine/test_runner.dart';
