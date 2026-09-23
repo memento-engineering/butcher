@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 
-import 'binary_expression_mutagen.dart';
+import 'binary_expression_mutator.dart';
 import 'promotion_dependence.dart';
 
 /// Swaps `==` with `!=` and back on any operands.
@@ -9,9 +9,9 @@ import 'promotion_dependence.dart';
 /// Widened guard: any operand types compile, except null tests whose flip
 /// strands a promoted use; the viability check backstops the remainder
 /// (ADR 0019).
-final class EqualityMutagen extends BinaryExpressionMutagen {
-  /// Creates the mutagen; it holds no state.
-  const EqualityMutagen();
+final class EqualityMutator extends BinaryExpressionMutator {
+  /// Creates the mutator; it holds no state.
+  const EqualityMutator();
 
   @override
   String get id => 'equality';

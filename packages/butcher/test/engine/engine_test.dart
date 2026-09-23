@@ -272,7 +272,7 @@ void main() {
   });
 
   test('classifies non-compiling mutants without running tests', () async {
-    // A for-each over the checked variable is invisible to the mutagen
+    // A for-each over the checked variable is invisible to the mutator
     // guards, so the unviable flip reaches the viability filter (ADR 0019).
     final root = await miniProject(
       calc:

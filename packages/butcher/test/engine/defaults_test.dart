@@ -8,7 +8,7 @@ void main() {
     length: 1,
     original: '+',
     replacement: '-',
-    operatorId: 'arithmetic',
+    mutatorId: 'arithmetic',
     description: 'replace + with -',
   );
   const mutant = Mutant(id: 'lib/a.dart:4:arithmetic', mutation: mutation);

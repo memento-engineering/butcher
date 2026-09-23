@@ -141,7 +141,7 @@ void main() {
       length: 1,
       original: '+',
       replacement: '-',
-      operatorId: 'arithmetic',
+      mutatorId: 'arithmetic',
       description: 'replace + with -',
     );
     await clone.apply(mutation);
@@ -236,7 +236,7 @@ void main() {
       length: 1,
       original: '+',
       replacement: '-',
-      operatorId: 'arithmetic',
+      mutatorId: 'arithmetic',
       description: 'replace + with -',
     );
     await copy.apply(mutation);
@@ -297,7 +297,7 @@ void main() {
         length: 1,
         original: '+',
         replacement: '-',
-        operatorId: 'arithmetic',
+        mutatorId: 'arithmetic',
         description: 'replace + with -',
       );
       final copied = File(p.join(containment.root, 'lib/a.dart'));
@@ -321,7 +321,7 @@ void main() {
       length: 1,
       original: '+',
       replacement: '-',
-      operatorId: 'arithmetic',
+      mutatorId: 'arithmetic',
       description: 'replace + with -',
     );
     await expectLater(containment.apply(drifted), throwsStateError);
@@ -334,7 +334,7 @@ void main() {
       length: 1,
       original: '+',
       replacement: '-',
-      operatorId: 'arithmetic',
+      mutatorId: 'arithmetic',
       description: 'replace + with -',
     );
     await expectLater(containment.apply(pastEnd), throwsStateError);

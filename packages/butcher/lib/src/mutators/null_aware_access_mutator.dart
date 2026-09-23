@@ -1,15 +1,15 @@
 import 'package:analyzer/dart/ast/ast.dart';
 
 import '../model/mutation.dart';
-import 'mutagen.dart';
+import 'mutator.dart';
 
 /// Replaces `?.` with `!.`: a silent null skip becomes a crash.
 ///
 /// Always compiles: `!` accepts any receiver and the result type only
 /// narrows. Cascades (`?..`) and null-aware indexing are follow-ups.
-final class NullAwareAccessMutagen implements Mutagen {
-  /// Creates the mutagen; it holds no state.
-  const NullAwareAccessMutagen();
+final class NullAwareAccessMutator implements Mutator {
+  /// Creates the mutator; it holds no state.
+  const NullAwareAccessMutator();
 
   @override
   String get id => 'null-aware';
@@ -29,7 +29,7 @@ final class NullAwareAccessMutagen implements Mutagen {
         length: operator.length,
         original: operator.lexeme,
         replacement: '!.',
-        operatorId: id,
+        mutatorId: id,
         description: 'replace ?. with !.',
       ),
     ];

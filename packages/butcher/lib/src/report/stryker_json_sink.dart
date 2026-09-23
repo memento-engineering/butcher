@@ -49,7 +49,7 @@ final class StrykerJsonSink implements ReportSink {
       );
       (file['mutants']! as List<Object>).add({
         'id': result.mutant.id,
-        'mutatorName': mutation.operatorId,
+        'mutatorName': mutation.mutatorId,
         'replacement': mutation.replacement,
         'description': mutation.description,
         'location': {

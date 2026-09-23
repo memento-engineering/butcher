@@ -21,7 +21,7 @@ Future<List<Mutation>> mutationsOf(String source) async {
   final mutations = <Mutation>[];
   (result as ResolvedUnitResult).unit.accept(
     MutationVisitor(
-      registry: MutagenRegistry.defaults(),
+      registry: MutatorRegistry.defaults(),
       filePath: 'main.dart',
       source: source,
       mutations: mutations,
@@ -31,7 +31,7 @@ Future<List<Mutation>> mutationsOf(String source) async {
 }
 
 Iterable<Mutation> ofOperator(List<Mutation> mutations, String id) =>
-    mutations.where((m) => m.operatorId == id);
+    mutations.where((m) => m.mutatorId == id);
 
 void main() {
   test('skips null-test flips stranding a member access', () async {

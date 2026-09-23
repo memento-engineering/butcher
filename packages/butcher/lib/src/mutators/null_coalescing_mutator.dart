@@ -1,15 +1,15 @@
 import 'package:analyzer/dart/ast/ast.dart';
 
 import '../model/mutation.dart';
-import 'mutagen.dart';
+import 'mutator.dart';
 
 /// Mutates `a ?? b` into always (`b`) and never (`a!`) falling back.
 ///
 /// Both forms compile by construction: the fallback was already checked
 /// against the same context, and `a!` only narrows a nullable type.
-final class NullCoalescingMutagen implements Mutagen {
-  /// Creates the mutagen; it holds no state.
-  const NullCoalescingMutagen();
+final class NullCoalescingMutator implements Mutator {
+  /// Creates the mutator; it holds no state.
+  const NullCoalescingMutator();
 
   @override
   String get id => 'null-coalescing';
@@ -32,7 +32,7 @@ final class NullCoalescingMutagen implements Mutagen {
           length: node.length,
           original: source.substring(node.offset, node.end),
           replacement: replacement,
-          operatorId: id,
+          mutatorId: id,
           description:
               'replace ${node.operator.lexeme} expression '
               'with $replacement',

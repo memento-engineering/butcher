@@ -30,7 +30,7 @@ void main() {
       final dir = await fixtureProject();
       final generator = MutantGenerator(
         projectRoot: dir.path,
-        registry: MutagenRegistry.defaults(),
+        registry: MutatorRegistry.defaults(),
         ignore: RadIgnore.load(dir.path),
       );
       final (mutants, sources) = await generator.generate();
@@ -57,7 +57,7 @@ void main() {
     File(p.join(dir.path, '.radignore')).writeAsStringSync('lib/src/\n');
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
-      registry: MutagenRegistry.defaults(),
+      registry: MutatorRegistry.defaults(),
       ignore: RadIgnore.load(dir.path),
     ).generate();
     expect(sources.keys, ['lib/a.dart']);
@@ -71,7 +71,7 @@ void main() {
       ..writeAsStringSync('int mul(int a, int b) => a * b;\n');
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
-      registry: MutagenRegistry.defaults(),
+      registry: MutatorRegistry.defaults(),
       ignore: RadIgnore.load(dir.path),
     ).generate();
     expect(sources.keys, isNot(contains('lib/.dart_tool/cached.dart')));
@@ -96,7 +96,7 @@ void main() {
     }
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
-      registry: MutagenRegistry.defaults(),
+      registry: MutatorRegistry.defaults(),
       ignore: RadIgnore.load(dir.path),
     ).generate();
     expect(sources.keys, isNot(contains('lib/linked.dart')));
@@ -111,7 +111,7 @@ void main() {
     addTearDown(() => dir.delete(recursive: true));
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
-      registry: MutagenRegistry.defaults(),
+      registry: MutatorRegistry.defaults(),
       ignore: RadIgnore.load(dir.path),
     ).generate();
     expect(mutants, isEmpty);

@@ -4,11 +4,11 @@ import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:path/path.dart' as p;
-import 'package:butcher/src/mutagens/binary_expression_mutagen.dart';
+import 'package:butcher/src/mutators/binary_expression_mutator.dart';
 import 'package:test/test.dart';
 
-final class SelfSwapMutagen extends BinaryExpressionMutagen {
-  const SelfSwapMutagen();
+final class SelfSwapMutator extends BinaryExpressionMutator {
+  const SelfSwapMutator();
 
   @override
   String get id => 'self-swap';
@@ -38,7 +38,7 @@ Future<BinaryExpression> binaryOf(String source) async {
 void main() {
   test('never proposes the operator it replaces', () async {
     final node = await binaryOf('int f(int a, int b) => a + b;');
-    final mutations = const SelfSwapMutagen().mutate(node, 'main.dart');
+    final mutations = const SelfSwapMutator().mutate(node, 'main.dart');
     expect(mutations.map((mutation) => mutation.replacement), ['-']);
   });
 }

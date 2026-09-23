@@ -1,6 +1,6 @@
-/// A single source change proposed by a mutagen.
+/// A single source change proposed by a mutator.
 ///
-/// Pure data: rewriting and execution live in the engine, never in mutagens.
+/// Pure data: rewriting and execution live in the engine, never in mutators.
 class Mutation {
   /// Creates a mutation replacing [original] with [replacement].
   const Mutation({
@@ -9,7 +9,7 @@ class Mutation {
     required this.length,
     required this.original,
     required this.replacement,
-    required this.operatorId,
+    required this.mutatorId,
     required this.description,
   });
 
@@ -28,8 +28,8 @@ class Mutation {
   /// Source text the mutant substitutes.
   final String replacement;
 
-  /// Id of the mutagen that proposed this mutation.
-  final String operatorId;
+  /// Id of the mutator that proposed this mutation.
+  final String mutatorId;
 
   /// Human-readable summary shown in reports.
   final String description;

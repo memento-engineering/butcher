@@ -10,7 +10,7 @@ import '../model/outcome.dart';
 import '../model/test_events.dart';
 import '../model/test_run.dart';
 import '../model/test_suite.dart';
-import '../mutagens/mutagen_registry.dart';
+import '../mutators/mutator_registry.dart';
 import '../rad_paths.dart';
 import 'containment.dart';
 import 'coverage_collector.dart';
@@ -42,13 +42,13 @@ final class Engine {
   Engine({
     required this.projectRoot,
     required this.paths,
-    MutagenRegistry? registry,
+    MutatorRegistry? registry,
     this.coverage = const FullCoverageProvider(),
     this.runnerFactory = _defaultRunnerFactory,
     this.onProgress,
     this.logger,
     int? jobs,
-  }) : registry = registry ?? MutagenRegistry.defaults(),
+  }) : registry = registry ?? MutatorRegistry.defaults(),
        jobs = jobs ?? defaultJobs,
        runId =
            logger?.runId ??
@@ -67,8 +67,8 @@ final class Engine {
   /// Filesystem locations resolved by the caller for this invocation.
   final RadPaths paths;
 
-  /// The active mutagen set.
-  final MutagenRegistry registry;
+  /// The active mutator set.
+  final MutatorRegistry registry;
 
   /// Coverage seam; `null` collects coverage during the run (ADR 0020).
   final CoverageProvider? coverage;
@@ -225,7 +225,7 @@ final class Engine {
           'Containment': containments[slot].name,
           'File': result.mutant.mutation.filePath,
           'Offset': result.mutant.mutation.offset,
-          'Operator': result.mutant.mutation.operatorId,
+          'Operator': result.mutant.mutation.mutatorId,
           'Replacement': result.mutant.mutation.replacement,
           'ExitCode': result.testRun?.exitCode,
           'TimedOut': result.testRun?.timedOut,
@@ -388,7 +388,7 @@ final class Engine {
       'Mutation': mutation.description,
       'File': mutation.filePath,
       'Offset': mutation.offset,
-      'Operator': mutation.operatorId,
+      'Operator': mutation.mutatorId,
       'Replacement': mutation.replacement,
       'Suites': [for (final suite in suites ?? const <TestSuite>[]) suite.path],
       'SuiteMs': suites?.fold(

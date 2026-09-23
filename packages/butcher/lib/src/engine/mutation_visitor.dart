@@ -2,14 +2,14 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 
 import '../model/mutation.dart';
-import '../mutagens/binary_expression_mutagen.dart';
-import '../mutagens/boolean_literal_mutagen.dart';
-import '../mutagens/mutagen_registry.dart';
-import '../mutagens/null_aware_access_mutagen.dart';
-import '../mutagens/null_coalescing_mutagen.dart';
-import '../mutagens/null_injection_mutagen.dart';
+import '../mutators/binary_expression_mutator.dart';
+import '../mutators/boolean_literal_mutator.dart';
+import '../mutators/mutator_registry.dart';
+import '../mutators/null_aware_access_mutator.dart';
+import '../mutators/null_coalescing_mutator.dart';
+import '../mutators/null_injection_mutator.dart';
 
-/// The single AST walk; dispatches nodes to registered mutagens (ADR 0008).
+/// The single AST walk; dispatches nodes to registered mutators (ADR 0008).
 final class MutationVisitor extends RecursiveAstVisitor<void> {
   /// Creates a visitor collecting into [mutations] for [filePath].
   MutationVisitor({
@@ -19,13 +19,13 @@ final class MutationVisitor extends RecursiveAstVisitor<void> {
     required this.mutations,
   });
 
-  /// The active mutagen set.
-  final MutagenRegistry registry;
+  /// The active mutator set.
+  final MutatorRegistry registry;
 
   /// Project-relative path of the unit being visited.
   final String filePath;
 
-  /// Full source text of the unit; span mutagens slice exact originals.
+  /// Full source text of the unit; span mutators slice exact originals.
   final String source;
 
   /// Collected mutations, in AST visit order (parent before child).
@@ -33,19 +33,19 @@ final class MutationVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitBinaryExpression(BinaryExpression node) {
-    for (final mutagen in registry.ofType<BinaryExpressionMutagen>()) {
-      mutations.addAll(mutagen.mutate(node, filePath));
+    for (final mutator in registry.ofType<BinaryExpressionMutator>()) {
+      mutations.addAll(mutator.mutate(node, filePath));
     }
-    for (final mutagen in registry.ofType<NullCoalescingMutagen>()) {
-      mutations.addAll(mutagen.mutate(node, filePath, source));
+    for (final mutator in registry.ofType<NullCoalescingMutator>()) {
+      mutations.addAll(mutator.mutate(node, filePath, source));
     }
     super.visitBinaryExpression(node);
   }
 
   @override
   void visitBooleanLiteral(BooleanLiteral node) {
-    for (final mutagen in registry.ofType<BooleanLiteralMutagen>()) {
-      mutations.addAll(mutagen.mutate(node, filePath));
+    for (final mutator in registry.ofType<BooleanLiteralMutator>()) {
+      mutations.addAll(mutator.mutate(node, filePath));
     }
     super.visitBooleanLiteral(node);
   }
@@ -63,8 +63,8 @@ final class MutationVisitor extends RecursiveAstVisitor<void> {
   }
 
   void _nullAware(Expression node) {
-    for (final mutagen in registry.ofType<NullAwareAccessMutagen>()) {
-      mutations.addAll(mutagen.mutate(node, filePath));
+    for (final mutator in registry.ofType<NullAwareAccessMutator>()) {
+      mutations.addAll(mutator.mutate(node, filePath));
     }
   }
 
@@ -99,8 +99,8 @@ final class MutationVisitor extends RecursiveAstVisitor<void> {
   }
 
   void _nullInjection(AstNode node) {
-    for (final mutagen in registry.ofType<NullInjectionMutagen>()) {
-      mutations.addAll(mutagen.mutate(node, filePath, source));
+    for (final mutator in registry.ofType<NullInjectionMutator>()) {
+      mutations.addAll(mutator.mutate(node, filePath, source));
     }
   }
 }

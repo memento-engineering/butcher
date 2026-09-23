@@ -11,7 +11,7 @@ Mutant mutantOnLine(int line) => Mutant(
     length: 1,
     original: '+',
     replacement: '-',
-    operatorId: 'arithmetic',
+    mutatorId: 'arithmetic',
     description: 'replace + with -',
   ),
 );

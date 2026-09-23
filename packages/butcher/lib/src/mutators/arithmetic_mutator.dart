@@ -1,11 +1,11 @@
 import 'package:analyzer/dart/ast/ast.dart';
 
-import 'binary_expression_mutagen.dart';
+import 'binary_expression_mutator.dart';
 
 /// Swaps arithmetic operators on numeric operands.
-final class ArithmeticMutagen extends BinaryExpressionMutagen {
-  /// Creates the mutagen; it holds no state.
-  const ArithmeticMutagen();
+final class ArithmeticMutator extends BinaryExpressionMutator {
+  /// Creates the mutator; it holds no state.
+  const ArithmeticMutator();
 
   @override
   String get id => 'arithmetic';

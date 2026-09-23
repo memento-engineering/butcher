@@ -21,7 +21,7 @@ Future<List<Mutation>> mutationsOf(String source) async {
   final mutations = <Mutation>[];
   (result as ResolvedUnitResult).unit.accept(
     MutationVisitor(
-      registry: MutagenRegistry.defaults(),
+      registry: MutatorRegistry.defaults(),
       filePath: 'main.dart',
       source: source,
       mutations: mutations,
@@ -34,7 +34,7 @@ void main() {
   test('mutates ?? into always and never falling back', () async {
     final mutations = await mutationsOf('int f(int? a, int b) => a ?? b;');
     final swaps = mutations
-        .where((m) => m.operatorId == 'null-coalescing')
+        .where((m) => m.mutatorId == 'null-coalescing')
         .toList();
     expect(swaps.map((m) => m.original).toSet(), {'a ?? b'});
     expect(swaps.map((m) => m.replacement), unorderedEquals(['b', 'a!']));
@@ -44,7 +44,7 @@ void main() {
     final mutations = await mutationsOf(
       'Future<int> f(Future<int?> g, int b) async => await g ?? b;',
     );
-    final swaps = mutations.where((m) => m.operatorId == 'null-coalescing');
+    final swaps = mutations.where((m) => m.mutatorId == 'null-coalescing');
     expect(
       swaps.map((m) => m.replacement),
       unorderedEquals(['b', '(await g)!']),
@@ -53,7 +53,7 @@ void main() {
 
   test('parenthesizes null-shorted chains before !', () async {
     final mutations = await mutationsOf('int f(String? s) => s?.length ?? 0;');
-    final swaps = mutations.where((m) => m.operatorId == 'null-coalescing');
+    final swaps = mutations.where((m) => m.mutatorId == 'null-coalescing');
     expect(
       swaps.map((m) => m.replacement),
       unorderedEquals(['0', '(s?.length)!']),
@@ -66,7 +66,7 @@ void main() {
 int f(String? s) => s?.length ?? 0;
 String? g(String? s) => s?.trim();
 ''');
-    final swaps = mutations.where((m) => m.operatorId == 'null-aware');
+    final swaps = mutations.where((m) => m.mutatorId == 'null-aware');
     expect(swaps, hasLength(2));
     expect(swaps.map((m) => m.original).toSet(), {'?.'});
     expect(swaps.map((m) => m.replacement).toSet(), {'!.'});
@@ -76,7 +76,7 @@ String? g(String? s) => s?.trim();
     final mutations = await mutationsOf('int f(String s) => s.length;');
     expect(
       mutations.where(
-        (m) => const {'null-aware', 'null-coalescing'}.contains(m.operatorId),
+        (m) => const {'null-aware', 'null-coalescing'}.contains(m.mutatorId),
       ),
       isEmpty,
     );

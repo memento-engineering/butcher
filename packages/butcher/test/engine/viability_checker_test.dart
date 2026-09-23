@@ -46,7 +46,7 @@ Mutant flipAt(
     length: original.length,
     original: original,
     replacement: replacement,
-    operatorId: 'equality',
+    mutatorId: 'equality',
     description: 'replace $original with $replacement',
   ),
 );
@@ -90,7 +90,7 @@ void main() {
     final root = await fixtureProject({'a.dart': _guarded});
     final generator = MutantGenerator(
       projectRoot: root,
-      registry: MutagenRegistry.defaults(),
+      registry: MutatorRegistry.defaults(),
       ignore: RadIgnore.load(root),
     );
     final (mutants, sources) = await generator.generate();

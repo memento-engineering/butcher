@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 
 import '../model/mutant.dart';
 import '../model/mutation.dart';
-import '../mutagens/mutagen_registry.dart';
+import '../mutators/mutator_registry.dart';
 import 'containment.dart';
 import 'mutation_visitor.dart';
 import 'project_analysis.dart';
@@ -36,8 +36,8 @@ final class MutantGenerator {
   /// Absolute path of the project under test.
   final String projectRoot;
 
-  /// The active mutagen set.
-  final MutagenRegistry registry;
+  /// The active mutator set.
+  final MutatorRegistry registry;
 
   /// Consumer exclusions shared with containment (ADR 0004).
   final RadIgnore ignore;
@@ -93,7 +93,7 @@ final class MutantGenerator {
       if (byFile != 0) return byFile;
       final byOffset = a.offset.compareTo(b.offset);
       if (byOffset != 0) return byOffset;
-      final byOperator = a.operatorId.compareTo(b.operatorId);
+      final byOperator = a.mutatorId.compareTo(b.mutatorId);
       if (byOperator != 0) return byOperator;
       return a.replacement.compareTo(b.replacement);
     });
@@ -103,7 +103,7 @@ final class MutantGenerator {
         Mutant(
           id:
               '${mutation.filePath}:${mutation.offset}'
-              ':${mutation.operatorId}:${mutation.replacement}',
+              ':${mutation.mutatorId}:${mutation.replacement}',
           mutation: mutation,
         ),
     ];

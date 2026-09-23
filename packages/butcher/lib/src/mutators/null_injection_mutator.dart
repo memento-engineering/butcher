@@ -4,7 +4,7 @@ import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
 
 import '../model/mutation.dart';
-import 'mutagen.dart';
+import 'mutator.dart';
 
 /// Injects `null` into slots whose declared context type is nullable:
 /// returns, arguments, assignments, and explicitly typed initializers.
@@ -12,9 +12,9 @@ import 'mutagen.dart';
 /// Sound null safety forbids `null` in non-nullable slots outright, so only
 /// declared-nullable contexts are mutable; there the injection compiles by
 /// construction and asks whether downstream code truly handles null.
-final class NullInjectionMutagen implements Mutagen {
-  /// Creates the mutagen; it holds no state.
-  const NullInjectionMutagen();
+final class NullInjectionMutator implements Mutator {
+  /// Creates the mutator; it holds no state.
+  const NullInjectionMutator();
 
   @override
   String get id => 'null-injection';
@@ -52,7 +52,7 @@ final class NullInjectionMutagen implements Mutagen {
             length: expression.length,
             original: source.substring(expression.offset, expression.end),
             replacement: 'null',
-            operatorId: id,
+            mutatorId: id,
             description: 'inject null',
           ),
     ];

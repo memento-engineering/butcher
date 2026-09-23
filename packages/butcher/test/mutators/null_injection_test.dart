@@ -21,7 +21,7 @@ Future<List<Mutation>> injectionsOf(String source) async {
   final mutations = <Mutation>[];
   (result as ResolvedUnitResult).unit.accept(
     MutationVisitor(
-      registry: const MutagenRegistry([NullInjectionMutagen()]),
+      registry: const MutatorRegistry([NullInjectionMutator()]),
       filePath: 'main.dart',
       source: source,
       mutations: mutations,

@@ -19,7 +19,7 @@ Future<void> roundtrip(String source) async {
 
   final (mutants, _) = await MutantGenerator(
     projectRoot: dir.path,
-    registry: MutagenRegistry.defaults(),
+    registry: MutatorRegistry.defaults(),
     ignore: RadIgnore.load(dir.path),
   ).generate();
   expect(mutants, isNotEmpty);

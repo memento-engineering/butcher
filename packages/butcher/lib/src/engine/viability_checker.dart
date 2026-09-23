@@ -11,7 +11,7 @@ import 'project_analysis.dart';
 ///
 /// Re-resolves the mutated file through an in-memory overlay on the shared
 /// [ProjectAnalysis]; only the mutated file needs analysis because every
-/// current mutagen rewrites expressions inside bodies, which cannot change a
+/// current mutator rewrites expressions inside bodies, which cannot change a
 /// file's API.
 final class ViabilityChecker {
   /// Creates a checker over the already resolved [analysis].

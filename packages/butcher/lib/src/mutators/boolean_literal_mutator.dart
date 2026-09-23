@@ -1,17 +1,17 @@
 import 'package:analyzer/dart/ast/ast.dart';
 
 import '../model/mutation.dart';
-import 'mutagen.dart';
+import 'mutator.dart';
 
 /// Flips `true` to `false` and back.
-final class BooleanLiteralMutagen implements Mutagen {
-  /// Creates the mutagen; it holds no state.
-  const BooleanLiteralMutagen();
+final class BooleanLiteralMutator implements Mutator {
+  /// Creates the mutator; it holds no state.
+  const BooleanLiteralMutator();
 
   @override
   String get id => 'bool-literal';
 
-  /// The mutations this mutagen proposes for [node] in [filePath].
+  /// The mutations this mutator proposes for [node] in [filePath].
   List<Mutation> mutate(BooleanLiteral node, String filePath) {
     final replacement = (!node.value).toString();
     return [
@@ -21,7 +21,7 @@ final class BooleanLiteralMutagen implements Mutagen {
         length: node.length,
         original: node.literal.lexeme,
         replacement: replacement,
-        operatorId: id,
+        mutatorId: id,
         description: 'replace ${node.literal.lexeme} with $replacement',
       ),
     ];

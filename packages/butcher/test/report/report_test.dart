@@ -15,7 +15,7 @@ MutantResult result(Outcome outcome, {int offset = 27, String id = 'm'}) =>
           length: 1,
           original: '+',
           replacement: '-',
-          operatorId: 'arithmetic',
+          mutatorId: 'arithmetic',
           description: 'replace + with -',
         ),
       ),

@@ -19,7 +19,7 @@ Mutant mutantAt(int line, {String file = 'lib/calc.dart'}) => Mutant(
     length: 1,
     original: '+',
     replacement: '-',
-    operatorId: 'arithmetic',
+    mutatorId: 'arithmetic',
     description: 'replace + with -',
   ),
 );

@@ -1,15 +1,15 @@
 import 'package:analyzer/dart/ast/ast.dart';
 
 import '../model/mutation.dart';
-import 'mutagen.dart';
+import 'mutator.dart';
 
-/// Base for operator-swap mutagens on binary expressions.
+/// Base for operator-swap mutators on binary expressions.
 ///
 /// Subclasses declare [swaps] as pure data. The default [guard] admits
 /// numeric operands only; widening it is an explicit override (ADR 0008).
-abstract class BinaryExpressionMutagen implements Mutagen {
+abstract class BinaryExpressionMutator implements Mutator {
   /// Allows subclasses to have const constructors.
-  const BinaryExpressionMutagen();
+  const BinaryExpressionMutator();
 
   /// Operator lexeme mapped to its replacement lexemes.
   Map<String, List<String>> get swaps;
@@ -22,7 +22,7 @@ abstract class BinaryExpressionMutagen implements Mutagen {
   bool guard(BinaryExpression node) =>
       _isNumeric(node.leftOperand) && _isNumeric(node.rightOperand);
 
-  /// The mutations this mutagen proposes for [node] in [filePath], or none.
+  /// The mutations this mutator proposes for [node] in [filePath], or none.
   List<Mutation> mutate(BinaryExpression node, String filePath) {
     final operator = node.operator;
     final replacements = replacementsFor(node);
@@ -36,7 +36,7 @@ abstract class BinaryExpressionMutagen implements Mutagen {
             length: operator.length,
             original: operator.lexeme,
             replacement: replacement,
-            operatorId: id,
+            mutatorId: id,
             description: 'replace ${operator.lexeme} with $replacement',
           ),
     ];

@@ -21,7 +21,7 @@ Future<List<Mutation>> mutationsOf(String source) async {
   final mutations = <Mutation>[];
   (result as ResolvedUnitResult).unit.accept(
     MutationVisitor(
-      registry: MutagenRegistry.defaults(),
+      registry: MutatorRegistry.defaults(),
       filePath: 'main.dart',
       source: source,
       mutations: mutations,
@@ -33,7 +33,7 @@ Future<List<Mutation>> mutationsOf(String source) async {
 void main() {
   test('mutates int arithmetic with every declared swap', () async {
     final mutations = await mutationsOf('int f(int a, int b) => a + b;');
-    final swaps = mutations.where((m) => m.operatorId == 'arithmetic').toList();
+    final swaps = mutations.where((m) => m.mutatorId == 'arithmetic').toList();
     expect(swaps.map((m) => m.original).toSet(), {'+'});
     expect(swaps.map((m) => m.replacement), unorderedEquals(['-', '*']));
     expect(swaps.map((m) => m.length).toSet(), {1});
@@ -41,7 +41,7 @@ void main() {
 
   test('swaps int multiplication to truncating division', () async {
     final mutations = await mutationsOf('int f(int a, int b) => a * b;');
-    final swaps = mutations.where((m) => m.operatorId == 'arithmetic');
+    final swaps = mutations.where((m) => m.mutatorId == 'arithmetic');
     expect(swaps.map((m) => m.replacement), unorderedEquals(['/', '~/', '+']));
   });
 
@@ -49,36 +49,36 @@ void main() {
     final mutations = await mutationsOf(
       'double f(double a, double b) => a % b;',
     );
-    final swaps = mutations.where((m) => m.operatorId == 'arithmetic');
+    final swaps = mutations.where((m) => m.mutatorId == 'arithmetic');
     expect(swaps.map((m) => m.replacement), unorderedEquals(['*', '/']));
   });
 
   test('keeps the declared swap when the result type is num', () async {
     final mutations = await mutationsOf('num f(num a, num b) => a * b;');
-    final swaps = mutations.where((m) => m.operatorId == 'arithmetic');
+    final swaps = mutations.where((m) => m.mutatorId == 'arithmetic');
     expect(swaps.map((m) => m.replacement), unorderedEquals(['/', '+']));
   });
 
   test('keeps floating division valid in a wider num context', () async {
     final mutations = await mutationsOf('num f(int a, int b) => a * b;');
-    final swaps = mutations.where((m) => m.operatorId == 'arithmetic');
+    final swaps = mutations.where((m) => m.mutatorId == 'arithmetic');
     expect(swaps.map((m) => m.replacement), unorderedEquals(['/', '~/', '+']));
   });
 
   test('guards string concatenation from arithmetic swaps', () async {
     final mutations = await mutationsOf("String f(String s) => 'a' + s;");
-    expect(mutations.where((m) => m.operatorId == 'arithmetic'), isEmpty);
+    expect(mutations.where((m) => m.mutatorId == 'arithmetic'), isEmpty);
   });
 
   test('mutates equality on any operand types', () async {
     final mutations = await mutationsOf("bool f(String s) => s == 'x';");
-    final swap = mutations.singleWhere((m) => m.operatorId == 'equality');
+    final swap = mutations.singleWhere((m) => m.mutatorId == 'equality');
     expect(swap.replacement, '!=');
   });
 
   test('mutates logical operators', () async {
     final mutations = await mutationsOf('bool f(bool a, bool b) => a && b;');
-    final swap = mutations.singleWhere((m) => m.operatorId == 'logical');
+    final swap = mutations.singleWhere((m) => m.mutatorId == 'logical');
     expect(swap.replacement, '||');
   });
 
@@ -89,13 +89,13 @@ class Probe {
 }
 bool f(Probe a, Probe b, int x, int y) => a < b && x < y;
 ''');
-    final swaps = mutations.where((m) => m.operatorId == 'relational');
+    final swaps = mutations.where((m) => m.mutatorId == 'relational');
     expect(swaps.map((m) => m.replacement), unorderedEquals(['<=', '>=']));
   });
 
   test('flips boolean literals', () async {
     final mutations = await mutationsOf('bool f() => true;');
-    final swap = mutations.singleWhere((m) => m.operatorId == 'bool-literal');
+    final swap = mutations.singleWhere((m) => m.mutatorId == 'bool-literal');
     expect(swap.original, 'true');
     expect(swap.replacement, 'false');
   });
@@ -105,8 +105,8 @@ bool f(Probe a, Probe b, int x, int y) => a < b && x < y;
     final first = await mutationsOf(source);
     final second = await mutationsOf(source);
     expect(
-      first.map((m) => '${m.offset}:${m.operatorId}:${m.replacement}'),
-      second.map((m) => '${m.offset}:${m.operatorId}:${m.replacement}'),
+      first.map((m) => '${m.offset}:${m.mutatorId}:${m.replacement}'),
+      second.map((m) => '${m.offset}:${m.mutatorId}:${m.replacement}'),
     );
   });
 }
