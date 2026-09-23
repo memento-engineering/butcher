@@ -23,4 +23,22 @@ class MutantResult {
 
   /// Exception and stack trace behind a [Outcome.runError] without [testRun].
   final String? error;
+
+  /// Value equality over every field, composing [Mutant] and [TestRun].
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MutantResult &&
+          mutant == other.mutant &&
+          outcome == other.outcome &&
+          testRun == other.testRun &&
+          error == other.error;
+
+  /// Hashes the same four fields [operator ==] compares.
+  @override
+  int get hashCode => Object.hash(mutant, outcome, testRun, error);
+
+  /// Names the mutant id and the outcome.
+  @override
+  String toString() => 'MutantResult(${mutant.id}, ${outcome.name})';
 }

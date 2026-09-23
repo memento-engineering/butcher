@@ -33,4 +33,35 @@ class Mutation {
 
   /// Human-readable summary shown in reports.
   final String description;
+
+  /// Value equality over every field: two mutations are the same proposed
+  /// change only when they rewrite the same range of the same file the same
+  /// way, under the same mutator and description.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Mutation &&
+          filePath == other.filePath &&
+          offset == other.offset &&
+          length == other.length &&
+          original == other.original &&
+          replacement == other.replacement &&
+          mutatorId == other.mutatorId &&
+          description == other.description;
+
+  /// Hashes the same seven fields [operator ==] compares.
+  @override
+  int get hashCode => Object.hash(
+    filePath,
+    offset,
+    length,
+    original,
+    replacement,
+    mutatorId,
+    description,
+  );
+
+  /// Names the file, the offset and the replacement text.
+  @override
+  String toString() => 'Mutation($filePath@$offset => $replacement)';
 }

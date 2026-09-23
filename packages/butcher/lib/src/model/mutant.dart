@@ -10,4 +10,18 @@ class Mutant {
 
   /// The source change this mutant carries.
   final Mutation mutation;
+
+  /// Value equality over [id] and [mutation], composing the mutation's own.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Mutant && id == other.id && mutation == other.mutation;
+
+  /// Hashes the same two fields [operator ==] compares.
+  @override
+  int get hashCode => Object.hash(id, mutation);
+
+  /// Names the mutant id.
+  @override
+  String toString() => 'Mutant($id)';
 }
