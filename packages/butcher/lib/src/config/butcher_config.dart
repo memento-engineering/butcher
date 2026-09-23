@@ -13,8 +13,9 @@ const _excludeKey = 'exclude';
 /// The file carries one key, `exclude`, holding a list of glob strings. The
 /// key name, the list shape and the glob dialect are deliberately the
 /// analyzer's `exclude` schema, so a reader who has written an analyzer
-/// exclude already knows this file. butcher never reads `analysis_options.yaml`
-/// and carries no configuration block in any package manifest.
+/// exclude already knows this file. butcher never reads the analyzer's own
+/// configuration file and carries no configuration block in any package
+/// manifest.
 ///
 /// A missing file, a missing key and an empty list all mean the same thing:
 /// nothing is excluded.
