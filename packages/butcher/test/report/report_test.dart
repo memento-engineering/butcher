@@ -222,6 +222,48 @@ void main() {
     }
   });
 
+  test(
+    'StrykerJsonSink emits the measured duration, not attribution',
+    () async {
+      final mutants = mutantsOf(
+        jsonDecode(
+              await writeReport([
+                result(
+                  Outcome.killed,
+                  offset: 37,
+                  id: 'measured',
+                  testRun: const TestRun(
+                    exitCode: 1,
+                    timedOut: false,
+                    output: '',
+                    duration: Duration(milliseconds: 1234),
+                  ),
+                ),
+                result(Outcome.noCoverage, offset: 37, id: 'unrun'),
+              ]),
+            )
+            as Map<String, dynamic>,
+      );
+      final byId = {
+        for (final mutant in mutants) mutant['id'] as String: mutant,
+      };
+
+      expect(byId['measured']!['duration'], 1234);
+      expect(
+        byId['unrun'],
+        isNot(contains('duration')),
+        reason: 'no run, nothing measured',
+      );
+      for (final field in ['coveredBy', 'killedBy', 'testsCompleted']) {
+        expect(
+          byId['measured'],
+          isNot(contains(field)),
+          reason: 'the runner carries no per-test identity',
+        );
+      }
+    },
+  );
+
   test('StrykerJsonSink quotes the diagnostic behind a run error', () async {
     final mutants = mutantsOf(
       jsonDecode(

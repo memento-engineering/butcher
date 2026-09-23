@@ -13,6 +13,14 @@ import 'report_sink.dart';
 /// The document is built as `butcher_report`'s typed [MutationTestResult] and
 /// serialised by that package, so nothing here shapes the schema by hand; the
 /// sink's only I/O remains the single file write.
+///
+/// The schema's test-attribution fields — `coveredBy`, `killedBy` and
+/// `testsCompleted` — are deliberately left unset. The runner carries no
+/// per-test identity: it reports a suite's events, not which named test
+/// covered a mutant or which one killed it, so writing those fields would
+/// mean inventing them. The schema distinguishes an absent optional from an
+/// empty one, and absent is the honest answer until the runner can name
+/// tests.
 final class StrykerJsonSink implements ReportSink {
   /// Creates a sink over generation-time [sources], writing [outputPath].
   const StrykerJsonSink({required this.sources, required this.outputPath});
@@ -97,6 +105,9 @@ final class StrykerJsonSink implements ReportSink {
               ),
               status: statusOf[result.outcome]!,
               description: mutation.description,
+              // The test run already measured this; the schema wants
+              // milliseconds. Absent when no tests ran for the mutant.
+              duration: result.testRun?.duration.inMilliseconds,
               replacement: mutation.replacement,
               statusReason: statusReasonFor(result),
             ),
