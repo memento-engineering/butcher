@@ -9,7 +9,7 @@ How the decisions compose at runtime:
 ```mermaid
 flowchart TD
     A[lock + startup cleanup] --> P[dependency resolution: pub get]
-    P --> B[containment: filtered project or workspace copy]
+    P --> B[sandbox: filtered project or workspace copy]
     B --> C[calibration reading: green suite, coverage, per-test timing]
     C --> E[routing: a given lcov overrides what was measured]
     E --> D[analyzer: resolved AST → mutants]
@@ -25,11 +25,11 @@ flowchart TD
 | [0001](2026-08-14-implement-in-dart.md) | Implement in Dart | accepted |
 | [0002](2026-08-14-parse-with-official-analyzer.md) | Parse with the official analyzer | accepted |
 | [0003](2026-08-14-distribution-and-sdk-resolution.md) | Distribution and SDK resolution | accepted |
-| [0004](2026-08-14-shadow-copy-isolation.md) | Containment isolation | accepted |
-| [0005](2026-08-14-mandatory-baseline-verification.md) | Mandatory background reading | accepted |
+| [0004](2026-08-14-shadow-copy-isolation.md) | Sandbox isolation | accepted |
+| [0005](2026-08-14-mandatory-baseline-verification.md) | Mandatory baseline verification | accepted |
 | [0006](2026-08-14-outcome-taxonomy.md) | Outcome taxonomy | accepted |
 | [0007](2026-08-14-deterministic-execution.md) | Deterministic execution | accepted |
-| [0008](2026-08-14-composable-mutator-framework.md) | Composable mutagen framework | accepted |
+| [0008](2026-08-14-composable-mutator-framework.md) | Composable mutator framework | accepted |
 | [0009](2026-08-14-stryker-json-primary-report.md) | Stryker JSON as primary report | accepted |
 | [0010](2026-08-14-mutant-schemata.md) | Mutant schemata | accepted, planned v1.0 |
 | [0011](2026-08-14-per-test-coverage-routing.md) | Tracer coverage routing | accepted, staged v0.1-v1.0 |
