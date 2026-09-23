@@ -14,7 +14,7 @@ const _upstreamCopyright = 'Copyright (c) 2026 Ricardo Boss';
 
 /// The org's own copyright line for the derivative work, added beside the
 /// upstream one and never in its place.
-const _orgCopyright = 'Copyright (c) 2026 memento-engineering';
+const _orgCopyright = 'Copyright (c) 2026 Nico Spencer';
 
 /// The MIT permission notice, which must survive byte-identical in every
 /// member's LICENSE.
