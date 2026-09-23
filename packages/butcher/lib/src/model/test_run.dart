@@ -15,7 +15,7 @@ final class TestRun {
   /// Process exit code; `-1` when the run [timedOut].
   final int exitCode;
 
-  /// Whether the process exceeded its half-life and was killed.
+  /// Whether the process exceeded its deadline and was killed.
   final bool timedOut;
 
   /// Suite stdout: the JSON reporter event stream, capped while it is read

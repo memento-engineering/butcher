@@ -104,7 +104,7 @@ void main() {
       ),
       hasLength(3),
       reason:
-          'the background reading plus one per --jobs worker, all kept '
+          'the baseline plus one per --jobs worker, all kept '
           'until the next run starts',
     );
     expect(

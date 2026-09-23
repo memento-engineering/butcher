@@ -112,11 +112,11 @@ final class Engine {
     final workspace = PubWorkspace.resolve(projectRoot);
 
     // Contain and verify before the expensive analysis stages so a red
-    // suite aborts within the background reading's duration (ADR 0005).
+    // suite aborts within the baseline's duration (ADR 0005).
     final prepareWatch = Stopwatch()..start();
     // Divide the cores among the requested jobs so parallel suites do not
-    // oversubscribe; the background reading uses the same concurrency to
-    // keep half-lives calibrated (ADR 0017).
+    // oversubscribe; the baseline uses the same concurrency to
+    // keep deadlines calibrated (ADR 0017).
     final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ jobs);
     final ignore = RadIgnore.load(projectRoot);
     final baseline = await Sandbox.create(
@@ -128,7 +128,7 @@ final class Engine {
     );
     await pubGet(baseline.projectRoot, label: 'the sandbox');
     ensureTestVersion(baseline.root);
-    // One pristine clone before the background reading; the workers are cloned
+    // One pristine clone before the baseline; the workers are cloned
     // from it, so none inherits what that suite writes into the package tree
     // (ADR 0017) and a red reading still costs one extra copy (ADR 0005).
     final template = await baseline.clone();
@@ -145,19 +145,19 @@ final class Engine {
           ? '${background.output}${background.errorOutput}'
           : summary;
       throw RunAborted(
-        'background reading is red; a green suite is a precondition '
+        'baseline is red; a green suite is a precondition '
         '(ADR 0005). If a copy exclusion removed a required asset, fix '
         '$butcherIgnoreFile.\n'
         '$evidence',
       );
     }
-    final halfLife = halfLifeFor(background.duration);
+    final deadline = deadlineFor(background.duration);
     logger?.info(
-      'background reading green in {DurationMs} ms, '
-      'half-life {HalfLifeMs} ms',
+      'baseline green in {DurationMs} ms, '
+      'deadline {DeadlineMs} ms',
       {
         'DurationMs': background.duration.inMilliseconds,
-        'HalfLifeMs': halfLife.inMilliseconds,
+        'DeadlineMs': deadline.inMilliseconds,
       },
     );
 
@@ -209,7 +209,7 @@ final class Engine {
           sandboxes[slot],
           runners[slot],
           runLogs[slot],
-          halfLife,
+          deadline,
           unviable,
           routing,
         );
@@ -238,8 +238,8 @@ final class Engine {
     return RunResult(
       results: results.cast<MutantResult>(),
       sources: sources,
-      backgroundReading: background.duration,
-      halfLife: halfLife,
+      baseline: background.duration,
+      deadline: deadline,
     );
   }
 
@@ -301,7 +301,7 @@ final class Engine {
     Sandbox sandbox,
     TestRunner runner,
     RadLogger runLog,
-    Duration halfLife,
+    Duration deadline,
     Set<String> unviable,
     CoverageProvider coverage,
   ) async {
@@ -319,7 +319,7 @@ final class Engine {
       final suites = coverage.suitesFor(mutant);
       final run = await runner.run(
         suites: [for (final suite in suites ?? const <TestSuite>[]) suite.path],
-        timeout: _halfLifeFor(suites, halfLife),
+        timeout: _deadlineFor(suites, deadline),
         // One failing test already kills the mutant; the rest is wasted work.
         failFast: true,
       );
@@ -413,23 +413,23 @@ final class Engine {
     }
   }
 
-  /// Half-life of a routed run: whichever of the selection's own serial cost
+  /// Deadline of a routed run: whichever of the selection's own serial cost
   /// and the [wholeSuite] reading is longer, both on the `× 3` rule.
   ///
   /// Workers contend for the machine, so a routed run cannot count on the
-  /// parallelism the background reading measured; its suites effectively run
+  /// parallelism the baseline measured; its suites effectively run
   /// one after another. Taking the reading alone timed out 75 of 709 healthy
   /// mutants (2026-08-21), 31 of them routed to the whole suite.
-  static Duration _halfLifeFor(List<TestSuite>? suites, Duration wholeSuite) {
+  static Duration _deadlineFor(List<TestSuite>? suites, Duration wholeSuite) {
     if (suites == null) return wholeSuite;
-    final selected = halfLifeFor(
+    final selected = deadlineFor(
       suites.fold(Duration.zero, (total, suite) => total + suite.duration),
     );
     return selected > wholeSuite ? selected : wholeSuite;
   }
 
   /// Per-mutant timeout: `max(background × 3, 10 s floor)` (ADR 0006).
-  static Duration halfLifeFor(Duration background) {
+  static Duration deadlineFor(Duration background) {
     const floor = Duration(seconds: 10);
     final scaled = background * 3;
     return Duration(

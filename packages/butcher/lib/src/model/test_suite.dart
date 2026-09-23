@@ -7,6 +7,6 @@ final class TestSuite {
   final String path;
 
   /// Wall-clock span the suite took when coverage was collected; the routing
-  /// order and half-life derive from it (ADR 0011).
+  /// order and deadline derive from it (ADR 0011).
   final Duration duration;
 }

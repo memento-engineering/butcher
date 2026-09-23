@@ -2,7 +2,7 @@ import 'dart:collection';
 
 /// Accumulates process output while retaining at most [limit] characters
 /// plus the dead prefix of the oldest chunk still held: a mutant that loops
-/// over `print` can emit gigabytes within its half-life, so streams are
+/// over `print` can emit gigabytes within its deadline, so streams are
 /// bounded while they are read instead of after the fact.
 ///
 /// Dropping whole chunks off the front keeps a write proportional to the

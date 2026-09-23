@@ -24,7 +24,7 @@ final class Metrics {
   /// Mutants no test covers; never executed.
   int get uncovered => _count(Outcome.noCoverage);
 
-  /// Mutants whose run exceeded its half-life: an inconclusive peer of
+  /// Mutants whose run exceeded its deadline: an inconclusive peer of
   /// killed and survived, in neither MSI term (ADR 0013).
   int get timedOut => _count(Outcome.timeout);
 

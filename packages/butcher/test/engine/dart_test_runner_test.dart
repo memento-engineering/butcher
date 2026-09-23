@@ -182,7 +182,7 @@ void main() {
     expect(classify(run), Outcome.killed);
   });
 
-  test('kills a hung suite at its half-life', () async {
+  test('kills a hung suite at its deadline', () async {
     final dir = await createFixturePackage(
       testSource: '''
 import 'package:test/test.dart';

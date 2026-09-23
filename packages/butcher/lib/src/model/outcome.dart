@@ -12,7 +12,7 @@ enum Outcome {
   /// No test covers the mutation site.
   noCoverage,
 
-  /// The test run exceeded the mutant's half-life.
+  /// The test run exceeded the mutant's deadline.
   timeout,
 
   /// The mutant does not compile.

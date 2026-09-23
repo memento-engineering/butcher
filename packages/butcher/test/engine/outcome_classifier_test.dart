@@ -97,20 +97,20 @@ void main() {
     });
   });
 
-  group('half-life', () {
-    test('is three background readings when above the floor', () {
+  group('deadline', () {
+    test('is three baselines when above the floor', () {
       expect(
-        Engine.halfLifeFor(const Duration(seconds: 20)),
+        Engine.deadlineFor(const Duration(seconds: 20)),
         const Duration(minutes: 1),
       );
     });
 
     test('never drops below the 10 s floor', () {
       expect(
-        Engine.halfLifeFor(const Duration(milliseconds: 200)),
+        Engine.deadlineFor(const Duration(milliseconds: 200)),
         const Duration(seconds: 10),
       );
-      expect(Engine.halfLifeFor(Duration.zero), const Duration(seconds: 10));
+      expect(Engine.deadlineFor(Duration.zero), const Duration(seconds: 10));
     });
   });
 }

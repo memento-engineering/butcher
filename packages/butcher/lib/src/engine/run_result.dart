@@ -6,8 +6,8 @@ final class RunResult {
   const RunResult({
     required this.results,
     required this.sources,
-    required this.backgroundReading,
-    required this.halfLife,
+    required this.baseline,
+    required this.deadline,
   });
 
   /// One classified result per generated mutant.
@@ -17,8 +17,8 @@ final class RunResult {
   final Map<String, String> sources;
 
   /// Duration of the green baseline suite run (ADR 0005).
-  final Duration backgroundReading;
+  final Duration baseline;
 
-  /// Per-mutant timeout derived from the background reading (ADR 0006).
-  final Duration halfLife;
+  /// Per-mutant timeout derived from the baseline (ADR 0006).
+  final Duration deadline;
 }

@@ -30,7 +30,7 @@ final class FakeRunner implements TestRunner {
   /// Per-call delays after the baseline; missing entries mean no delay.
   final List<Duration> delays;
 
-  /// Duration every run reports; the background reading's sets the half-life.
+  /// Duration every run reports; the baseline's sets the deadline.
   final Duration reported;
 
   final List<Duration?> timeouts = [];
@@ -90,7 +90,7 @@ final class CrashingRunner implements TestRunner {
   }
 }
 
-/// Writes a marker into its sandbox during the background reading, as a
+/// Writes a marker into its sandbox during the baseline, as a
 /// real suite writes incremental kernels and test fixtures into its tree.
 final class SuiteWritingRunner implements TestRunner {
   SuiteWritingRunner(this.root, this.runs);
@@ -100,7 +100,7 @@ final class SuiteWritingRunner implements TestRunner {
   final String root;
 
   /// Roots that have run, shared by every runner; the first run is the
-  /// background reading.
+  /// baseline.
   final List<String> runs;
 
   @override
@@ -175,7 +175,7 @@ Future<String> miniProject({
 
 void main() {
   test(
-    'classifies every mutant with the half-life and reports progress',
+    'classifies every mutant with the deadline and reports progress',
     () async {
       final runner = FakeRunner();
       final progress = <String>[];
@@ -189,9 +189,9 @@ void main() {
 
       expect(result.results, hasLength(2));
       expect(result.results.map((r) => r.outcome).toSet(), {Outcome.killed});
-      expect(result.halfLife, const Duration(seconds: 10));
+      expect(result.deadline, const Duration(seconds: 10));
       expect(progress, ['1/2 killed', '2/2 killed']);
-      expect(runner.timeouts, [null, result.halfLife, result.halfLife]);
+      expect(runner.timeouts, [null, result.deadline, result.deadline]);
       expect(
         runner.failFasts,
         [false, true, true],
@@ -225,12 +225,12 @@ void main() {
     expect(
       runner.timeouts.skip(1),
       everyElement(const Duration(seconds: 180)),
-      reason: 'a selection cheaper than the reading keeps its half-life',
+      reason: 'a selection cheaper than the reading keeps its deadline',
     );
   });
 
   test(
-    'gives a selection costlier than the reading its own half-life',
+    'gives a selection costlier than the reading its own deadline',
     () async {
       final runner = FakeRunner(reported: const Duration(seconds: 60));
       await Engine(
@@ -338,7 +338,7 @@ void main() {
     await expectLater(engine.run(), throwsArgumentError);
   });
 
-  test('aborts on a red background reading before any analysis', () async {
+  test('aborts on a red baseline before any analysis', () async {
     final coverage = RecordingCoverage();
     final paths = await isolatedRadPaths('rad_engine_state_');
     final engine = Engine(
@@ -414,7 +414,7 @@ void main() {
     expect(log, contains('"@mt":"generated {MutantCount} mutants'));
     expect(log, contains('"@mt":"checked viability of {MutantCount} mutants'));
     expect(log, contains('"@mt":"prepared {Sandboxes} sandboxes'));
-    expect(log, contains('"@mt":"background reading green'));
+    expect(log, contains('"@mt":"baseline green'));
     expect(log, contains('"@mt":"classified {MutantId} as {Outcome}'));
     expect(log, contains('"Outcome":"runError"'));
     final classified = log
@@ -525,7 +525,7 @@ void main() {
     expect(concurrencies, [expected, expected, expected]);
   });
 
-  test('clones workers before the background reading runs', () async {
+  test('clones workers before the baseline runs', () async {
     final roots = <String>[];
     final runs = <String>[];
     await Engine(
@@ -549,7 +549,7 @@ void main() {
       expect(
         File(p.join(worker, SuiteWritingRunner.marker)).existsSync(),
         isFalse,
-        reason: 'a worker must not inherit what the background reading wrote',
+        reason: 'a worker must not inherit what the baseline wrote',
       );
     }
   });

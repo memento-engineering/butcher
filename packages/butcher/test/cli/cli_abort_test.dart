@@ -51,7 +51,7 @@ void main() {
     );
   });
 
-  test('aborts with exit code 70 on a red background reading', () async {
+  test('aborts with exit code 70 on a red baseline', () async {
     final dir = await createFixturePackage(
       calc: 'int add(int a, int b) => a * b;\n',
     );

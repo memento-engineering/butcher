@@ -21,7 +21,7 @@ const defaultReportPath = 'mutation-report.json';
 /// Runs the `rad` CLI over [arguments]; returns the process exit code.
 ///
 /// Exit codes: 0 success, 1 criticality or honesty gate, 64 usage error,
-/// 70 aborted run (locked workspace, red background reading, failed pub get
+/// 70 aborted run (locked workspace, red baseline, failed pub get
 /// or coverage collection).
 ///
 /// [paths] overrides every filesystem location used by the invocation.
@@ -186,8 +186,8 @@ Future<int> radMain(
     sink.writeln('irradiating $projectRoot');
     final result = await engine.run();
     sink.writeln(
-      'background reading: ${result.backgroundReading.inSeconds}s, '
-      'half-life: ${result.halfLife.inSeconds}s',
+      'baseline: ${result.baseline.inSeconds}s, '
+      'deadline: ${result.deadline.inSeconds}s',
     );
 
     await ConsoleReportSink(out: sink).write(result.results);
@@ -215,8 +215,8 @@ Future<int> radMain(
         'ExitCode': gated ? 1 : 0,
         'Counts': metrics.counts.map((k, v) => MapEntry(k.name, v)),
         'CoveredMsi': _rounded(coveredMsi),
-        'BackgroundMs': result.backgroundReading.inMilliseconds,
-        'HalfLifeMs': result.halfLife.inMilliseconds,
+        'BaselineMs': result.baseline.inMilliseconds,
+        'DeadlineMs': result.deadline.inMilliseconds,
         'DurationMs': watch.elapsedMilliseconds,
         'Report': reportPath,
       },

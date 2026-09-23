@@ -58,7 +58,7 @@ void main() {
     expect(
       record.existsSync(),
       isTrue,
-      reason: 'the suite must reach its spawn before the half-life',
+      reason: 'the suite must reach its spawn before the deadline',
     );
     final child = int.parse(record.readAsStringSync());
     expect(
