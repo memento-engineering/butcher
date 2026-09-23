@@ -11,7 +11,7 @@ every suite. A run pays for one full suite instead of two.
 
 | Pass | Instrumented | Produces |
 |---|---|---|
-| Background reading | no | green verdict, half-life base |
+| Baseline | no | green verdict, deadline base |
 | Coverage collection | yes | per-line hits, per-suite hits, suite timings |
 
 Both run the whole suite. On this package that is ~73 s spent twice.

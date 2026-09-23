@@ -1,4 +1,4 @@
-# 6. Dart-specific mutagens
+# 6. Dart-specific mutators
 
 - Status: pending
 - Decisions: [0008](../../decisions/2026-08-14-composable-mutator-framework.md),
@@ -14,7 +14,7 @@ the census decides.
 |---|---|---|
 | Collection elements | drop a spread, negate an `if` element, drop a `for` element | low; span replacement, usually viable |
 | Type test | `is` → `is!` | strands promotions; reuse `promotion_dependence.dart` |
-| Assignment | `+=` → `-=`, and peers | mirrors the arithmetic mutagen |
+| Assignment | `+=` → `-=`, and peers | mirrors the arithmetic mutator |
 | Increment | `++` → `--` | prefix/postfix swaps are often equivalent |
 | Conditional | swap `?:` branches, force one | overlaps null injection |
 | Cascade | drop a cascade section | `..` → `.` changes the expression type |
@@ -34,7 +34,7 @@ the census decides.
 
 ## Steps
 
-- One family per commit: mutagen, guard, unit tests.
+- One family per commit: mutator, guard, unit tests.
 - After each, a self-run: mutant count, unviable rate, survivors, MSI change.
 - Fill the table above with measurements, and drop families that fail
   question 2.
@@ -47,7 +47,7 @@ the census decides.
 
 ## Seams for later
 
-- One file per mutagen, registered in `MutagenRegistry`; the framework shape
+- One file per mutator, registered in `MutatorRegistry`; the framework shape
   does not change.
 - Schemata ([0010](../../decisions/2026-08-14-mutant-schemata.md)) need a mutation
   to be selectable by a runtime value, so the mutated and original code must

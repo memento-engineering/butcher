@@ -20,11 +20,11 @@ can tell a held lock from an abandoned one.
 2. How is liveness checked per platform without spawning a process per check?
    Windows has no signals, so `Process.killPid` with signal 0 is not the
    portable answer it is elsewhere. This is the spike.
-3. `RAD_TEMP` can point at a shared location. When the recorded host is not
+3. `BUTCHER_TEMP` can point at a shared location. When the recorded host is not
    this one, liveness is unknowable — prompt, or abort and say why?
 4. What counts as interactive? `stdin.hasTerminal` is the obvious test; decide
    whether a missing terminal already implies `--non-interactive`.
-5. Does taking a lock have to clean the previous run's containments, or does
+5. Does taking a lock have to clean the previous run's sandboxes, or does
    the existing startup `clean()` already cover it?
 
 ## Steps
@@ -43,10 +43,10 @@ can tell a held lock from an abandoned one.
 
 ## Seams for later
 
-- v1.0 dogfooding runs `rad` on a schedule against a machine that may hold a
+- v1.0 dogfooding runs `butcher` on a schedule against a machine that may hold a
   stale lock. The workflow uses `--non-interactive` and a serialized
   concurrency group.
-- rad's own e2e suite spawns rad. Nested runs get their own `RAD_TEMP`, and
+- butcher's own e2e suite spawns butcher. Nested runs get their own `BUTCHER_TEMP`, and
   the owner record must never let one be mistaken for a stale parent.
 
 ## Result

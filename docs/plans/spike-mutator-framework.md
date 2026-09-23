@@ -3,8 +3,9 @@
 Goal: validate the mutator API reads as intended before writing many
 operators. Timebox: ~1 h. Throwaway code; only findings are kept.
 
-Historical record; predates [0014](../decisions/2026-08-14-naming-and-vocabulary.md):
-"mutator" is now "mutagen".
+Historical record. It reads in the tool's current terms: the renaming in
+[0014](../decisions/2026-08-14-naming-and-vocabulary.md), which came after this
+spike and gave them other names for a time, is retired.
 
 ## Questions to answer
 

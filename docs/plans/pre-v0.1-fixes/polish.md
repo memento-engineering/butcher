@@ -33,7 +33,7 @@ Release, lifecycle, and logging gaps. Part of [index.md](index.md).
 
 ## 4. `--verbose` is never colored
 
-- Files: `lib/src/log/rad_logger.dart`, `lib/src/cli/cli.dart`.
+- Files: `lib/src/log/butcher_logger.dart`, `lib/src/cli/cli.dart`.
 - ADR: [0016](../../decisions/2026-08-15-wide-event-logging.md) requires ANSI color
   when the terminal supports it.
 - Problem: auto-detection requires `console == null`, but the CLI always passes

@@ -15,9 +15,9 @@ Part of [index.md](index.md).
   - overlay restore invalidates a file before the next same-file mutant.
 - Fix: share analysis state, batch by file, and avoid redundant invalidation.
 
-## 2. Containment copying wastes the walk and workers
+## 2. Sandbox copying wastes the walk and workers
 
-- File: `lib/src/engine/containment.dart` (`create`, `_excluded`).
+- File: `lib/src/engine/sandbox.dart` (`create`, `_excluded`).
 - ADR: [0004](../../decisions/2026-08-14-shadow-copy-isolation.md) targets workspaces.
 - Problems:
   - recursive listing enters excluded directories before filtering;
@@ -25,11 +25,11 @@ Part of [index.md](index.md).
   - nested `.git`, `.dart_tool`, and `build` directories are copied;
   - `copySync` blocks the isolate once per file and limits worker preparation.
 - Fix: recurse manually, prune directories, match excludes at any depth, and
-  use asynchronous copies or clone one prepared containment.
+  use asynchronous copies or clone one prepared sandbox.
 
 ## 3. Arithmetic swaps generate predictable compile failures
 
-- File: `lib/src/mutagens/arithmetic_mutagen.dart` (`swaps`).
+- File: `lib/src/mutators/arithmetic_mutator.dart` (`swaps`).
 - ADR: [0019](../../decisions/2026-08-16-static-viability-filtering.md) assigns guards
   the job of minimizing unviable mutants.
 - Problem: `/` always yields `double`, so swaps such as `*` to `/` cannot fill
@@ -44,6 +44,6 @@ Part of [index.md](index.md).
   `lib/src/engine/engine.dart` (`_logMutantRun`).
 - Problem: all stdout and stderr are retained, then embedded again in a JSON
   log event.
-- Effect: a print-loop mutant can exhaust rad's memory within its half-life.
+- Effect: a print-loop mutant can exhaust butcher's memory within its deadline.
 - Fix: cap captured output while retaining its beginning, end, and truncation
   metadata.

@@ -1,4 +1,4 @@
-# 1. Half-life as a budget of silence
+# 1. Deadline as a budget of silence
 
 - Status: pending
 - Decision: [0006](../../decisions/2026-08-14-outcome-taxonomy.md)
@@ -10,8 +10,8 @@ A hung run is silent under any load; a slow one keeps streaming events.
 
 | Where | Behaviour |
 |---|---|
-| `engine.dart` `halfLifeFor` | `max(background × 3, 10 s floor)` |
-| `engine.dart` `_halfLifeFor` | routed: `max(selection sum, background) × 3` |
+| `engine.dart` `deadlineFor` | `max(background × 3, 10 s floor)` |
+| `engine.dart` `_deadlineFor` | routed: `max(selection sum, background) × 3` |
 | `dart_test_runner.dart` | `process.exitCode.timeout(...)`, one elapsed budget |
 
 Calibrated idle, spent under 8-way contention. Three self-runs paid for that
@@ -41,7 +41,7 @@ inconclusive.
   the distribution for a green reading and for a contended routed run.
 - Replace the exit-code timeout with a resettable idle timer plus the total
   ceiling. A killed run still reports `timedOut`.
-- Drop `_halfLifeFor`'s selection term: a silence budget does not care how
+- Drop `_deadlineFor`'s selection term: a silence budget does not care how
   many suites were selected.
 - Re-run the self-run; compare timeouts, killed median, and wall clock against
   runs 1-3 and append the row to

@@ -6,8 +6,8 @@ Ordered by severity. Part of [index.md](index.md).
 
 ## 1. Promotion guard drops viable mutants
 
-- Files: `lib/src/mutagens/promotion_dependence.dart` (`flipStrands`),
-  consumers `equality_mutagen.dart`, `logical_mutagen.dart`.
+- Files: `lib/src/mutators/promotion_dependence.dart` (`flipStrands`),
+  consumers `equality_mutator.dart`, `logical_mutator.dart`.
 - ADR: [0019](../../decisions/2026-08-16-static-viability-filtering.md) says guards
   err toward keeping a mutant.
 - Problem: the guard scans the whole function for any promotion-dependent use.
@@ -51,27 +51,27 @@ Ordered by severity. Part of [index.md](index.md).
 - Effect: engine bugs inflate MSI and cannot be diagnosed from retained logs.
 - Fix: retain structured error details and only translate expected failures.
 
-## 6. An in-project `RAD_TEMP` copies itself
+## 6. An in-project `BUTCHER_TEMP` copies itself
 
-- Files: `lib/src/rad_paths.dart`, `lib/src/engine/containment.dart`.
-- ADR: [0004](../../decisions/2026-08-14-shadow-copy-isolation.md) allows `RAD_TEMP`
+- Files: `lib/src/butcher_paths.dart`, `lib/src/engine/sandbox.dart`.
+- ADR: [0004](../../decisions/2026-08-14-shadow-copy-isolation.md) allows `BUTCHER_TEMP`
   to set the exact production root.
-- Problem: containment creates its target before recursively listing the
+- Problem: sandbox creates its target before recursively listing the
   project. A target below the project can enter its own source walk.
 - Effect: recursive growth can consume disk and prevent the run from starting.
-- Fix: reject roots inside the project or prune the resolved rad root.
+- Fix: reject roots inside the project or prune the resolved butcher root.
 
-## 7. `.radignore` is ignored during generation
+## 7. `.butcherignore` is ignored during generation
 
 - Files: `lib/src/engine/mutant_generator.dart`,
-  `lib/src/engine/containment.dart`.
-- Problem: generation visits excluded `lib/` paths that containment omits.
+  `lib/src/engine/sandbox.dart`.
+- Problem: generation visits excluded `lib/` paths that sandbox omits.
 - Effect: applying those mutants fails as `runError`, which MSI ignores.
-- Fix: resolve exclusions once and share them with generation and containment.
+- Fix: resolve exclusions once and share them with generation and sandbox.
 
-## 8. `.radignore` is not gitignore-style
+## 8. `.butcherignore` is not gitignore-style
 
-- File: `lib/src/engine/containment.dart` (`_consumerGlobs`).
+- File: `lib/src/engine/sandbox.dart` (`_consumerGlobs`).
 - ADR: [0004](../../decisions/2026-08-14-shadow-copy-isolation.md) requires
   gitignore-style consumer exclusions.
 - Problem: each line is passed directly to `Glob`. Negation and gitignore
@@ -88,11 +88,11 @@ Ordered by severity. Part of [index.md](index.md).
 - Effect: mid-run edits can route mutants using the wrong source lines.
 - Fix: build coverage indexes from the captured source map.
 
-## 10. Generator and containment disagree about symlinks
+## 10. Generator and sandbox disagree about symlinks
 
 - Files: `lib/src/engine/mutant_generator.dart`,
-  `lib/src/engine/containment.dart`.
-- Problem: generation follows links by default. Containment uses
+  `lib/src/engine/sandbox.dart`.
+- Problem: generation follows links by default. Sandbox uses
   `followLinks: false` and does not copy link entries.
 - Effect: linked Dart files can generate mutants whose contained files do not
   exist, producing `runError`.
@@ -103,7 +103,7 @@ Ordered by severity. Part of [index.md](index.md).
 - File: `lib/src/engine/dart_test_runner.dart`.
 - Problem: mutant runs always pass `--fail-fast`, introduced by `package:test`
   1.24.6. A consumer can still resolve an older compatible version.
-- Effect: the background reading passes, then every mutant becomes `runError`.
+- Effect: the baseline passes, then every mutant becomes `runError`.
 - Fix: detect support once or document and enforce the minimum test version.
 
 ## 12. POSIX timeouts do not kill the process tree
@@ -115,11 +115,11 @@ Ordered by severity. Part of [index.md](index.md).
   resources after classification.
 - Fix: start a process group and terminate the whole group on timeout.
 
-## 13. Background reading runs after expensive analysis
+## 13. Baseline runs after expensive analysis
 
 - Files: `lib/src/engine/engine.dart`,
   [decisions/index.md](../../decisions/index.md).
-- Docs compose containment and background reading before generation and
+- Docs compose sandbox and baseline before generation and
   viability. Code does generation and viability first.
 - Effect: a red suite can waste minutes before the mandatory abort.
-- Fix: run the background reading first or update the documented composition.
+- Fix: run the baseline first or update the documented composition.

@@ -3,9 +3,10 @@
 Goal: prove the MVP isolation model works on Windows before building on it.
 Timebox: ~30 min. Throwaway code; only findings are kept.
 
-Historical record; predates [0014](../decisions/2026-08-14-naming-and-vocabulary.md):
-"shadow copy/tree" is now "containment", "baseline" is now "background
-reading".
+Historical record. "shadow copy/tree" is now "sandbox"; its other terms are the
+tool's current ones, because the renaming in
+[0014](../decisions/2026-08-14-naming-and-vocabulary.md), which came after this
+spike, is retired.
 
 ## Questions to answer
 
