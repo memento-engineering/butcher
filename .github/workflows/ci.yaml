@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+  workflow_call:
+
+# A newer push on the same ref makes the running check obsolete. The group is
+# a literal: when called, `github.workflow` is the caller's name, and sharing
+# its group would let the caller cancel the job it waits on.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    strategy:
+      fail-fast: false
+      matrix:
+        # The engine branches on the platform: it kills process trees by
+        # process group on POSIX and by job object on Windows, and it resolves
+        # and copies paths differently on each. macOS is not redundant with
+        # Linux here -- the POSIX kill path meets a different kernel and a
+        # different `dart` distribution there.
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dart-lang/setup-dart@v1
+      # One resolution at the workspace root covers every member.
+      - run: dart pub get
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: dart analyze
+      - name: Test butcher
+        working-directory: packages/butcher
+        run: dart test
+      - name: Test butcher_process
+        working-directory: packages/butcher_process
+        run: dart test
+      - name: Test butcher_report
+        working-directory: packages/butcher_report
+        run: dart test
+
+  # Branch protection needs one check name that does not change when the matrix
+  # does, so it requires this job and never the legs.
+  ci-required:
+    name: CI required
+    needs: [test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every matrix leg succeeded
+        run: |
+          if [ "${{ needs.test.result }}" != "success" ]; then
+            echo "matrix result: ${{ needs.test.result }}"
+            exit 1
+          fi
