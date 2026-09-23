@@ -6,8 +6,8 @@ register:
   spec: 1
   slug: composable-mutator-framework
   surfaces:
-    - "lib/src/mutators/mutator.dart"
-    - "lib/src/engine/mutation_visitor.dart"
+    - "packages/butcher/lib/src/mutators/mutator.dart"
+    - "packages/butcher/lib/src/engine/mutation_visitor.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null

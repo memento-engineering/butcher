@@ -6,7 +6,7 @@ register:
   spec: 1
   slug: parallel-classification
   surfaces:
-    - "lib/src/engine/engine.dart"
+    - "packages/butcher/lib/src/engine/engine.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null

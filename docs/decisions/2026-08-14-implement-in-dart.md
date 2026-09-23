@@ -6,7 +6,7 @@ register:
   spec: 1
   slug: implement-in-dart
   surfaces:
-    - "pubspec.yaml"
+    - "packages/butcher/pubspec.yaml"
   obsoletes: []
   updates: []
   obsoleted-by: null

@@ -6,7 +6,7 @@ register:
   spec: 1
   slug: static-viability-filtering
   surfaces:
-    - "lib/src/engine/viability_checker.dart"
+    - "packages/butcher/lib/src/engine/viability_checker.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null

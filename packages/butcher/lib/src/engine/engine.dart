@@ -465,12 +465,8 @@ final class Engine {
   }
 
   /// Deadline of a routed run: whichever of the selection's own serial cost
-  /// and the [wholeSuite] reading is longer, both on the `× 3` rule.
-  ///
-  /// Workers contend for the machine, so a routed run cannot count on the
-  /// parallelism the baseline measured; its suites effectively run
-  /// one after another. Taking the reading alone timed out 75 of 709 healthy
-  /// mutants (2026-08-21), 31 of them routed to the whole suite.
+  /// and the [wholeSuite] reading is longer, both on the `× 3` rule. ADR 0006
+  /// records the self-run receipt that rules out taking the reading alone.
   static Duration _deadlineFor(List<TestSuite>? suites, Duration wholeSuite) {
     if (suites == null) return wholeSuite;
     final selected = deadlineFor(

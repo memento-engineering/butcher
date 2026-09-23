@@ -6,8 +6,8 @@ register:
   spec: 1
   slug: mandatory-baseline-verification
   surfaces:
-    - "lib/src/engine/engine.dart"
-    - "lib/src/engine/run_aborted.dart"
+    - "packages/butcher/lib/src/engine/engine.dart"
+    - "packages/butcher/lib/src/engine/run_aborted.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null

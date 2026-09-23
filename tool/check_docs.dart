@@ -3,8 +3,9 @@
 /// A shell grep can prove a word is gone; it cannot resolve a markdown link or
 /// reconcile an index against the files on disk. These checks walk `docs/`,
 /// resolve every relative link target, reconcile the decision index against the
-/// entry files beside it in both directions, and assert that the retired entry
-/// still declares itself retired.
+/// entry files it views in both directions, assert that the superseded entry
+/// names its successor, and assert that each amended or new decision entry
+/// still states the subject it was written to state.
 ///
 /// Run from the repository root:
 ///
@@ -19,8 +20,119 @@ import 'dart:io';
 
 const _docsDir = 'docs';
 const _decisionsDir = '$_docsDir/decisions';
-const _decisionsIndex = '$_decisionsDir/index.md';
-const _retiredEntrySuffix = '-naming-and-vocabulary.md';
+const _decisionsIndex = '$_decisionsDir/views/index.md';
+const _supersededEntry = '$_decisionsDir/2026-08-14-naming-and-vocabulary.md';
+const _successorSlug = 'standard-mutation-vocabulary';
+
+/// What one entry file must and must not say.
+///
+/// Every subject here is one this repository decided and then changed its mind
+/// about, or one it decided and never wrote down; a grep for the subject is
+/// what stops the entry drifting back to the argument it replaced.
+typedef Subject = ({String file, List<String> says, List<String> neverSays});
+
+const _subjects = <Subject>[
+  (
+    file: '$_decisionsDir/2026-08-14-shadow-copy-isolation.md',
+    says: [
+      'git ls-files --cached --others --exclude-standard --deduplicate -z',
+      'always-include',
+      'hierarchical walk',
+      // Both enumerations, re-run on this repository.
+      '223',
+      '691,112',
+      '224',
+      '702,299',
+    ],
+    neverSays: ['.butcherignore', 'ignore file', 'gitignore-style'],
+  ),
+  (
+    file: '$_decisionsDir/2026-08-21-process-interlock.md',
+    says: [
+      // The group spawn Dart was said to be incapable of.
+      'execs the rest of its argument vector in place',
+      // Membership inheritance, scoped to the platform that has it.
+      'Membership is inherited there',
+      // The session escape, pinned by a test and carrying no rate.
+      'posix_interlock_test.dart',
+      'No escape rate is recorded',
+      // Why that escape is not a new hole.
+      'reparented to pid 1',
+      // Why the interlock owns the spawn.
+      'setpgid',
+      // What the adoption deleted.
+      'descendant walker are deleted',
+    ],
+    neverSays: [
+      'Dart cannot spawn a process group',
+      'Membership is inherited, so everything the suite spawns joins it',
+      'POSIX keeps the sweep',
+    ],
+  ),
+  (
+    file: '$_decisionsDir/2026-08-14-outcome-taxonomy.md',
+    says: ['75 of 709 healthy', '2026-08-21'],
+    neverSays: [],
+  ),
+  (
+    file: '$_decisionsDir/2026-08-14-stryker-json-primary-report.md',
+    says: ['butcher_report', 'unthemed'],
+    neverSays: [],
+  ),
+  (
+    file: '$_decisionsDir/2026-09-22-value-equality-boundary.md',
+    says: [
+      // The five that gained equality.
+      '`Mutation`',
+      '`Mutant`',
+      '`MutantResult`',
+      '`TestRun`',
+      '`TestSuite`',
+      // The three that deliberately did not.
+      '`TestEvents`',
+      '`CappedOutput`',
+      '`ViabilityChecker`',
+    ],
+    neverSays: [],
+  ),
+  (
+    file: '$_decisionsDir/2026-09-22-two-mechanism-configuration.md',
+    says: [
+      'butcher.yaml',
+      '`exclude`',
+      'never reads the analyzer',
+      'no configuration block in any package manifest',
+      'no include list, no negation and no re-include',
+      'git listing',
+    ],
+    neverSays: [],
+  ),
+  (
+    file: '$_decisionsDir/2026-09-22-live-event-surface.md',
+    says: ['additive', 'NON-DETERMINISTIC', 'in parallel'],
+    neverSays: [],
+  ),
+  (
+    file: '$_decisionsDir/2026-09-22-workspace-shape.md',
+    says: [
+      'packages/butcher`',
+      'packages/butcher_process`',
+      'packages/butcher_report`',
+      'butcher-v0.1.0',
+      'prerelease tag push is a routine release',
+    ],
+    neverSays: [],
+  ),
+];
+
+/// Phrases that would mean an entry here states where the tool sits in the
+/// organisation; that ruling belongs to the organisation's own register.
+const _orgPlacementPhrases = [
+  'org placement',
+  'org-placement',
+  'organisation placement',
+  'organization placement',
+];
 
 /// Raised by a check that its subject violates, carrying the operator-readable
 /// reasons.
@@ -45,7 +157,12 @@ void main() {
   final checks = <Check>[
     (name: 'every relative link under docs resolves', run: _checkLinks),
     (name: 'the decision index matches the entries on disk', run: _checkIndex),
-    (name: 'the naming entry is retired', run: _checkRetiredEntry),
+    (name: 'the naming entry names its successor', run: _checkSupersededEntry),
+    (
+      name: 'every amended or new entry states its subject',
+      run: _checkSubjects,
+    ),
+    (name: 'no entry states an org-placement ruling', run: _checkOrgPlacement),
   ];
 
   var failed = false;
@@ -198,10 +315,15 @@ void _checkIndex() {
   for (final link in _linksIn(index)) {
     if (_isExternal(link.target)) continue;
 
+    // The index is a view one directory below the entries, so every entry
+    // link climbs out of `views/` first.
     final target = link.target.split('#').first;
-    if (target.contains('/') || !target.endsWith('.md')) continue;
+    if (!target.startsWith('../') || !target.endsWith('.md')) continue;
 
-    listed.add(target);
+    final name = target.substring('../'.length);
+    if (name.contains('/')) continue;
+
+    listed.add(name);
   }
 
   final onDisk = _entryFiles().toSet();
@@ -222,34 +344,88 @@ void _checkIndex() {
   if (reasons.isNotEmpty) throw CheckFailure(check, reasons);
 }
 
-void _checkRetiredEntry() {
-  const check = 'the naming entry is retired';
+void _checkSupersededEntry() {
+  const check = 'the naming entry names its successor';
 
-  final names = _entryFiles().where(
-    (name) => name.endsWith(_retiredEntrySuffix),
-  );
-  if (names.isEmpty) {
+  final file = File(_supersededEntry);
+  if (!file.existsSync()) {
     throw CheckFailure(check, [
-      'no entry file ending in $_retiredEntrySuffix under $_decisionsDir; the '
-          'register keeps retired entries so inbound links keep resolving',
+      'no such file: $_supersededEntry; the register keeps superseded entries '
+          'so inbound links keep resolving',
     ]);
   }
 
   final reasons = <String>[];
-  for (final name in names) {
-    final path = '$_decisionsDir/$name';
-    final lines = File(path).readAsLinesSync();
+  final lines = file.readAsLinesSync();
 
-    final front = lines.any((line) => line.trim() == 'status: retired');
-    if (!front) {
-      reasons.add('$path: the front matter status does not read retired');
+  // The register's own force operation writes this line; a hand-written
+  // status value would not be one the register spec supports.
+  final front = lines.any(
+    (line) => line.trim() == 'status: superseded by $_successorSlug',
+  );
+  if (!front) {
+    reasons.add(
+      '$_supersededEntry: the front matter status is not the one the '
+      "register's obsolete operation writes",
+    );
+  }
+
+  if (!lines.any((line) => line.trim() == 'obsoleted-by: $_successorSlug')) {
+    reasons.add('$_supersededEntry: no obsoleted-by edge to $_successorSlug');
+  }
+
+  if (!file.readAsStringSync().contains(_successorSlug)) {
+    reasons.add('$_supersededEntry: the body never names $_successorSlug');
+  }
+
+  if (reasons.isNotEmpty) throw CheckFailure(check, reasons);
+}
+
+/// [text] with every run of whitespace collapsed to one space, so a phrase
+/// matches however the markdown happens to be wrapped.
+String _flattened(String text) => text.replaceAll(RegExp(r'\s+'), ' ');
+
+void _checkSubjects() {
+  const check = 'every amended or new entry states its subject';
+
+  final reasons = <String>[];
+  for (final subject in _subjects) {
+    final file = File(subject.file);
+    if (!file.existsSync()) {
+      reasons.add('no such entry: ${subject.file}');
+      continue;
     }
 
-    final body = lines.any(
-      (line) => line.trim().toLowerCase() == '- status: retired',
-    );
-    if (!body) {
-      reasons.add('$path: the body status line does not read retired');
+    final text = _flattened(file.readAsStringSync());
+    for (final phrase in subject.says) {
+      if (!text.contains(phrase)) {
+        reasons.add('${subject.file} no longer states "$phrase"');
+      }
+    }
+    for (final phrase in subject.neverSays) {
+      if (text.contains(phrase)) {
+        reasons.add('${subject.file} states "$phrase" again');
+      }
+    }
+  }
+
+  if (reasons.isNotEmpty) throw CheckFailure(check, reasons);
+}
+
+void _checkOrgPlacement() {
+  const check = 'no entry states an org-placement ruling';
+
+  final reasons = <String>[];
+  for (final name in _entryFiles()) {
+    final path = '$_decisionsDir/$name';
+    final text = _flattened(File(path).readAsStringSync()).toLowerCase();
+    for (final phrase in _orgPlacementPhrases) {
+      if (text.contains(phrase)) {
+        reasons.add(
+          '$path states "$phrase"; where this tool sits in the organisation '
+          "is the organisation's own register to record",
+        );
+      }
     }
   }
 

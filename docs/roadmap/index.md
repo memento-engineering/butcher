@@ -1,7 +1,7 @@
 # Roadmap
 
 Staged feature plan for the mutation testing tool described in
-[../decisions/index.md](../decisions/index.md). Each stage prepares the seams
+[../decisions/views/index.md](../decisions/views/index.md). Each stage prepares the seams
 the next stage fills.
 
 | Stage | Status | Goal | Details |

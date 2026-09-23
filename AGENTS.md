@@ -15,7 +15,7 @@
 - avoid letting branches grow indefinitely; warn the user if the amount of changes in a branch gets "large"
 - long-standing decisions for the project should be recorded in `docs/decisions/` as ADR documents
 - when looking for guidance, check `docs/index.md`
-- when working on code, always check `docs/decisions/index.md` for relevant guidance
+- when working on code, always check `docs/decisions/views/index.md` for relevant guidance
 - always differentiate between docs for maintainers and docs for users; never leak one into the other (for example, users don't care about ADRs)
 - every _user visible_ change should get an entry in the CHANGELOG.md; internal changes don't get one
 - the pubspec.yaml on main always contains the in-development version

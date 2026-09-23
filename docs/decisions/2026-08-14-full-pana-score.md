@@ -6,7 +6,7 @@ register:
   spec: 1
   slug: full-pana-score
   surfaces:
-    - "analysis_options.yaml"
+    - "packages/butcher/analysis_options.yaml"
   obsoletes: []
   updates: []
   obsoleted-by: null

@@ -6,7 +6,7 @@ register:
   spec: 1
   slug: parse-with-official-analyzer
   surfaces:
-    - "lib/src/engine/project_analysis.dart"
+    - "packages/butcher/lib/src/engine/project_analysis.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null
