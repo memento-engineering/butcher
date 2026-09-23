@@ -22,6 +22,18 @@ void main() {
 }
 ''';
 
+/// Initialises [root] as a git repository.
+///
+/// A sandbox copy set comes from the repository's own listing, so a fixture
+/// the tool is pointed at has to be a repository like any real project;
+/// without one it would take the not-a-repository fallback instead.
+Future<void> initGitRepository(String root) async {
+  final init = await Process.run('git', ['init', '-q', root]);
+  if (init.exitCode != 0) {
+    fail('fixture git init failed: ${init.stdout}${init.stderr}');
+  }
+}
+
 /// Creates a resolvable single-package fixture with one lib and one suite.
 ///
 /// [resolve] runs `dart pub get` in it; skip it to test provisioning.
@@ -47,6 +59,7 @@ dev_dependencies:
 ''');
   write('lib/calc.dart', calc);
   write('test/calc_test.dart', testSource);
+  await initGitRepository(dir.path);
 
   if (!resolve) return dir;
   final pubGet = await Process.run(Platform.resolvedExecutable, [
@@ -116,6 +129,7 @@ environment:
   sdk: ^3.12.0
 ''');
   write('packages/sibling/lib/value.dart', 'const siblingValue = 2;\n');
+  await initGitRepository(root.path);
 
   return (root: root, member: member, sibling: sibling);
 }
