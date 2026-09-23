@@ -1,12 +1,13 @@
 /// Process-tree lifetime and kill primitives for the butcher mutation engine.
 ///
-/// The abstraction itself moves here with the process-control work; this
-/// barrel exists so the member resolves, analyzes and tests from the change
-/// that creates it.
+/// A consumer starts work through [SupervisedProcess], which owns the spawn
+/// through a [ProcessInterlock] so the started process is a kill boundary from
+/// the moment it exists. [terminateAllSupervisedProcesses] reaps whatever is
+/// still running, and [hostProcessCount] is the diagnostic that says whether
+/// anything leaked.
 library;
 
-/// The name this package publishes under.
-///
-/// A placeholder so the barrel carries one documented, testable declaration
-/// until the process-tree abstraction lands here.
-const butcherProcessPackageName = 'butcher_process';
+export 'src/process_census.dart' show hostProcessCount;
+export 'src/process_interlock.dart' show ProcessInterlock;
+export 'src/supervised_process.dart'
+    show SupervisedProcess, terminateAllSupervisedProcesses;
