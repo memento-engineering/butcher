@@ -35,7 +35,7 @@ flowchart TD
 | [0011](2026-08-14-per-test-coverage-routing.md) | Tracer coverage routing | accepted, staged v0.1-v1.0 |
 | [0012](2026-08-14-tce-equivalent-detection.md) | TCE equivalent-mutant detection | accepted, planned v2.0 |
 | [0013](2026-08-14-score-and-honesty-metrics.md) | Score and honesty metrics | accepted |
-| [0014](2026-08-14-naming-and-vocabulary.md) | Naming and vocabulary | accepted |
+| [0014](2026-08-14-naming-and-vocabulary.md) | Naming and vocabulary | retired |
 | [0015](2026-08-14-full-pana-score.md) | Full pana score | accepted |
 | [0016](2026-08-15-wide-event-logging.md) | Wide-event logging | accepted |
 | [0017](2026-08-15-parallel-classification.md) | Parallel classification | accepted |
