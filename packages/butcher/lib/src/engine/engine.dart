@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:path/path.dart' as p;
 
-import '../log/rad_logger.dart';
+import '../log/butcher_logger.dart';
 import '../model/mutant.dart';
 import '../model/mutant_result.dart';
 import '../model/outcome.dart';
@@ -11,7 +11,7 @@ import '../model/test_events.dart';
 import '../model/test_run.dart';
 import '../model/test_suite.dart';
 import '../mutators/mutator_registry.dart';
-import '../rad_paths.dart';
+import '../butcher_paths.dart';
 import 'sandbox.dart';
 import 'coverage_collector.dart';
 import 'coverage_provider.dart';
@@ -65,7 +65,7 @@ final class Engine {
   final String projectRoot;
 
   /// Filesystem locations resolved by the caller for this invocation.
-  final RadPaths paths;
+  final ButcherPaths paths;
 
   /// The active mutator set.
   final MutatorRegistry registry;
@@ -83,7 +83,7 @@ final class Engine {
   final int jobs;
 
   /// Receives engine wide events; `null` disables engine logging.
-  final RadLogger? logger;
+  final ButcherLogger? logger;
 
   /// Correlates and namespaces every mutant-run log from this engine run.
   final String runId;
@@ -188,7 +188,7 @@ final class Engine {
     // One run log per sandbox, named after it (ADR 0016).
     final runLogs = [
       for (final c in sandboxes)
-        RadLogger(
+        ButcherLogger(
           verbose: false,
           path: p.join(paths.runLogs, '${c.name}.log'),
           runId: runId,
@@ -300,7 +300,7 @@ final class Engine {
     Mutant mutant,
     Sandbox sandbox,
     TestRunner runner,
-    RadLogger runLog,
+    ButcherLogger runLog,
     Duration deadline,
     Set<String> unviable,
     CoverageProvider coverage,
@@ -372,7 +372,7 @@ final class Engine {
   /// [nestedErrors] come from the full stream, of which [result] keeps only
   /// an excerpt.
   void _logMutantRun(
-    RadLogger runLog,
+    ButcherLogger runLog,
     String sandbox,
     MutantResult result,
     List<String> nestedErrors,

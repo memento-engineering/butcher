@@ -7,8 +7,8 @@ import '../engine/engine.dart';
 import '../engine/full_coverage_provider.dart';
 import '../engine/lcov_coverage_provider.dart';
 import '../engine/run_aborted.dart';
-import '../log/rad_logger.dart';
-import '../rad_paths.dart';
+import '../log/butcher_logger.dart';
+import '../butcher_paths.dart';
 import '../report/console_report_sink.dart';
 import '../report/metrics.dart';
 import '../report/stryker_json_sink.dart';
@@ -28,7 +28,7 @@ const defaultReportPath = 'mutation-report.json';
 Future<int> radMain(
   List<String> arguments, {
   StringSink? out,
-  RadPaths? paths,
+  ButcherPaths? paths,
 }) async {
   final sink = out ?? stdout;
   final parser = ArgParser()
@@ -107,7 +107,7 @@ Future<int> radMain(
   final projectRoot = p.normalize(
     p.absolute(options.rest.isEmpty ? '.' : options.rest.single),
   );
-  final resolvedPaths = paths ?? RadPaths.production();
+  final resolvedPaths = paths ?? ButcherPaths.production();
   // Given, then found, then collected by the engine (ADR 0020).
   final found = coverageFile ?? _projectCoverageFile(projectRoot);
   // Parsed before acquisition so a broken report cannot strand the lock.
@@ -138,10 +138,10 @@ Future<int> radMain(
   }
   final verbose = options.flag('verbose');
   final watch = Stopwatch()..start();
-  final RadLogger logger;
+  final ButcherLogger logger;
   final Engine engine;
   try {
-    logger = RadLogger(
+    logger = ButcherLogger(
       verbose: verbose,
       path: resolvedPaths.toolLog,
       console: sink,
@@ -304,4 +304,4 @@ double? _threshold(ArgResults options) {
 String _usage(ArgParser parser) =>
     'Usage: rad [options] [project root]\n\n${parser.usage}'
     '\n\nEnvironment:\n'
-    'RAD_TEMP  Exact root for sandboxes and logs.';
+    'BUTCHER_TEMP  Exact root for sandboxes and logs.';

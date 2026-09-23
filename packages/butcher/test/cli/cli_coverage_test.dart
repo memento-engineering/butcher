@@ -14,9 +14,9 @@ import '../helpers/fixtures.dart';
 import '../helpers/paths.dart';
 
 void main() {
-  late RadPaths paths;
+  late ButcherPaths paths;
 
-  setUp(() async => paths = await isolatedRadPaths('rad_cli_coverage_'));
+  setUp(() async => paths = await isolatedButcherPaths('rad_cli_coverage_'));
 
   test('routes from lcov: mutants on unhit lines never run', () async {
     final dir = await createFixturePackage(calc: fixturePartiallyTestedCalc);

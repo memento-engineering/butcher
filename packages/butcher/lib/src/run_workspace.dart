@@ -4,7 +4,7 @@ import 'package:path/path.dart' as p;
 
 import 'engine/sandbox.dart';
 import 'engine/run_aborted.dart';
-import 'rad_paths.dart';
+import 'butcher_paths.dart';
 
 /// Exclusive ownership of the rad workspace for one run (ADR 0018).
 ///
@@ -13,7 +13,7 @@ import 'rad_paths.dart';
 /// next run starts instead of being destroyed at exit.
 final class RunWorkspace {
   /// Takes the exclusive lock for [paths]; aborts when it is already held.
-  factory RunWorkspace.acquire(RadPaths paths) {
+  factory RunWorkspace.acquire(ButcherPaths paths) {
     final lock = File(paths.lockFile)..parent.createSync(recursive: true);
     try {
       lock.createSync(exclusive: true);
@@ -29,7 +29,7 @@ final class RunWorkspace {
   RunWorkspace._(this.paths);
 
   /// Filesystem locations this workspace owns.
-  final RadPaths paths;
+  final ButcherPaths paths;
 
   /// Removes the previous tool log, leftover sandboxes, and every run log,
   /// keeping the run-log directory itself; aborts when a target survives.

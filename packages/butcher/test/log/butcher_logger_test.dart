@@ -11,7 +11,7 @@ void main() {
   setUp(() async {
     final dir = await Directory.systemTemp.createTemp('rad_log_');
     addTearDown(() => dir.delete(recursive: true));
-    path = p.join(dir.path, 'rad.log');
+    path = p.join(dir.path, 'butcher.log');
   });
 
   List<Map<String, dynamic>> events() => File(path)
@@ -19,13 +19,16 @@ void main() {
       .map((line) => jsonDecode(line) as Map<String, dynamic>)
       .toList();
 
-  RadLogger logger({bool verbose = false, StringSink? console, bool? colors}) =>
-      RadLogger(
-        verbose: verbose,
-        path: path,
-        console: console ?? StringBuffer(),
-        colors: colors,
-      );
+  ButcherLogger logger({
+    bool verbose = false,
+    StringSink? console,
+    bool? colors,
+  }) => ButcherLogger(
+    verbose: verbose,
+    path: path,
+    console: console ?? StringBuffer(),
+    colors: colors,
+  );
 
   test('writes CLEF lines: @t, @mt, properties, and @l only on errors', () {
     final log = logger()
@@ -54,7 +57,7 @@ void main() {
   });
 
   test('uses paths resolved by the caller', () {
-    final paths = RadPaths(root: p.dirname(path));
+    final paths = ButcherPaths(root: p.dirname(path));
     expect(paths.toolLog, path);
     expect(paths.runLogs, p.join(p.dirname(path), 'runs'));
   });
@@ -123,7 +126,7 @@ void main() {
 
   test('adopts a caller-provided run id for correlation', () {
     logger(); // Claims `path`; the correlated logger writes elsewhere.
-    final correlated = RadLogger(
+    final correlated = ButcherLogger(
       verbose: false,
       path: '$path.child',
       console: StringBuffer(),

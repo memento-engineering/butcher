@@ -1,6 +1,7 @@
 /// Public seams and value objects for extending butcher.
 library;
 
+export 'src/butcher_paths.dart';
 export 'src/engine/coverage_provider.dart';
 export 'src/engine/dart_test_runner.dart';
 export 'src/engine/engine.dart';
@@ -10,7 +11,7 @@ export 'src/engine/run_aborted.dart';
 export 'src/engine/run_result.dart';
 export 'src/engine/suite_coverage_provider.dart';
 export 'src/engine/test_runner.dart';
-export 'src/log/rad_logger.dart';
+export 'src/log/butcher_logger.dart';
 export 'src/model/line_index.dart';
 export 'src/model/mutant.dart';
 export 'src/model/mutant_result.dart';
@@ -30,7 +31,6 @@ export 'src/mutators/null_aware_access_mutator.dart';
 export 'src/mutators/null_coalescing_mutator.dart';
 export 'src/mutators/null_injection_mutator.dart';
 export 'src/mutators/relational_mutator.dart';
-export 'src/rad_paths.dart';
 export 'src/report/console_report_sink.dart';
 export 'src/report/metrics.dart';
 export 'src/report/report_sink.dart';

@@ -30,9 +30,9 @@ final class ThrowingSink implements StringSink {
 }
 
 void main() {
-  late RadPaths paths;
+  late ButcherPaths paths;
 
-  setUp(() async => paths = await isolatedRadPaths('rad_cli_abort_'));
+  setUp(() async => paths = await isolatedButcherPaths('rad_cli_abort_'));
 
   test('aborts with exit code 70 while another run holds the lock', () async {
     final held = RunWorkspace.acquire(paths);

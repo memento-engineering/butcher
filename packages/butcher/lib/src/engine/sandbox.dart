@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import '../model/mutation.dart';
-import '../rad_paths.dart';
+import '../butcher_paths.dart';
 import 'rad_ignore.dart';
 
 /// Top-level output directories never copied into a sandbox (ADR 0004).
@@ -36,7 +36,7 @@ final class Sandbox {
   /// remains relative to the selected project.
   static Future<Sandbox> create(
     String projectRoot, {
-    required RadPaths paths,
+    required ButcherPaths paths,
     required RadIgnore ignore,
     String? workspaceRoot,
     RadIgnore? workspaceIgnore,

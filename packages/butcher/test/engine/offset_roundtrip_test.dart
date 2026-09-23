@@ -24,7 +24,7 @@ Future<void> roundtrip(String source) async {
   ).generate();
   expect(mutants, isNotEmpty);
 
-  final paths = await isolatedRadPaths('rad_roundtrip_state_');
+  final paths = await isolatedButcherPaths('rad_roundtrip_state_');
   final sandbox = await Sandbox.create(
     dir.path,
     paths: paths,

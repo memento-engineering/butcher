@@ -3,7 +3,7 @@ import 'package:butcher/butcher.dart';
 Future<void> main() async {
   final engine = Engine(
     projectRoot: '.',
-    paths: RadPaths.systemTemp(),
+    paths: ButcherPaths.systemTemp(),
     onProgress: (done, total, result) =>
         print('[$done/$total] ${result.mutant.id} -> ${result.outcome.name}'),
   );

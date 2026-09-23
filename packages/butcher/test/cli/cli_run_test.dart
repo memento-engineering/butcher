@@ -48,9 +48,9 @@ final class _CapturedStderr implements Stdout {
 }
 
 void main() {
-  late RadPaths paths;
+  late ButcherPaths paths;
 
-  setUp(() async => paths = await isolatedRadPaths('rad_cli_run_'));
+  setUp(() async => paths = await isolatedButcherPaths('rad_cli_run_'));
 
   test('produces a Stryker JSON report and kills tested mutants', () async {
     final dir = await createFixturePackage(calc: fixturePartiallyTestedCalc);

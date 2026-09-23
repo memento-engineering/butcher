@@ -7,14 +7,14 @@ import 'dart:io';
 /// `@mt` message template with `{Property}` holes, `@l` level (absent means
 /// informational), plus the event's properties. The file is flushed per
 /// event; with [verbose] events also render human-readably to the console.
-final class RadLogger {
+final class ButcherLogger {
   /// Creates the logger, replacing any log file left by a previous run.
   ///
   /// [colors] defaults to auto-detection: on only when [console] is stdout
   /// and that stdout is a terminal supporting ANSI escapes. Pass [runId] to
   /// correlate this log with another one (e.g. mutant-run logs with the tool
   /// log).
-  RadLogger({
+  ButcherLogger({
     required this.verbose,
     required this.path,
     StringSink? console,

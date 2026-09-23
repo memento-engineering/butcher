@@ -7,7 +7,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:butcher/src/cli/cli.dart';
-import 'package:butcher/src/rad_paths.dart';
+import 'package:butcher/src/butcher_paths.dart';
 import 'package:butcher/src/engine/sandbox.dart';
 import 'package:test/test.dart';
 
@@ -15,9 +15,9 @@ import '../helpers/fixtures.dart';
 import '../helpers/paths.dart';
 
 void main() {
-  late RadPaths paths;
+  late ButcherPaths paths;
 
-  setUp(() async => paths = await isolatedRadPaths('rad_cli_workspace_'));
+  setUp(() async => paths = await isolatedButcherPaths('rad_cli_workspace_'));
 
   test('irradiates only the selected workspace member', () async {
     final fixture = await createFixtureWorkspace();

@@ -13,9 +13,11 @@ import '../helpers/fixtures.dart';
 import '../helpers/paths.dart';
 
 void main() {
-  late RadPaths paths;
+  late ButcherPaths paths;
 
-  setUp(() async => paths = await isolatedRadPaths('rad_cli_provisioning_'));
+  setUp(
+    () async => paths = await isolatedButcherPaths('rad_cli_provisioning_'),
+  );
 
   test('provisions an unresolved project before analysing it', () async {
     final dir = await createFixturePackage(resolve: false);

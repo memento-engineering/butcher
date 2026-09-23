@@ -41,12 +41,12 @@ Future<Directory> fixtureProject() async {
 
 void main() {
   late Directory source;
-  late RadPaths paths;
+  late ButcherPaths paths;
   late Sandbox sandbox;
 
   setUp(() async {
     source = await fixtureProject();
-    paths = await isolatedRadPaths('rad_sandbox_state_');
+    paths = await isolatedButcherPaths('rad_sandbox_state_');
     sandbox = await Sandbox.create(
       source.path,
       paths: paths,
@@ -90,7 +90,7 @@ void main() {
     ).writeAsStringSync('assets/big/\n!assets/big/keep.txt\n');
     final copy = await Sandbox.create(
       project.path,
-      paths: await isolatedRadPaths('rad_sandbox_rule_'),
+      paths: await isolatedButcherPaths('rad_sandbox_rule_'),
       ignore: RadIgnore.load(project.path),
     );
     expect(Directory(p.join(copy.root, 'assets/big')).existsSync(), isFalse);
@@ -99,7 +99,7 @@ void main() {
 
   test('does not copy an in-project rad root', () async {
     final project = await fixtureProject();
-    final inProject = RadPaths(root: p.join(project.path, '.rad_temp'));
+    final inProject = ButcherPaths(root: p.join(project.path, '.rad_temp'));
     final copy = await Sandbox.create(
       project.path,
       paths: inProject,
@@ -113,7 +113,7 @@ void main() {
     final project = await fixtureProject();
     final copy = await Sandbox.create(
       project.path,
-      paths: RadPaths(root: project.path),
+      paths: ButcherPaths(root: project.path),
       ignore: RadIgnore.load(project.path),
     );
     expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
@@ -192,7 +192,7 @@ void main() {
       member.path,
       workspaceRoot: workspace.path,
       workspaceIgnore: RadIgnore.load(workspace.path),
-      paths: await isolatedRadPaths('rad_sandbox_workspace_state_'),
+      paths: await isolatedButcherPaths('rad_sandbox_workspace_state_'),
       ignore: RadIgnore.load(member.path),
     );
 
@@ -281,7 +281,7 @@ void main() {
       Sandbox.create(
         member.path,
         workspaceRoot: workspace.path,
-        paths: await isolatedRadPaths('rad_sandbox_outside_'),
+        paths: await isolatedButcherPaths('rad_sandbox_outside_'),
         ignore: RadIgnore.load(member.path),
       ),
       throwsArgumentError,

@@ -153,7 +153,7 @@ final class RecordingCoverage implements CoverageProvider {
   void indexSources(Map<String, String> sources) => indexed = true;
 }
 
-List<Directory> _sandboxesIn(RadPaths paths) => Directory(paths.root)
+List<Directory> _sandboxesIn(ButcherPaths paths) => Directory(paths.root)
     .listSync()
     .whereType<Directory>()
     .where((dir) => p.basename(dir.path).startsWith(sandboxPrefix))
@@ -181,7 +181,7 @@ void main() {
       final progress = <String>[];
       final result = await Engine(
         projectRoot: await miniProject(),
-        paths: await isolatedRadPaths('rad_engine_state_'),
+        paths: await isolatedButcherPaths('rad_engine_state_'),
         runnerFactory: (_, _) => runner,
         onProgress: (done, total, result) =>
             progress.add('$done/$total ${result.outcome.name}'),
@@ -204,7 +204,7 @@ void main() {
     final runner = FakeRunner(reported: const Duration(seconds: 60));
     final result = await Engine(
       projectRoot: await miniProject(),
-      paths: await isolatedRadPaths('rad_engine_state_'),
+      paths: await isolatedButcherPaths('rad_engine_state_'),
       runnerFactory: (_, _) => runner,
       coverage: RecordingCoverage(const [
         TestSuite(path: 'test/fast_test.dart', duration: Duration(seconds: 2)),
@@ -235,7 +235,7 @@ void main() {
       final runner = FakeRunner(reported: const Duration(seconds: 60));
       await Engine(
         projectRoot: await miniProject(),
-        paths: await isolatedRadPaths('rad_engine_state_'),
+        paths: await isolatedButcherPaths('rad_engine_state_'),
         runnerFactory: (_, _) => runner,
         coverage: RecordingCoverage(const [
           TestSuite(
@@ -257,7 +257,7 @@ void main() {
 
   test('skips uncovered mutants without running tests', () async {
     final root = await miniProject();
-    final paths = await isolatedRadPaths('rad_engine_state_');
+    final paths = await isolatedButcherPaths('rad_engine_state_');
     final runner = FakeRunner();
     final result = await Engine(
       projectRoot: root,
@@ -289,7 +289,7 @@ void main() {
     final runner = FakeRunner();
     final result = await Engine(
       projectRoot: root,
-      paths: await isolatedRadPaths('rad_engine_state_'),
+      paths: await isolatedButcherPaths('rad_engine_state_'),
       runnerFactory: (_, _) => runner,
     ).run();
 
@@ -298,7 +298,7 @@ void main() {
   });
 
   test('retains evidence when a mutant run throws', () async {
-    final paths = await isolatedRadPaths('rad_engine_state_');
+    final paths = await isolatedButcherPaths('rad_engine_state_');
     final runner = CrashingRunner(
       const ProcessException('dart', ['test'], 'venting core'),
     );
@@ -332,7 +332,7 @@ void main() {
     final runner = CrashingRunner(ArgumentError('engine bug'));
     final engine = Engine(
       projectRoot: await miniProject(),
-      paths: await isolatedRadPaths('rad_engine_state_'),
+      paths: await isolatedButcherPaths('rad_engine_state_'),
       runnerFactory: (_, _) => runner,
     );
     await expectLater(engine.run(), throwsArgumentError);
@@ -340,7 +340,7 @@ void main() {
 
   test('aborts on a red baseline before any analysis', () async {
     final coverage = RecordingCoverage();
-    final paths = await isolatedRadPaths('rad_engine_state_');
+    final paths = await isolatedButcherPaths('rad_engine_state_');
     final engine = Engine(
       projectRoot: await miniProject(),
       paths: paths,
@@ -366,7 +366,7 @@ void main() {
   test('gives every worker its own sandbox, capped by mutant count', () async {
     final roots = <String>[];
     final runner = FakeRunner();
-    final paths = await isolatedRadPaths('rad_engine_state_');
+    final paths = await isolatedButcherPaths('rad_engine_state_');
     await Engine(
       projectRoot: await miniProject(),
       paths: paths,
@@ -390,13 +390,13 @@ void main() {
   test('logs engine stages without removing existing run logs', () async {
     final temp = await Directory.systemTemp.createTemp('rad_engine_log_');
     addTearDown(() => temp.delete(recursive: true));
-    final paths = RadPaths(root: temp.path);
+    final paths = ButcherPaths(root: temp.path);
     File(p.join(paths.runLogs, 'stale.log'))
       ..parent.createSync(recursive: true)
       ..writeAsStringSync('from a previous run');
 
     final runner = FakeRunner(mutantExitCode: 70, mutantOutput: 'venting core');
-    final toolLogger = RadLogger(
+    final toolLogger = ButcherLogger(
       verbose: false,
       path: paths.toolLog,
       console: StringBuffer(),
@@ -483,7 +483,7 @@ void main() {
   test('keeps run logs when mutants are killed cleanly', () async {
     final temp = await Directory.systemTemp.createTemp('rad_engine_clean_');
     addTearDown(() => temp.delete(recursive: true));
-    final paths = RadPaths(root: temp.path);
+    final paths = ButcherPaths(root: temp.path);
 
     final runner = FakeRunner();
     await Engine(
@@ -513,7 +513,7 @@ void main() {
     final runner = FakeRunner();
     await Engine(
       projectRoot: await miniProject(),
-      paths: await isolatedRadPaths('rad_engine_state_'),
+      paths: await isolatedButcherPaths('rad_engine_state_'),
       jobs: 2,
       runnerFactory: (_, suiteConcurrency) {
         concurrencies.add(suiteConcurrency);
@@ -530,7 +530,7 @@ void main() {
     final runs = <String>[];
     await Engine(
       projectRoot: await miniProject(),
-      paths: await isolatedRadPaths('rad_engine_clone_'),
+      paths: await isolatedButcherPaths('rad_engine_clone_'),
       jobs: 2,
       runnerFactory: (root, _) {
         roots.add(root);
@@ -555,7 +555,7 @@ void main() {
   });
 
   test('retains only an excerpt of a huge suite stream', () async {
-    final paths = await isolatedRadPaths('rad_engine_excerpt_');
+    final paths = await isolatedButcherPaths('rad_engine_excerpt_');
     final flood = 'flood\n' * 20000;
     // The verdict and the error sit in the middle, where the excerpt cannot
     // reach them: both must be parsed out of the full stream.
@@ -607,7 +607,7 @@ void main() {
     final completionOrder = <String>[];
     final result = await Engine(
       projectRoot: await miniProject(),
-      paths: await isolatedRadPaths('rad_engine_state_'),
+      paths: await isolatedButcherPaths('rad_engine_state_'),
       jobs: 2,
       runnerFactory: (_, _) => runner,
       onProgress: (done, total, r) => completionOrder.add(r.mutant.id),
