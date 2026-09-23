@@ -16,6 +16,8 @@ const _suite = TestSuite(
   duration: Duration(milliseconds: 300),
 );
 
+const _mutant = Mutant(id: 'lib/a.dart:12:arithmetic', mutation: _mutation);
+
 void main() {
   group('Mutation', () {
     test('equals a separately built mutation with the same fields', () {
@@ -202,6 +204,63 @@ void main() {
 
     test('names the suite path', () {
       expect(_suite.toString(), contains('test/a_test.dart'));
+    });
+  });
+
+  group('Mutant', () {
+    test('equals a separately built mutant with the same fields', () {
+      const other = Mutant(
+        id: 'lib/a.dart:12:arithmetic',
+        mutation: Mutation(
+          filePath: 'lib/a.dart',
+          offset: 12,
+          length: 1,
+          original: '+',
+          replacement: '-',
+          mutatorId: 'arithmetic',
+          description: 'replace + with -',
+        ),
+      );
+
+      expect(_mutant, other);
+      expect(_mutant.hashCode, other.hashCode);
+    });
+
+    test('differs when any single field differs', () {
+      expect(
+        _mutant,
+        isNot(
+          const Mutant(id: 'lib/a.dart:99:arithmetic', mutation: _mutation),
+        ),
+      );
+      expect(
+        _mutant,
+        isNot(
+          const Mutant(
+            id: 'lib/a.dart:12:arithmetic',
+            mutation: Mutation(
+              filePath: 'lib/a.dart',
+              offset: 12,
+              length: 1,
+              original: '+',
+              replacement: '*',
+              mutatorId: 'arithmetic',
+              description: 'replace + with -',
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('carries value semantics into a set and a map key', () {
+      const twin = Mutant(id: 'lib/a.dart:12:arithmetic', mutation: _mutation);
+
+      expect({_mutant}, contains(twin));
+      expect({_mutant: 'seen'}[twin], 'seen');
+    });
+
+    test('names the mutant id', () {
+      expect(_mutant.toString(), contains('lib/a.dart:12:arithmetic'));
     });
   });
 }
