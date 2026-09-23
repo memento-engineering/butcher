@@ -12,6 +12,7 @@
 #   test/engine/kill_tree_test.dart       26s
 #   test/engine/dart_test_runner_test.dart 26s
 #   test/cli/cli_workspace_test.dart      17s
+#   test/e2e/self_run_test.dart           18s
 #   test/cli/cli_provisioning_test.dart   16s
 #   test/cli/cli_abort_test.dart           5s
 #

@@ -35,9 +35,11 @@ jobs:
       - run: dart pub get
       - run: dart format --output=none --set-exit-if-changed .
       - run: dart analyze
+      # The slow selection runs in its own job below; running it here too
+      # would pay for the same suites twice on every leg.
       - name: Test butcher
         working-directory: packages/butcher
-        run: dart test
+        run: dart test -x slow
       - name: Test butcher_process
         working-directory: packages/butcher_process
         run: dart test
@@ -45,11 +47,34 @@ jobs:
         working-directory: packages/butcher_report
         run: dart test
 
+  # The suites that spawn real subprocesses -- a real `dart test` run, a real
+  # `dart pub get`, a real process tree to kill, and the end-to-end self run.
+  # They are the slowest legs and the ones most likely to behave differently
+  # per platform, so they run on every platform, in their own job, after the
+  # fast gate has already said the tree is sound.
+  slow:
+    name: Slow suites
+    needs: [test]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      # Only `butcher` tags suites slow; the other members have none, and a
+      # selection that finds no suite is an error rather than a pass.
+      - name: Test butcher
+        working-directory: packages/butcher
+        run: dart test -t slow
+
   # Branch protection needs one check name that does not change when the matrix
   # does, so it requires this job and never the legs.
   ci-required:
     name: CI required
-    needs: [test]
+    needs: [test, slow]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -57,5 +82,9 @@ jobs:
         run: |
           if [ "${{ needs.test.result }}" != "success" ]; then
             echo "matrix result: ${{ needs.test.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.slow.result }}" != "success" ]; then
+            echo "slow result: ${{ needs.slow.result }}"
             exit 1
           fi
