@@ -1,11 +1,6 @@
-# Replaces .gitignore for `dart pub publish`, so it repeats its entries.
+# Replaces .gitignore for `dart pub publish`, so it repeats the entries that
+# can appear inside this member. The lock file and the maintainer-only trees
+# live at the workspace root, outside the published archive already.
 .dart_tool/
-pubspec.lock
 /mutation-report.json
 /self-run.log
-
-# Maintainer-only material; users read the README and pub.dev API docs.
-/AGENTS.md
-/CLAUDE.md
-/docs/
-/sandbox/

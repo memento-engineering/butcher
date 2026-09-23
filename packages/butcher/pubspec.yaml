@@ -1,18 +1,23 @@
-name: radioactive_dart
-description: Mutation testing for Dart; irradiates source with mutants and scores which ones the tests kill.
-version: 0.2.0
-repository: https://github.com/ricardoboss/radioactive_dart
+name: butcher
+description: Mutation testing for Dart; rewrites the source into mutants and scores which ones the tests kill.
+version: 0.1.0
+repository: https://github.com/memento-engineering/butcher
 
 environment:
   sdk: ^3.12.0
 
+resolution: workspace
+
 executables:
-  rad: rad
+  butcher: butcher
+
+dependencies:
+  analyzer: ^14.1.0
+  args: ^2.7.0
+  butcher_process: ^0.1.0
+  butcher_report: ^0.1.0
+  path: ^1.9.1
 
 dev_dependencies:
   lints: ^6.0.0
   test: ^1.25.6
-dependencies:
-  analyzer: ^14.1.0
-  args: ^2.7.0
-  path: ^1.9.1

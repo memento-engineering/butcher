@@ -1,8 +1,13 @@
 .dart_tool/
 .idea/
-pubspec.lock
-/mutation-report.json
-/self-run.log
 
-# the_grid live-arm worktrees + station artifacts (cut under this substation root)
+# One resolution for the whole workspace, so the only lock file is this one.
+pubspec.lock
+
+# Run artifacts: a member is a working directory now, so these are not anchored
+# to the workspace root.
+mutation-report.json
+self-run.log
+
+# the_grid live-arm worktrees + station artifacts
 .grid/
