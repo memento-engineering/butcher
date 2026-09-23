@@ -14,7 +14,7 @@ void main() {
     for (var i = 0; i < 5; i++) {
       buffer.write('$i\n');
     }
-    expect('$buffer', '0\n1\n\n[rad] truncated 2 characters\n3\n4\n');
+    expect('$buffer', '0\n1\n\n[butcher] truncated 2 characters\n3\n4\n');
   });
 
   test('bounds the retained size for a runaway stream', () {
@@ -29,7 +29,7 @@ void main() {
 
   test('splits a single oversized chunk across head and tail', () {
     final buffer = CappedOutput(limit: 10)..write('abcdefghijklmnop');
-    expect('$buffer', 'abcde\n[rad] truncated 6 characters\nlmnop');
+    expect('$buffer', 'abcde\n[butcher] truncated 6 characters\nlmnop');
   });
 
   test('renders the same bytes however the chunks are split', () {
@@ -38,7 +38,7 @@ void main() {
       ..write('defgh')
       ..write('ij')
       ..write('klmnop');
-    expect('$buffer', 'abcde\n[rad] truncated 6 characters\nlmnop');
+    expect('$buffer', 'abcde\n[butcher] truncated 6 characters\nlmnop');
   });
 
   test('drains a flood at the cost of the flood, not of the limit', () {

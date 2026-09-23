@@ -363,7 +363,7 @@ final class Engine {
     if (stream.length <= outputExcerptLimit) return stream;
     const head = outputExcerptLimit ~/ 2;
     return '${stream.substring(0, head)}\n'
-        '[rad] truncated ${stream.length - outputExcerptLimit} characters\n'
+        '[butcher] truncated ${stream.length - outputExcerptLimit} characters\n'
         '${stream.substring(stream.length - outputExcerptLimit + head)}';
   }
 

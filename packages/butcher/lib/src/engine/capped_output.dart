@@ -64,5 +64,5 @@ final class CappedOutput {
   @override
   String toString() => _dropped == 0
       ? '$_head$_tailText'
-      : '$_head\n[rad] truncated $_dropped characters\n$_tailText';
+      : '$_head\n[butcher] truncated $_dropped characters\n$_tailText';
 }

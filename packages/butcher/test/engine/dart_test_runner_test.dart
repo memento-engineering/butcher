@@ -148,8 +148,8 @@ void main() {
     final run = await DartTestRunner(dir.path).run();
 
     expect(run.errorOutput.length, lessThan(DartTestRunner.stderrLimit + 64));
-    expect(run.errorOutput, contains('[rad] truncated'));
-    expect(run.output, isNot(contains('[rad] truncated')));
+    expect(run.errorOutput, contains('[butcher] truncated'));
+    expect(run.output, isNot(contains('[butcher] truncated')));
     expect(classify(run), Outcome.killed);
   });
 
@@ -170,7 +170,7 @@ void main() {
       add(filler);
     }
     events.close();
-    expect('$buffer', contains('[rad] truncated'));
+    expect('$buffer', contains('[butcher] truncated'));
     expect('$buffer', isNot(contains('"result":"failure"')));
     final run = TestRun(
       exitCode: 1,

@@ -580,7 +580,7 @@ void main() {
         mutantResult.testRun!.output.length,
         lessThan(Engine.outputExcerptLimit + 64),
       );
-      expect(mutantResult.testRun!.output, contains('[rad] truncated'));
+      expect(mutantResult.testRun!.output, contains('[butcher] truncated'));
     }
     final events = [
       for (final file in Directory(paths.runLogs).listSync().whereType<File>())
