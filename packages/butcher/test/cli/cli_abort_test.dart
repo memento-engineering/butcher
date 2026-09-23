@@ -2,6 +2,7 @@
 @Tags(['slow'])
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -12,6 +13,12 @@ import 'package:test/test.dart';
 
 import '../helpers/fixtures.dart';
 import '../helpers/paths.dart';
+
+/// [s] as it appears inside a JSON string value, quotes stripped: the tool
+/// log is one JSON object per line, so a Windows path's backslashes arrive
+/// escaped and a raw path never matches it directly.
+String jsonText(String s) =>
+    jsonEncode(s).substring(1, jsonEncode(s).length - 1);
 
 final class ThrowingSink implements StringSink {
   Never _fail() => throw StateError('console failed');
@@ -106,7 +113,7 @@ void main() {
 
     expect(await butcherMain([missing], out: StringBuffer(), paths: paths), 70);
 
-    expect(File(paths.toolLog).readAsStringSync(), contains(missing));
+    expect(File(paths.toolLog).readAsStringSync(), contains(jsonText(missing)));
     expect(
       File(paths.lockFile).existsSync(),
       isFalse,
