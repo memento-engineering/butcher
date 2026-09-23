@@ -7,6 +7,10 @@
 /// without depending on the mutation engine.
 library;
 
+export 'src/file_result.dart';
 export 'src/location.dart';
 export 'src/mutant_status.dart';
 export 'src/report_mutant.dart';
+export 'src/run_metadata.dart';
+export 'src/test_file.dart';
+export 'src/thresholds.dart';
