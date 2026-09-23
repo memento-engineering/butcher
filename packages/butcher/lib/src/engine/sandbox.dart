@@ -193,7 +193,14 @@ final class Sandbox {
       );
       return false;
     }
-    await Link(target).create(linkTarget);
+    // Git always records a relative link target with posix separators; the
+    // filesystem's symlink API takes that string verbatim rather than
+    // parsing it as a path, so on Windows a target still carrying `/`
+    // creates a link nothing can resolve. Nativize it before recreating.
+    final recreateTarget = p.isAbsolute(linkTarget)
+        ? linkTarget
+        : p.joinAll(p.posix.split(linkTarget));
+    await Link(target).create(recreateTarget);
     return true;
   }
 

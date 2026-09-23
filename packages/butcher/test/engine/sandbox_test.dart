@@ -115,7 +115,9 @@ void main() {
     final outside = await Directory.systemTemp.createTemp('butcher_outside_');
     addTearDown(() => outside.delete(recursive: true));
     File(p.join(outside.path, 'secret.txt')).writeAsStringSync('secret');
-    Link(p.join(project.path, 'inside.link')).createSync('lib/a.dart');
+    Link(
+      p.join(project.path, 'inside.link'),
+    ).createSync(p.join('lib', 'a.dart'));
     Link(
       p.join(project.path, 'outside.link'),
     ).createSync(p.join(outside.path, 'secret.txt'));
@@ -131,7 +133,13 @@ void main() {
       logger: logger,
     );
 
-    expect(Link(p.join(copy.root, 'inside.link')).targetSync(), 'lib/a.dart');
+    expect(
+      p.equals(
+        Link(p.join(copy.root, 'inside.link')).targetSync(),
+        p.join('lib', 'a.dart'),
+      ),
+      isTrue,
+    );
     expect(
       File(p.join(copy.root, 'inside.link')).readAsStringSync(),
       contains('a + b'),
@@ -149,6 +157,25 @@ void main() {
       ).readAsLinesSync().where((line) => line.contains('skipped symlink')),
       hasLength(1),
     );
+  });
+
+  test('nativizes a posix-style relative link target on recreation', () async {
+    final project = await fixtureProject();
+    // Git always records a relative link target with posix separators,
+    // whatever platform checks it out, so write the source link with a
+    // literal forward slash rather than a native-separator path: that is
+    // the shape a real checkout hands the sandbox on every OS.
+    Link(p.join(project.path, 'posix.link')).createSync('lib/a.dart');
+    final linkPaths = await isolatedButcherPaths('butcher_sandbox_posix_');
+
+    final copy = await Sandbox.create(project.path, paths: linkPaths);
+
+    final recreated = Link(p.join(copy.root, 'posix.link')).targetSync();
+    if (Platform.pathSeparator == r'\') {
+      expect(recreated, isNot(contains('/')));
+    } else {
+      expect(recreated, 'lib/a.dart');
+    }
   });
 
   test('falls back to the built-in exclusions outside a repository', () async {
