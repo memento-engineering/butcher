@@ -6,8 +6,9 @@ register:
   spec: 1
   slug: outcome-taxonomy
   surfaces:
-    - "lib/src/model/outcome.dart"
-    - "lib/src/engine/outcome_classifier.dart"
+    - "packages/butcher/lib/src/model/outcome.dart"
+    - "packages/butcher/lib/src/engine/outcome_classifier.dart"
+    - "packages/butcher/lib/src/engine/engine.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null
@@ -25,9 +26,13 @@ register:
 - A tool exception mid-run loses all completed work.
 - A budget of elapsed time cannot separate a hung run from a slow one: it is
   calibrated on an idle baseline and spent under the load the run
-  itself creates. Sized that way, a self-run timed out 75 of 709 healthy
-  mutants, 31 of them routed to the whole suite
+  itself creates. Workers contend for the machine, so a run cannot count on
+  the parallelism the baseline measured; its suites effectively run one after
+  another. Sized on the whole-suite reading alone, a self-run on 2026-08-21
+  timed out 75 of 709 healthy mutants, 31 of them routed to the whole suite
   ([../plans/self-run-performance.md](../plans/self-run-performance.md)).
+  That receipt is the whole empirical case for both rules below, and it is
+  recorded here and nowhere else.
 
 ## Decision
 
@@ -43,6 +48,10 @@ register:
 - A generous total ceiling stays as a backstop against a run that is hung
   but noisy. It no longer has to tell slow from hung, so it does not have
   to be tight.
+- A routed run's deadline is whichever is longer, the selection's own serial
+  cost or the whole-suite reading, both on the `× 3` rule. Taking the reading
+  alone is what produced the timeouts recorded above, so the longer of the two
+  is the deadline.
 - Under [0021](2026-08-21-beamline-execution.md) the budget is per exposure: the
   calibration run measures every test, so a hung exposure is one that
   outlasts its own measured cost by a factor.
@@ -50,9 +59,9 @@ register:
 - Timeouts are inconclusive. They count as neither killed nor survived.
 - `--max-timeouts` fails a run when its timeout ceiling is exceeded.
 - A timed-out run is killed with everything it spawned, through the interlock
-  it was admitted to ([0022](2026-08-21-process-interlock.md)). Where none exists,
-  the tree is listed while still attached and swept until nothing new appears;
-  that fallback is best-effort and has leaked at every scale.
+  that started it ([0022](2026-08-21-process-interlock.md)). Where no
+  interlock mechanism resolves, the started pid is killed alone and the run
+  says so; nothing is listed.
 
 ## Rejected
 
