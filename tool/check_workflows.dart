@@ -130,6 +130,7 @@ void main() {
       run: _checkDependabot,
     ),
     (name: 'ci pins the Dart SDK to the workspace floor', run: _checkSdkPin),
+    (name: 'CI never invokes melos', run: _checkNoMelosInCi),
   ];
 
   for (final check in checks) {
@@ -1012,5 +1013,26 @@ void _checkSdkPin() {
       '$_ciPath uses no dart-lang/setup-dart@v1 step, so there is nothing to '
       'pin',
     );
+  }
+}
+
+/// Melos (`pubspec.yaml`'s `melos:` section) is developer tooling only
+/// (Nico, 2026-09-23): a per-bead validation lane runs in a worktree that
+/// cannot see a script the same branch adds, so CI and every bead
+/// validation_plan must keep calling plain `dart` commands. This check
+/// makes that boundary durable rather than a comment someone can drift
+/// away from.
+void _checkNoMelosInCi() {
+  const check = 'CI never invokes melos';
+
+  for (final path in [_ciPath, _publishPath]) {
+    final text = _text(path, check);
+    if (text.toLowerCase().contains('melos')) {
+      throw CheckFailure(
+        check,
+        '$path mentions melos; melos is developer tooling only and must '
+        'never be load-bearing for the CI or release workflow',
+      );
+    }
   }
 }
