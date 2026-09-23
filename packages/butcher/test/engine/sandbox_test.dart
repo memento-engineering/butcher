@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:butcher/src/engine/sandbox.dart';
-import 'package:butcher/src/engine/butcher_ignore.dart';
 import 'package:test/test.dart';
 
+import '../helpers/fixtures.dart';
 import '../helpers/paths.dart';
 
 Future<Directory> fixtureProject() async {
@@ -19,7 +19,6 @@ Future<Directory> fixtureProject() async {
 
   write('lib/a.dart', 'int add(int a, int b) => a + b;\n');
   write('test/a_test.dart', 'void main() {}\n');
-  write('.git/config', 'x');
   write('.dart_tool/package_config.json', '{}');
   write('build/out.txt', 'x');
   write('lib/nested/build/gen.dart', 'const g = 1;\n');
@@ -33,9 +32,10 @@ Future<Directory> fixtureProject() async {
   write('assets/small.txt', 'keep');
   write('deep/nested/trace.log', 'x');
   write(
-    '.butcherignore',
+    '.gitignore',
     '# comment\n\n*.log\nassets/big/**\n!assets/big/keep.txt\n',
   );
+  await initGitRepository(dir.path);
   return dir;
 }
 
@@ -47,11 +47,7 @@ void main() {
   setUp(() async {
     source = await fixtureProject();
     paths = await isolatedButcherPaths('butcher_sandbox_state_');
-    sandbox = await Sandbox.create(
-      source.path,
-      paths: paths,
-      ignore: ButcherIgnore.load(source.path),
-    );
+    sandbox = await Sandbox.create(source.path, paths: paths);
   });
 
   test('lives inside the configured temp folder', () {
@@ -86,12 +82,11 @@ void main() {
   test('keeps a directory rule from being undone below it', () async {
     final project = await fixtureProject();
     File(
-      p.join(project.path, '.butcherignore'),
+      p.join(project.path, '.gitignore'),
     ).writeAsStringSync('assets/big/\n!assets/big/keep.txt\n');
     final copy = await Sandbox.create(
       project.path,
       paths: await isolatedButcherPaths('butcher_sandbox_rule_'),
-      ignore: ButcherIgnore.load(project.path),
     );
     expect(Directory(p.join(copy.root, 'assets/big')).existsSync(), isFalse);
     expect(File(p.join(copy.root, 'assets/small.txt')).existsSync(), isTrue);
@@ -100,11 +95,7 @@ void main() {
   test('does not copy an in-project butcher root', () async {
     final project = await fixtureProject();
     final inProject = ButcherPaths(root: p.join(project.path, '.butcher_temp'));
-    final copy = await Sandbox.create(
-      project.path,
-      paths: inProject,
-      ignore: ButcherIgnore.load(project.path),
-    );
+    final copy = await Sandbox.create(project.path, paths: inProject);
     expect(Directory(p.join(copy.root, '.butcher_temp')).existsSync(), isFalse);
     expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
   });
@@ -114,10 +105,106 @@ void main() {
     final copy = await Sandbox.create(
       project.path,
       paths: ButcherPaths(root: project.path),
-      ignore: ButcherIgnore.load(project.path),
     );
     expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
     expect(Directory(p.join(copy.root, copy.name)).existsSync(), isFalse);
+  });
+
+  test('recreates an in-workspace link and skips one pointing out', () async {
+    final project = await fixtureProject();
+    final outside = await Directory.systemTemp.createTemp('butcher_outside_');
+    addTearDown(() => outside.delete(recursive: true));
+    File(p.join(outside.path, 'secret.txt')).writeAsStringSync('secret');
+    Link(p.join(project.path, 'inside.link')).createSync('lib/a.dart');
+    Link(
+      p.join(project.path, 'outside.link'),
+    ).createSync(p.join(outside.path, 'secret.txt'));
+    final linkPaths = await isolatedButcherPaths('butcher_sandbox_link_');
+    final logger = ButcherLogger(
+      verbose: false,
+      path: p.join(linkPaths.root, 'links.log'),
+    );
+
+    final copy = await Sandbox.create(
+      project.path,
+      paths: linkPaths,
+      logger: logger,
+    );
+
+    expect(Link(p.join(copy.root, 'inside.link')).targetSync(), 'lib/a.dart');
+    expect(
+      File(p.join(copy.root, 'inside.link')).readAsStringSync(),
+      contains('a + b'),
+    );
+    expect(
+      FileSystemEntity.typeSync(
+        p.join(copy.root, 'outside.link'),
+        followLinks: false,
+      ),
+      FileSystemEntityType.notFound,
+    );
+    expect(
+      File(
+        logger.path,
+      ).readAsLinesSync().where((line) => line.contains('skipped symlink')),
+      hasLength(1),
+    );
+  });
+
+  test('falls back to the built-in exclusions outside a repository', () async {
+    final plain = await Directory.systemTemp.createTemp('butcher_plain_');
+    addTearDown(() => plain.delete(recursive: true));
+    void write(String relative, String content) {
+      final file = File(p.join(plain.path, relative));
+      file.parent.createSync(recursive: true);
+      file.writeAsStringSync(content);
+    }
+
+    write('lib/a.dart', 'int add(int a, int b) => a + b;\n');
+    write('build/out.txt', 'x');
+    write('.dart_tool/package_config.json', '{}');
+    write('deep/nested/trace.log', 'x');
+    final plainPaths = await isolatedButcherPaths('butcher_sandbox_plain_');
+    final logger = ButcherLogger(
+      verbose: false,
+      path: p.join(plainPaths.root, 'plain.log'),
+    );
+
+    final copy = await Sandbox.create(
+      plain.path,
+      paths: plainPaths,
+      logger: logger,
+    );
+
+    bool has(String relative) =>
+        File(p.join(copy.root, relative)).existsSync();
+    expect(has('lib/a.dart'), isTrue);
+    expect(has('deep/nested/trace.log'), isTrue);
+    expect(has('build/out.txt'), isFalse);
+    expect(has('.dart_tool/package_config.json'), isFalse);
+    expect(
+      File(logger.path).readAsLinesSync().where(
+        (line) => line.contains('it is not a git repository'),
+      ),
+      hasLength(1),
+    );
+  });
+
+  test('clones the copy set rather than the sandbox tree', () async {
+    int files(String root) => Directory(
+      root,
+    ).listSync(recursive: true, followLinks: false).whereType<File>().length;
+    // What the baseline suite drops in the tree is not the copy set, so no
+    // worker inherits it.
+    File(p.join(sandbox.root, 'dropped.txt')).writeAsStringSync('x');
+
+    final template = await sandbox.clone();
+    final worker = await template.clone();
+
+    expect(File(p.join(template.root, 'dropped.txt')).existsSync(), isFalse);
+    expect(files(template.root), files(sandbox.root) - 1);
+    expect(files(worker.root), files(template.root));
+    expect(files(template.root), lessThan(files(source.path)));
   });
 
   test('clones the copied tree into an independent sandbox', () async {
@@ -175,11 +262,11 @@ void main() {
     }
 
     write('pubspec.yaml', 'name: workspace\n');
-    write('.butcherignore', 'bulk/\n');
+    write('.gitignore', 'bulk/\n');
     write('bulk/blob.bin', 'workspace bulk');
     write('build/root.txt', 'root output');
     write('packages/member/pubspec.yaml', 'name: member\n');
-    write('packages/member/.butcherignore', 'assets/\n');
+    write('packages/member/.gitignore', 'assets/\n');
     write('packages/member/lib/a.dart', 'int add(int a, int b) => a + b;\n');
     write('packages/member/assets/blob.bin', 'member bulk');
     write('packages/member/build/member.txt', 'member output');
@@ -187,13 +274,12 @@ void main() {
     write('packages/sibling/lib/b.dart', 'const b = 1;\n');
     write('packages/sibling/build/kept.txt', 'sibling source');
     write('packages/sibling/.git/config', 'metadata');
+    await initGitRepository(workspace.path);
 
     final copy = await Sandbox.create(
       member.path,
       workspaceRoot: workspace.path,
-      workspaceIgnore: ButcherIgnore.load(workspace.path),
       paths: await isolatedButcherPaths('butcher_sandbox_workspace_state_'),
-      ignore: ButcherIgnore.load(member.path),
     );
 
     expect(copy.projectRoot, p.join(copy.root, 'packages', 'member'));
@@ -282,7 +368,6 @@ void main() {
         member.path,
         workspaceRoot: workspace.path,
         paths: await isolatedButcherPaths('butcher_sandbox_outside_'),
-        ignore: ButcherIgnore.load(member.path),
       ),
       throwsArgumentError,
     );

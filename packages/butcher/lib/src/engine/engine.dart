@@ -22,7 +22,6 @@ import 'mutant_generator.dart';
 import 'outcome_classifier.dart';
 import 'pub_get.dart';
 import 'pub_workspace.dart';
-import 'butcher_ignore.dart';
 import 'run_aborted.dart';
 import 'run_result.dart';
 import 'test_runner.dart';
@@ -119,13 +118,11 @@ final class Engine {
     // oversubscribe; the baseline uses the same concurrency to
     // keep deadlines calibrated (ADR 0017).
     final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ jobs);
-    final ignore = ButcherIgnore.load(projectRoot);
     final baseline = await Sandbox.create(
       projectRoot,
       paths: paths,
-      ignore: ignore,
       workspaceRoot: workspace.root,
-      workspaceIgnore: ButcherIgnore.load(workspace.root),
+      logger: logger,
     );
     await pubGet(baseline.projectRoot, label: 'the sandbox');
     ensureTestVersion(baseline.root);
@@ -147,8 +144,8 @@ final class Engine {
           : summary;
       throw RunAborted(
         'baseline is red; a green suite is a precondition '
-        '(ADR 0005). If a copy exclusion removed a required asset, fix '
-        '$butcherIgnoreFile.\n'
+        '(ADR 0005). If the sandbox is missing an asset the suite needs, '
+        "check the project's gitignore rules: they decide the copy set.\n"
         '$evidence',
       );
     }

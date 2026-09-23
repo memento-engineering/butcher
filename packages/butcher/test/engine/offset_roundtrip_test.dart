@@ -5,9 +5,9 @@ import 'package:butcher/butcher.dart';
 import 'package:butcher/src/engine/sandbox.dart';
 import 'package:butcher/src/engine/mutant_generator.dart';
 import 'package:butcher/src/config/mutation_scope.dart';
-import 'package:butcher/src/engine/butcher_ignore.dart';
 import 'package:test/test.dart';
 
+import '../helpers/fixtures.dart';
 import '../helpers/paths.dart';
 
 /// Generates on a one-file project, applies every mutant, checks the splice.
@@ -17,6 +17,7 @@ Future<void> roundtrip(String source) async {
   File(p.join(dir.path, 'lib', 'a.dart'))
     ..parent.createSync(recursive: true)
     ..writeAsStringSync(source);
+  await initGitRepository(dir.path);
 
   final (mutants, _) = await MutantGenerator(
     projectRoot: dir.path,
@@ -26,11 +27,7 @@ Future<void> roundtrip(String source) async {
   expect(mutants, isNotEmpty);
 
   final paths = await isolatedButcherPaths('butcher_roundtrip_state_');
-  final sandbox = await Sandbox.create(
-    dir.path,
-    paths: paths,
-    ignore: ButcherIgnore.load(dir.path),
-  );
+  final sandbox = await Sandbox.create(dir.path, paths: paths);
   final copy = File(p.join(sandbox.root, 'lib', 'a.dart'));
   for (final mutant in mutants) {
     await sandbox.apply(mutant.mutation);
