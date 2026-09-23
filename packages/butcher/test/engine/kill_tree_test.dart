@@ -12,7 +12,7 @@ import 'package:test/test.dart';
 import '../helpers/fixtures.dart';
 
 /// A suite that starts a process of its own, records its pid, then hangs:
-/// what rad's own suite does to every mutant of it.
+/// what butcher's own suite does to every mutant of it.
 const _spawningTest = '''
 import 'dart:io';
 

@@ -6,7 +6,7 @@ import 'engine/sandbox.dart';
 import 'engine/run_aborted.dart';
 import 'butcher_paths.dart';
 
-/// Exclusive ownership of the rad workspace for one run (ADR 0018).
+/// Exclusive ownership of the butcher workspace for one run (ADR 0018).
 ///
 /// Acquiring takes the lock; an actively held lock is never stolen. [clean]
 /// then removes what earlier runs left behind, so evidence survives until the
@@ -19,7 +19,7 @@ final class RunWorkspace {
       lock.createSync(exclusive: true);
     } on FileSystemException {
       throw RunAborted(
-        'another rad run holds ${paths.lockFile}. Wait for it to finish, or '
+        'another butcher run holds ${paths.lockFile}. Wait for it to finish, or '
         'delete the lock file if the run that left it is gone.',
       );
     }

@@ -30,7 +30,7 @@ Future<Directory> createFixturePackage({
   String testSource = fixtureTest,
   bool resolve = true,
 }) async {
-  final dir = await Directory.systemTemp.createTemp('rad_fixture_');
+  final dir = await Directory.systemTemp.createTemp('butcher_fixture_');
   addTearDown(() => dir.delete(recursive: true));
   void write(String relative, String content) {
     final file = File(p.join(dir.path, relative));
@@ -63,7 +63,9 @@ dev_dependencies:
 /// version-constrained, unpublished sibling package.
 Future<({Directory root, Directory member, Directory sibling})>
 createFixtureWorkspace() async {
-  final root = await Directory.systemTemp.createTemp('rad_fixture_workspace_');
+  final root = await Directory.systemTemp.createTemp(
+    'butcher_fixture_workspace_',
+  );
   addTearDown(() => root.delete(recursive: true));
   final member = Directory(p.join(root.path, 'packages', 'member'));
   final sibling = Directory(p.join(root.path, 'packages', 'sibling'));
@@ -74,7 +76,7 @@ createFixtureWorkspace() async {
   }
 
   write('pubspec.yaml', '''
-name: rad_fixture_workspace
+name: butcher_fixture_workspace
 publish_to: none
 environment:
   sdk: ^3.12.0
@@ -89,12 +91,12 @@ resolution: workspace
 environment:
   sdk: ^3.12.0
 dependencies:
-  rad_fixture_sibling: ^1.0.0
+  butcher_fixture_sibling: ^1.0.0
 dev_dependencies:
   test: any
 ''');
   write('packages/member/lib/calc.dart', '''
-import 'package:rad_fixture_sibling/value.dart';
+import 'package:butcher_fixture_sibling/value.dart';
 
 int calculate() => siblingValue + 1;
 ''');
@@ -107,7 +109,7 @@ void main() {
 }
 ''');
   write('packages/sibling/pubspec.yaml', '''
-name: rad_fixture_sibling
+name: butcher_fixture_sibling
 version: 1.0.0
 resolution: workspace
 environment:

@@ -12,7 +12,7 @@ void main() {
   late File reference;
 
   setUp(() async {
-    workspaceRoot = await Directory.systemTemp.createTemp('rad_workspace_');
+    workspaceRoot = await Directory.systemTemp.createTemp('butcher_workspace_');
     addTearDown(() => workspaceRoot.delete(recursive: true));
     File(
       p.join(workspaceRoot.path, 'pubspec.yaml'),
@@ -108,7 +108,7 @@ void main() {
 
   test('rejects a workspace root outside the package ancestry', () async {
     final outside = await Directory.systemTemp.createTemp(
-      'rad_outside_workspace_',
+      'butcher_outside_workspace_',
     );
     addTearDown(() => outside.delete(recursive: true));
     File(

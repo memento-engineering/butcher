@@ -88,7 +88,7 @@ void main() {
   test(
     'StrykerJsonSink writes schema-shaped JSON with 1-based positions',
     () async {
-      final dir = await Directory.systemTemp.createTemp('rad_report_');
+      final dir = await Directory.systemTemp.createTemp('butcher_report_');
       addTearDown(() => dir.delete(recursive: true));
       final output = p.join(dir.path, 'report.json');
 

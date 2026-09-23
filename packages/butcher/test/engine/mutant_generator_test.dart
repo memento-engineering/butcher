@@ -7,7 +7,7 @@ import 'package:butcher/src/engine/butcher_ignore.dart';
 import 'package:test/test.dart';
 
 Future<Directory> fixtureProject() async {
-  final dir = await Directory.systemTemp.createTemp('rad_gen_');
+  final dir = await Directory.systemTemp.createTemp('butcher_gen_');
   addTearDown(() => dir.delete(recursive: true));
   final src = Directory(p.join(dir.path, 'lib', 'src'))
     ..createSync(recursive: true);
@@ -84,7 +84,7 @@ void main() {
 
   test('does not follow symlinks', () async {
     final dir = await fixtureProject();
-    final outside = await Directory.systemTemp.createTemp('rad_gen_link_');
+    final outside = await Directory.systemTemp.createTemp('butcher_gen_link_');
     addTearDown(() => outside.delete(recursive: true));
     final target = File(p.join(outside.path, 'linked.dart'))
       ..writeAsStringSync('int mul(int a, int b) => a * b;\n');
@@ -107,7 +107,7 @@ void main() {
   });
 
   test('returns no mutants without a lib directory', () async {
-    final dir = await Directory.systemTemp.createTemp('rad_gen_empty_');
+    final dir = await Directory.systemTemp.createTemp('butcher_gen_empty_');
     addTearDown(() => dir.delete(recursive: true));
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,

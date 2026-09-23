@@ -14,7 +14,7 @@ String _lock(Map<String, String> packages) =>
 ''').join()}sdks:\n  dart: ">=3.0.0"\n';
 
 Future<String> _project({String? lock}) async {
-  final dir = await Directory.systemTemp.createTemp('rad_test_version_');
+  final dir = await Directory.systemTemp.createTemp('butcher_test_version_');
   addTearDown(() => dir.delete(recursive: true));
   if (lock != null) {
     File(p.join(dir.path, 'pubspec.lock')).writeAsStringSync(lock);

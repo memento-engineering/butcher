@@ -32,7 +32,7 @@ final class ThrowingSink implements StringSink {
 void main() {
   late ButcherPaths paths;
 
-  setUp(() async => paths = await isolatedButcherPaths('rad_cli_abort_'));
+  setUp(() async => paths = await isolatedButcherPaths('butcher_cli_abort_'));
 
   test('aborts with exit code 70 while another run holds the lock', () async {
     final held = RunWorkspace.acquire(paths);
@@ -41,7 +41,7 @@ void main() {
       ..parent.createSync(recursive: true)
       ..writeAsStringSync('from the active run');
 
-    final exit = await radMain([], out: StringBuffer(), paths: paths);
+    final exit = await butcherMain([], out: StringBuffer(), paths: paths);
 
     expect(exit, 70);
     expect(
@@ -55,7 +55,11 @@ void main() {
     final dir = await createFixturePackage(
       calc: 'int add(int a, int b) => a * b;\n',
     );
-    final exit = await radMain([dir.path], out: StringBuffer(), paths: paths);
+    final exit = await butcherMain(
+      [dir.path],
+      out: StringBuffer(),
+      paths: paths,
+    );
     expect(exit, 70);
     final logText = File(paths.toolLog).readAsStringSync();
     expect(logText, contains('"@mt":"run aborted: {Reason}"'));
@@ -80,7 +84,10 @@ void main() {
       pubspec.readAsStringSync().replaceFirst('test: any', 'test: 1.24.5'),
     );
 
-    expect(await radMain([dir.path], out: StringBuffer(), paths: paths), 70);
+    expect(
+      await butcherMain([dir.path], out: StringBuffer(), paths: paths),
+      70,
+    );
     expect(
       File(paths.toolLog).readAsStringSync(),
       contains('does not support --fail-fast'),
@@ -98,7 +105,7 @@ void main() {
     final missing = p.join(paths.root, 'no_such_project');
 
     await expectLater(
-      radMain([missing], out: StringBuffer(), paths: paths),
+      butcherMain([missing], out: StringBuffer(), paths: paths),
       throwsA(isA<FileSystemException>()),
     );
 
@@ -111,7 +118,7 @@ void main() {
 
   test('releases the lock when initial logging fails', () async {
     await expectLater(
-      radMain(
+      butcherMain(
         ['--verbose', '--no-collect-coverage'],
         out: ThrowingSink(),
         paths: paths,

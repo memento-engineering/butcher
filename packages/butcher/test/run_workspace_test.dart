@@ -10,7 +10,7 @@ import 'helpers/paths.dart';
 void main() {
   late ButcherPaths paths;
 
-  setUp(() async => paths = await isolatedButcherPaths('rad_workspace_'));
+  setUp(() async => paths = await isolatedButcherPaths('butcher_workspace_'));
 
   test('cleans leftover state and keeps the run-log directory', () {
     File(paths.toolLog).writeAsStringSync('from a previous run');

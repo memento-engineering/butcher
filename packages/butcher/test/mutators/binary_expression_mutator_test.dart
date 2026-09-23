@@ -20,7 +20,7 @@ final class SelfSwapMutator extends BinaryExpressionMutator {
 }
 
 Future<BinaryExpression> binaryOf(String source) async {
-  final dir = await Directory.systemTemp.createTemp('rad_binary_');
+  final dir = await Directory.systemTemp.createTemp('butcher_binary_');
   addTearDown(() => dir.delete(recursive: true));
   final file = File(p.join(dir.path, 'main.dart'));
   await file.writeAsString(source);

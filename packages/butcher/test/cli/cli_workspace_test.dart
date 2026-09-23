@@ -17,7 +17,9 @@ import '../helpers/paths.dart';
 void main() {
   late ButcherPaths paths;
 
-  setUp(() async => paths = await isolatedButcherPaths('rad_cli_workspace_'));
+  setUp(
+    () async => paths = await isolatedButcherPaths('butcher_cli_workspace_'),
+  );
 
   test('mutates only the selected workspace member', () async {
     final fixture = await createFixtureWorkspace();
@@ -29,7 +31,7 @@ void main() {
     final originalSibling = siblingSource.readAsBytesSync();
     final out = StringBuffer();
 
-    final exit = await radMain(
+    final exit = await butcherMain(
       ['--jobs', '1', '--output', 'report.json', fixture.member.path],
       out: out,
       paths: paths,
@@ -60,7 +62,7 @@ void main() {
     final originalSibling = siblingSource.readAsBytesSync();
     final out = StringBuffer();
 
-    final exit = await radMain(
+    final exit = await butcherMain(
       ['--jobs', '1', '--output', 'report.json', fixture.member.path],
       out: out,
       paths: paths,
@@ -90,7 +92,7 @@ void main() {
       final decoded =
           jsonDecode(config.readAsStringSync()) as Map<String, dynamic>;
       final packages = decoded['packages'] as List<dynamic>;
-      for (final name in ['fixture', 'rad_fixture_sibling']) {
+      for (final name in ['fixture', 'butcher_fixture_sibling']) {
         final package = packages.cast<Map<String, dynamic>>().singleWhere(
           (entry) => entry['name'] == name,
         );

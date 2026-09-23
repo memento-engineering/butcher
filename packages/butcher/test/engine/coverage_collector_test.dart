@@ -60,7 +60,7 @@ void main() {
   ).collect(_ReportingRunner(reports));
 
   setUp(() async {
-    sandbox = await Directory.systemTemp.createTemp('rad_collect_');
+    sandbox = await Directory.systemTemp.createTemp('butcher_collect_');
     addTearDown(() => sandbox.delete(recursive: true));
     coverageDir = p.join(sandbox.path, 'coverage');
     void write(String relative) => File(p.join(sandbox.path, relative))
@@ -166,7 +166,7 @@ void main() {
     'resolves a member package through a workspace package config',
     () async {
       final workspace = await Directory.systemTemp.createTemp(
-        'rad_collect_workspace_',
+        'butcher_collect_workspace_',
       );
       addTearDown(() => workspace.delete(recursive: true));
       final member = Directory(p.join(workspace.path, 'packages', 'member'))

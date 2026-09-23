@@ -206,7 +206,7 @@ void main() {
       // Without a snapshot the tree stays unknown, but the hung suite is still
       // killed and still times out instead of erroring out of the run.
       expect(
-        await DartTestRunner.processSnapshot('rad_absent_lister'),
+        await DartTestRunner.processSnapshot('butcher_absent_lister'),
         isEmpty,
       );
     },

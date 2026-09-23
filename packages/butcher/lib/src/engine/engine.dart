@@ -95,7 +95,7 @@ final class Engine {
 
   /// Directory inside the baseline sandbox holding the collected VM
   /// coverage reports (ADR 0020).
-  static const coverageDirName = '.rad_coverage';
+  static const coverageDirName = '.butcher_coverage';
 
   /// Outcomes recorded as errors in their run log.
   static const failedOutcomes = {

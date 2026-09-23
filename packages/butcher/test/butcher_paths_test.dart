@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 void main() {
   test('BUTCHER_TEMP redirects the exact production root', () {
-    final root = p.join('somewhere', 'rad');
+    final root = p.join('somewhere', 'butcher');
 
     final paths = ButcherPaths.production(environment: {'BUTCHER_TEMP': root});
 

@@ -16,14 +16,14 @@ void main() {
   late ButcherPaths paths;
 
   setUp(
-    () async => paths = await isolatedButcherPaths('rad_cli_provisioning_'),
+    () async => paths = await isolatedButcherPaths('butcher_cli_provisioning_'),
   );
 
   test('provisions an unresolved project before analysing it', () async {
     final dir = await createFixturePackage(resolve: false);
     final out = StringBuffer();
 
-    final exit = await radMain(
+    final exit = await butcherMain(
       ['--no-collect-coverage', '--jobs', '1', dir.path],
       out: out,
       paths: paths,
@@ -71,7 +71,7 @@ int add(int a, int b) => a + b + extra;
 ''');
     final out = StringBuffer();
 
-    final exit = await radMain(
+    final exit = await butcherMain(
       ['--no-collect-coverage', '--jobs', '1', dir.path],
       out: out,
       paths: paths,

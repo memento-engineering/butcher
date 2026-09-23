@@ -8,7 +8,7 @@ import 'package:butcher/src/engine/mutation_visitor.dart';
 import 'package:test/test.dart';
 
 Future<List<Mutation>> mutationsOf(String source) async {
-  final dir = await Directory.systemTemp.createTemp('rad_null_');
+  final dir = await Directory.systemTemp.createTemp('butcher_null_');
   addTearDown(() => dir.delete(recursive: true));
   final file = File(p.join(dir.path, 'main.dart'));
   await file.writeAsString(source);

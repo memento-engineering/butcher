@@ -20,7 +20,7 @@ String label(int? level) => level == null ? 'INF' : 'ERR';
 ''';
 
 Future<String> fixtureProject(Map<String, String> files) async {
-  final dir = await Directory.systemTemp.createTemp('rad_viability_');
+  final dir = await Directory.systemTemp.createTemp('butcher_viability_');
   addTearDown(() => dir.delete(recursive: true));
   File(
     p.join(dir.path, 'pubspec.yaml'),

@@ -18,14 +18,14 @@ import '../version.dart';
 /// Default path of the Stryker JSON report, relative to the project root.
 const defaultReportPath = 'mutation-report.json';
 
-/// Runs the `rad` CLI over [arguments]; returns the process exit code.
+/// Runs the `butcher` CLI over [arguments]; returns the process exit code.
 ///
 /// Exit codes: 0 success, 1 criticality or honesty gate, 64 usage error,
 /// 70 aborted run (locked workspace, red baseline, failed pub get
 /// or coverage collection).
 ///
 /// [paths] overrides every filesystem location used by the invocation.
-Future<int> radMain(
+Future<int> butcherMain(
   List<String> arguments, {
   StringSink? out,
   ButcherPaths? paths,
@@ -146,15 +146,17 @@ Future<int> radMain(
       path: resolvedPaths.toolLog,
       console: sink,
     );
-    logger
-        .info('starting rad {ToolVersion} on {ProjectRoot} with {Jobs} jobs', {
-          'ToolVersion': packageVersion,
-          'ProjectRoot': projectRoot,
-          'Jobs': jobs ?? Engine.defaultJobs,
-          'Dart': Platform.version,
-          'Os': Platform.operatingSystem,
-          'Argv': arguments,
-        });
+    logger.info(
+      'starting butcher {ToolVersion} on {ProjectRoot} with {Jobs} jobs',
+      {
+        'ToolVersion': packageVersion,
+        'ProjectRoot': projectRoot,
+        'Jobs': jobs ?? Engine.defaultJobs,
+        'Dart': Platform.version,
+        'Os': Platform.operatingSystem,
+        'Argv': arguments,
+      },
+    );
 
     if (ingested != null) {
       logger.info('ingested coverage for {FileCount} files from {Path}', {
@@ -302,6 +304,6 @@ double? _threshold(ArgResults options) {
 }
 
 String _usage(ArgParser parser) =>
-    'Usage: rad [options] [project root]\n\n${parser.usage}'
+    'Usage: butcher [options] [project root]\n\n${parser.usage}'
     '\n\nEnvironment:\n'
     'BUTCHER_TEMP  Exact root for sandboxes and logs.';

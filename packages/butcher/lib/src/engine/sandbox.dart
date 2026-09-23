@@ -53,8 +53,8 @@ final class Sandbox {
     final projectRelative = p.relative(project, from: source);
     final tempRoot = Directory(paths.root)..createSync(recursive: true);
     final target = await tempRoot.createTemp(sandboxPrefix);
-    // An in-project rad root must never copy itself (recursive growth); a
-    // rad root at or above the project only prunes the fresh target.
+    // An in-project butcher root must never copy itself (recursive growth); a
+    // butcher root at or above the project only prunes the fresh target.
     final prune = p.isWithin(source, paths.root) ? paths.root : target.path;
 
     await _copyInto(Directory(source), target.path, '', (

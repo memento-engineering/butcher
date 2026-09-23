@@ -126,7 +126,7 @@ final class CoverageCollector {
 
   /// Sandbox-relative posix path of [source], or `null` when it is not a
   /// file inside the sandbox. Both sides are resolved through the
-  /// filesystem: the SDK spells temp paths differently than rad created them.
+  /// filesystem: the SDK spells temp paths differently than butcher created them.
   String? _relative(String source, Map<String, Uri> packages, String realRoot) {
     final uri = Uri.tryParse(source);
     final Uri? file;

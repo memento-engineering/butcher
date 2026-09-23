@@ -9,7 +9,7 @@ void main() {
   late String path;
 
   setUp(() async {
-    final dir = await Directory.systemTemp.createTemp('rad_log_');
+    final dir = await Directory.systemTemp.createTemp('butcher_log_');
     addTearDown(() => dir.delete(recursive: true));
     path = p.join(dir.path, 'butcher.log');
   });
@@ -32,12 +32,12 @@ void main() {
 
   test('writes CLEF lines: @t, @mt, properties, and @l only on errors', () {
     final log = logger()
-      ..info('starting rad {ToolVersion}', {'ToolVersion': '0.1.0-dev'})
+      ..info('starting butcher {ToolVersion}', {'ToolVersion': '0.1.0-dev'})
       ..error('run aborted: {Reason}', {'Reason': 'red baseline'});
 
     final lines = events();
     expect(lines, hasLength(2));
-    expect(lines.first['@mt'], 'starting rad {ToolVersion}');
+    expect(lines.first['@mt'], 'starting butcher {ToolVersion}');
     expect(lines.first['ToolVersion'], '0.1.0-dev');
     expect(lines.first.containsKey('@l'), isFalse, reason: 'info is default');
     expect(lines.first['RunId'], log.runId);

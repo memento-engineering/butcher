@@ -21,7 +21,7 @@ void ensureTestVersion(String root) {
   if (version == null || !_isOlder(version, minTestVersion)) return;
   throw RunAborted(
     'resolved package:test $version does not support --fail-fast; '
-    'rad needs test $minTestVersion or newer.',
+    'butcher needs test $minTestVersion or newer.',
   );
 }
 

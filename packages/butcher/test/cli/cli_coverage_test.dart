@@ -16,7 +16,9 @@ import '../helpers/paths.dart';
 void main() {
   late ButcherPaths paths;
 
-  setUp(() async => paths = await isolatedButcherPaths('rad_cli_coverage_'));
+  setUp(
+    () async => paths = await isolatedButcherPaths('butcher_cli_coverage_'),
+  );
 
   test('routes from lcov: mutants on unhit lines never run', () async {
     final dir = await createFixturePackage(calc: fixturePartiallyTestedCalc);
@@ -25,7 +27,7 @@ void main() {
       ..writeAsStringSync('SF:lib/calc.dart\nDA:1,4\nDA:2,0\nend_of_record\n');
     final out = StringBuffer();
 
-    final exit = await radMain(
+    final exit = await butcherMain(
       ['--coverage', lcov.path, '--jobs', '1', dir.path],
       out: out,
       paths: paths,
@@ -49,7 +51,7 @@ void main() {
     ).writeAsStringSync('int mul(int a, int b) => a * b;\n');
     final out = StringBuffer();
 
-    final exit = await radMain(
+    final exit = await butcherMain(
       ['--jobs', '1', dir.path],
       out: out,
       paths: paths,
@@ -88,7 +90,7 @@ void main() {
       ..writeAsStringSync('SF:lib/calc.dart\nDA:1,4\nDA:2,0\nend_of_record\n');
     final out = StringBuffer();
 
-    final exit = await radMain(
+    final exit = await butcherMain(
       ['--jobs', '1', dir.path],
       out: out,
       paths: paths,
@@ -112,7 +114,7 @@ void main() {
       ..writeAsStringSync('');
     final out = StringBuffer();
 
-    final exit = await radMain(
+    final exit = await butcherMain(
       ['--jobs', '1', dir.path],
       out: out,
       paths: paths,

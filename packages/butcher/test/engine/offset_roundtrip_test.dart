@@ -11,7 +11,7 @@ import '../helpers/paths.dart';
 
 /// Generates on a one-file project, applies every mutant, checks the splice.
 Future<void> roundtrip(String source) async {
-  final dir = await Directory.systemTemp.createTemp('rad_roundtrip_');
+  final dir = await Directory.systemTemp.createTemp('butcher_roundtrip_');
   addTearDown(() => dir.delete(recursive: true));
   File(p.join(dir.path, 'lib', 'a.dart'))
     ..parent.createSync(recursive: true)
@@ -24,7 +24,7 @@ Future<void> roundtrip(String source) async {
   ).generate();
   expect(mutants, isNotEmpty);
 
-  final paths = await isolatedButcherPaths('rad_roundtrip_state_');
+  final paths = await isolatedButcherPaths('butcher_roundtrip_state_');
   final sandbox = await Sandbox.create(
     dir.path,
     paths: paths,

@@ -50,7 +50,7 @@ final class _CapturedStderr implements Stdout {
 void main() {
   late ButcherPaths paths;
 
-  setUp(() async => paths = await isolatedButcherPaths('rad_cli_run_'));
+  setUp(() async => paths = await isolatedButcherPaths('butcher_cli_run_'));
 
   test('produces a Stryker JSON report and kills tested mutants', () async {
     final dir = await createFixturePackage(calc: fixturePartiallyTestedCalc);
@@ -59,7 +59,7 @@ void main() {
       ..parent.createSync(recursive: true)
       ..writeAsStringSync('from a previous run');
 
-    final exit = await radMain(
+    final exit = await butcherMain(
       [
         '--output',
         'report.json',
@@ -78,7 +78,7 @@ void main() {
         .readAsLinesSync()
         .map((line) => jsonDecode(line) as Map<String, dynamic>)
         .toList();
-    expect(logLines.first['@mt'], startsWith('starting rad'));
+    expect(logLines.first['@mt'], startsWith('starting butcher'));
     expect(
       logLines.map((e) => e['@mt']),
       isNot(contains(startsWith('collected coverage'))),
@@ -143,13 +143,13 @@ void main() {
   test('gates on --threshold and streams events with --verbose', () async {
     final dir = await createFixturePackage(calc: fixturePartiallyTestedCalc);
     final out = StringBuffer();
-    final exit = await radMain(
+    final exit = await butcherMain(
       ['--threshold', '90', '--verbose', '--no-collect-coverage', dir.path],
       out: out,
       paths: paths,
     );
     expect(exit, 1, reason: out.toString());
-    expect(out.toString(), contains('INF starting rad'));
+    expect(out.toString(), contains('INF starting butcher'));
     expect(out.toString(), contains('as survived'));
     expect(out.toString(), contains('exit 1'));
     expect(out.toString(), isNot(contains('@mt')));
@@ -163,7 +163,7 @@ void main() {
     );
     final out = StringBuffer();
 
-    final exit = await radMain(
+    final exit = await butcherMain(
       ['--max-timeouts', '0', '--no-collect-coverage', dir.path],
       out: out,
       paths: paths,
@@ -180,7 +180,7 @@ void main() {
     final captured = _CapturedStderr();
 
     final exit = await IOOverrides.runZoned(
-      () => radMain(
+      () => butcherMain(
         ['--threshold', '50', '--no-collect-coverage', dir.path],
         out: StringBuffer(),
         paths: paths,

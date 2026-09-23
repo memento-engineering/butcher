@@ -25,7 +25,7 @@ Mutant mutantAt(int line, {String file = 'lib/calc.dart'}) => Mutant(
 );
 
 void main() {
-  final root = p.join(Directory.systemTemp.path, 'rad_lcov_fake');
+  final root = p.join(Directory.systemTemp.path, 'butcher_lcov_fake');
   final sources = {'lib/calc.dart': _source};
 
   test('reads hits per line from absolute and relative SF records', () {
@@ -77,7 +77,7 @@ end_of_record
   test(
     'maps offsets with the captured sources, not the working tree',
     () async {
-      final dir = await Directory.systemTemp.createTemp('rad_lcov_');
+      final dir = await Directory.systemTemp.createTemp('butcher_lcov_');
       addTearDown(() => dir.delete(recursive: true));
       File(p.join(dir.path, 'lib', 'calc.dart'))
         ..parent.createSync(recursive: true)

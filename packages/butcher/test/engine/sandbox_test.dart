@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 import '../helpers/paths.dart';
 
 Future<Directory> fixtureProject() async {
-  final dir = await Directory.systemTemp.createTemp('rad_sandbox_src_');
+  final dir = await Directory.systemTemp.createTemp('butcher_sandbox_src_');
   addTearDown(() => dir.delete(recursive: true));
   void write(String relative, String content) {
     final file = File(p.join(dir.path, relative));
@@ -46,7 +46,7 @@ void main() {
 
   setUp(() async {
     source = await fixtureProject();
-    paths = await isolatedButcherPaths('rad_sandbox_state_');
+    paths = await isolatedButcherPaths('butcher_sandbox_state_');
     sandbox = await Sandbox.create(
       source.path,
       paths: paths,
@@ -90,26 +90,26 @@ void main() {
     ).writeAsStringSync('assets/big/\n!assets/big/keep.txt\n');
     final copy = await Sandbox.create(
       project.path,
-      paths: await isolatedButcherPaths('rad_sandbox_rule_'),
+      paths: await isolatedButcherPaths('butcher_sandbox_rule_'),
       ignore: ButcherIgnore.load(project.path),
     );
     expect(Directory(p.join(copy.root, 'assets/big')).existsSync(), isFalse);
     expect(File(p.join(copy.root, 'assets/small.txt')).existsSync(), isTrue);
   });
 
-  test('does not copy an in-project rad root', () async {
+  test('does not copy an in-project butcher root', () async {
     final project = await fixtureProject();
-    final inProject = ButcherPaths(root: p.join(project.path, '.rad_temp'));
+    final inProject = ButcherPaths(root: p.join(project.path, '.butcher_temp'));
     final copy = await Sandbox.create(
       project.path,
       paths: inProject,
       ignore: ButcherIgnore.load(project.path),
     );
-    expect(Directory(p.join(copy.root, '.rad_temp')).existsSync(), isFalse);
+    expect(Directory(p.join(copy.root, '.butcher_temp')).existsSync(), isFalse);
     expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
   });
 
-  test('copies the project when the rad root equals it', () async {
+  test('copies the project when the butcher root equals it', () async {
     final project = await fixtureProject();
     final copy = await Sandbox.create(
       project.path,
@@ -164,7 +164,7 @@ void main() {
 
   test('copies a workspace while targeting only its member', () async {
     final workspace = await Directory.systemTemp.createTemp(
-      'rad_sandbox_workspace_',
+      'butcher_sandbox_workspace_',
     );
     addTearDown(() => workspace.delete(recursive: true));
     final member = Directory(p.join(workspace.path, 'packages', 'member'));
@@ -192,7 +192,7 @@ void main() {
       member.path,
       workspaceRoot: workspace.path,
       workspaceIgnore: ButcherIgnore.load(workspace.path),
-      paths: await isolatedButcherPaths('rad_sandbox_workspace_state_'),
+      paths: await isolatedButcherPaths('butcher_sandbox_workspace_state_'),
       ignore: ButcherIgnore.load(member.path),
     );
 
@@ -281,7 +281,7 @@ void main() {
       Sandbox.create(
         member.path,
         workspaceRoot: workspace.path,
-        paths: await isolatedButcherPaths('rad_sandbox_outside_'),
+        paths: await isolatedButcherPaths('butcher_sandbox_outside_'),
         ignore: ButcherIgnore.load(member.path),
       ),
       throwsArgumentError,
