@@ -9,3 +9,4 @@ library;
 
 export 'src/location.dart';
 export 'src/mutant_status.dart';
+export 'src/report_mutant.dart';
