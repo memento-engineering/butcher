@@ -1,12 +1,43 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:butcher_report/butcher_report.dart';
+
 import '../model/line_index.dart';
 import '../model/mutant_result.dart';
 import '../model/outcome.dart';
 import 'report_sink.dart';
 
+/// The `schemaVersion` every document [StrykerJsonSink] writes declares.
+///
+/// Hoisted out of the document body so the configuration surface that will
+/// one day let a run declare these values has a named knob to replace, rather
+/// than a literal buried in the write path.
+const strykerSchemaVersion = '1';
+
+/// The mutation-score percentage at or above which a run counts as good.
+///
+/// Hoisted for the same reason as [strykerSchemaVersion].
+const strykerHighThreshold = 80;
+
+/// The mutation-score percentage below which a run counts as bad.
+///
+/// Hoisted for the same reason as [strykerSchemaVersion].
+const strykerLowThreshold = 60;
+
 /// Writes the Stryker `mutation-testing-report-schema` JSON (ADR 0009).
+///
+/// The document is built as `butcher_report`'s typed [MutationTestResult] and
+/// serialised by that package, so nothing here shapes the schema by hand; the
+/// sink's only I/O remains the single file write.
+///
+/// The schema's test-attribution fields — `coveredBy`, `killedBy` and
+/// `testsCompleted` — are deliberately left unset. The runner carries no
+/// per-test identity: it reports a suite's events, not which named test
+/// covered a mutant or which one killed it, so writing those fields would
+/// mean inventing them. The schema distinguishes an absent optional from an
+/// empty one, and absent is the honest answer until the runner can name
+/// tests.
 final class StrykerJsonSink implements ReportSink {
   /// Creates a sink over generation-time [sources], writing [outputPath].
   const StrykerJsonSink({required this.sources, required this.outputPath});
@@ -18,61 +49,136 @@ final class StrykerJsonSink implements ReportSink {
   final String outputPath;
 
   /// Stryker status per outcome; unthemed interop names (ADR 0014).
+  ///
+  /// The eight outcomes map onto seven statuses: [Outcome.runError] and
+  /// [Outcome.memoryError] both carry `RuntimeError`, because the schema has
+  /// no memory status of its own. That collapse stays; [statusReasonFor] is
+  /// what keeps it from erasing which of the two happened.
+  ///
+  /// The values are [MutantStatus], whose [MutantStatus.wireName] is the
+  /// exact spelling the document carries, so the wire names are the schema
+  /// package's rather than a second copy of them here.
   static const statusOf = {
-    Outcome.killed: 'Killed',
-    Outcome.survived: 'Survived',
-    Outcome.noCoverage: 'NoCoverage',
-    Outcome.timeout: 'Timeout',
-    Outcome.unviable: 'CompileError',
-    Outcome.runError: 'RuntimeError',
-    Outcome.memoryError: 'RuntimeError',
-    Outcome.equivalent: 'Ignored',
+    Outcome.killed: MutantStatus.killed,
+    Outcome.survived: MutantStatus.survived,
+    Outcome.noCoverage: MutantStatus.noCoverage,
+    Outcome.timeout: MutantStatus.timeout,
+    Outcome.unviable: MutantStatus.compileError,
+    Outcome.runError: MutantStatus.runtimeError,
+    Outcome.memoryError: MutantStatus.runtimeError,
+    Outcome.equivalent: MutantStatus.ignored,
   };
+
+  /// Why [result] carries the status [statusOf] gives it, or `null` when the
+  /// status already says everything the document can say.
+  ///
+  /// Three outcomes need a reason, and for two different sorts of reason.
+  /// [Outcome.runError] and [Outcome.memoryError] share the `RuntimeError`
+  /// wire status, so without one the document cannot tell a process that
+  /// crashed from one that ran out of memory. [Outcome.unviable] shares its
+  /// status with nothing, but `CompileError` on its own never says whether
+  /// the mutant failed to compile or the tool did, so it is just as opaque
+  /// unexplained.
+  ///
+  /// [Outcome.memoryError] is RESERVED. The taxonomy declares it and this
+  /// mapping covers it, but no classification path in the tool assigns it
+  /// today and nothing captures a memory-specific diagnostic, so its reason
+  /// names the category and nothing more. A producer that can actually raise
+  /// the outcome is what earns it a measured reason.
+  static String? statusReasonFor(MutantResult result) =>
+      switch (result.outcome) {
+        Outcome.runError => _runErrorReason(result),
+        Outcome.memoryError =>
+          'The test process ran out of memory. Reserved: no classification '
+              'path assigns this outcome yet.',
+        Outcome.unviable =>
+          'The mutant does not compile; its test suite failed to load.',
+        Outcome.killed ||
+        Outcome.survived ||
+        Outcome.noCoverage ||
+        Outcome.timeout ||
+        Outcome.equivalent => null,
+      };
 
   @override
   Future<void> write(List<MutantResult> results) async {
-    final files = <String, Map<String, Object>>{};
+    final sourceOf = <String, String>{};
+    final mutantsOf = <String, List<ReportMutant>>{};
     final indexes = <String, LineIndex>{};
     for (final result in results) {
       final mutation = result.mutant.mutation;
-      final file = files.putIfAbsent(
-        mutation.filePath,
-        () => {
-          'language': 'dart',
-          'source': sources[mutation.filePath] ?? '',
-          'mutants': <Object>[],
-        },
-      );
-      final index = indexes.putIfAbsent(
-        mutation.filePath,
-        () => LineIndex(file['source']! as String),
-      );
-      (file['mutants']! as List<Object>).add({
-        'id': result.mutant.id,
-        'mutatorName': mutation.mutatorId,
-        'replacement': mutation.replacement,
-        'description': mutation.description,
-        'location': {
-          'start': _position(index, mutation.offset),
-          'end': _position(index, mutation.offset + mutation.length),
-        },
-        'status': statusOf[result.outcome]!,
-      });
+      final path = mutation.filePath;
+      final source = sourceOf.putIfAbsent(path, () => sources[path] ?? '');
+      final index = indexes.putIfAbsent(path, () => LineIndex(source));
+      mutantsOf
+          .putIfAbsent(path, () => <ReportMutant>[])
+          .add(
+            ReportMutant(
+              id: result.mutant.id,
+              mutatorName: mutation.mutatorId,
+              location: Location(
+                start: _position(index, mutation.offset),
+                end: _position(index, mutation.offset + mutation.length),
+              ),
+              status: statusOf[result.outcome]!,
+              description: mutation.description,
+              // The test run already measured this; the schema wants
+              // milliseconds. Absent when no tests ran for the mutant.
+              duration: result.testRun?.duration.inMilliseconds,
+              replacement: mutation.replacement,
+              statusReason: statusReasonFor(result),
+            ),
+          );
     }
+
+    final document = MutationTestResult(
+      schemaVersion: strykerSchemaVersion,
+      thresholds: const Thresholds(
+        high: strykerHighThreshold,
+        low: strykerLowThreshold,
+      ),
+      files: {
+        for (final entry in mutantsOf.entries)
+          entry.key: FileResult(
+            language: 'dart',
+            source: sourceOf[entry.key]!,
+            mutants: entry.value,
+          ),
+      },
+    );
 
     final report = File(outputPath);
     report.parent.createSync(recursive: true);
     await report.writeAsString(
-      const JsonEncoder.withIndent('  ').convert({
-        'schemaVersion': '1',
-        'thresholds': {'high': 80, 'low': 60},
-        'files': files,
-      }),
+      const JsonEncoder.withIndent('  ').convert(document.toJson()),
     );
   }
 
-  static Map<String, int> _position(LineIndex index, int offset) => {
-    'line': index.lineAt(offset),
-    'column': index.columnAt(offset),
-  };
+  /// The reason for an [Outcome.runError], carrying the diagnostic the
+  /// classification path captured when there is one.
+  static String _runErrorReason(MutantResult result) {
+    const summary = 'The test process failed without reporting a test failure.';
+    final detail = _firstLine(result.error ?? result.testRun?.errorOutput);
+    return detail == null ? summary : '$summary $detail';
+  }
+
+  /// The first non-blank line of [diagnostic], bounded so a stack trace
+  /// cannot push a whole process dump into the document.
+  static String? _firstLine(String? diagnostic) {
+    if (diagnostic == null) return null;
+    for (final line in const LineSplitter().convert(diagnostic)) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      return trimmed.length <= _reasonDetailLimit
+          ? trimmed
+          : '${trimmed.substring(0, _reasonDetailLimit)}...';
+    }
+    return null;
+  }
+
+  /// Longest captured diagnostic a status reason quotes.
+  static const _reasonDetailLimit = 200;
+
+  static Position _position(LineIndex index, int offset) =>
+      Position(line: index.lineAt(offset), column: index.columnAt(offset));
 }
