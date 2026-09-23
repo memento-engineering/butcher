@@ -24,7 +24,7 @@ register:
 - Mature tools (pitest) model every failure mode as a result category.
 - A tool exception mid-run loses all completed work.
 - A budget of elapsed time cannot separate a hung run from a slow one: it is
-  calibrated on an idle background reading and spent under the load the run
+  calibrated on an idle baseline and spent under the load the run
   itself creates. Sized that way, a self-run timed out 75 of 709 healthy
   mutants, 31 of them routed to the whole suite
   ([../plans/self-run-performance.md](../plans/self-run-performance.md)).
@@ -36,10 +36,10 @@ register:
   MemoryError · Equivalent`.
 - The full enum exists from the MVP, even for outcomes produced only by later
   stages.
-- The half-life is a budget of silence, not of elapsed time: a run is timed
+- The deadline is a budget of silence, not of elapsed time: a run is timed
   out once its reporter has produced nothing for longer than the budget.
   A hung run is silent under any load; a slow one keeps streaming events.
-- Budget = `max(longest gap in the background reading × 3, 10 s floor)`.
+- Budget = `max(longest gap in the baseline × 3, 10 s floor)`.
 - A generous total ceiling stays as a backstop against a run that is hung
   but noisy. It no longer has to tell slow from hung, so it does not have
   to be tight.
@@ -58,7 +58,7 @@ register:
 
 - Uncaught timeouts/OOM/crashes.
 - Folding timeouts into killed or survived results.
-- Half-life derived from the background reading without a floor: a near-zero
+- Deadline derived from the baseline without a floor: a near-zero
   reading collapses it.
-- Half-life as a budget of total elapsed time: idle calibration, contended
+- Deadline as a budget of total elapsed time: idle calibration, contended
   spending, and healthy mutants reported as inconclusive.

@@ -23,7 +23,7 @@ register:
 - Per-mutant recompilation dominates mutation testing cost in most compiled
   languages. Validated by Stryker JS 4.0 ("mutation switching", 20-70%
   faster) and Stryker.NET.
-- It does not dominate here: the containment keeps `dart test`'s incremental
+- It does not dominate here: the sandbox keeps `dart test`'s incremental
   kernel cache, so a suite run after a real `lib/` edit costs what a warm one
   costs (2.36 s vs 2.34 s, measured in
   [../plans/self-run-performance.md](../plans/self-run-performance.md)).
@@ -50,7 +50,7 @@ register:
 
 ## Consequences
 
-- Implemented as an engine rewriting strategy; mutagens and reports untouched
+- Implemented as an engine rewriting strategy; mutators and reports untouched
   ([0008](2026-08-14-composable-mutator-framework.md)).
 - Every mutation site costs a branch and a read in the hot path of the code
   under test. The calibration run measures that overhead, since it runs on

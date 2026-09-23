@@ -20,8 +20,8 @@ register:
 
 ## Context
 
-- A timed-out suite has to die with everything it started. rad's own suite
-  starts nested `rad` runs, which start suites of their own, so an escapee is
+- A timed-out suite has to die with everything it started. butcher's own suite
+  starts nested `butcher` runs, which start suites of their own, so an escapee is
   not idle: it keeps classifying mutants and spawning children.
 - Hunting the tree from a process listing fails in the case that matters. Three
   self-runs leaked 2, then 69, then 127 processes across 24 trees, the last of
@@ -53,9 +53,9 @@ register:
 - A process the suite started before it was admitted is outside the job. The
   window is the microseconds between `Process.start` and `admit`, and a test
   runner spends far longer than that starting up.
-- Nested runs work: job objects nest since Windows 8, so a `rad` inside a
+- Nested runs work: job objects nest since Windows 8, so a `butcher` inside a
   suite inside a job creates its own.
-- The interlock is not a lifetime guarantee: rad killed outright still leaves
+- The interlock is not a lifetime guarantee: butcher killed outright still leaves
   its suites running, since the job is not set to die with its handle. Adding
   `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` would fix that, and needs an allocator,
   which means a dependency.

@@ -38,7 +38,7 @@ register:
   unit of work ([0011](2026-08-14-per-test-coverage-routing.md),
   [0017](2026-08-15-parallel-classification.md)).
 - Selecting a mutant is assigning a value, not writing a file, so a
-  containment is read-only once its beamline is built
+  sandbox is read-only once its beamline is built
   ([0004](2026-08-14-shadow-copy-isolation.md)).
 - Each exposure runs in a fresh isolate: state is isolated per exposure
   without paying for a process.
@@ -64,7 +64,7 @@ register:
 - A fresh isolate does not reset process state: working directory,
   environment, ports, and temp directories are shared by every exposure in a
   beamline.
-- Half-lives become per exposure and measured
+- Deadlines become per exposure and measured
   ([0006](2026-08-14-outcome-taxonomy.md)).
 - Workers follow the core count, since a beamline runs one exposure at a time
   ([0017](2026-08-15-parallel-classification.md)).

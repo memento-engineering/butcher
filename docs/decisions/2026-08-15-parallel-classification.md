@@ -28,11 +28,11 @@ register:
 ## Decision
 
 - A worker pool classifies mutants concurrently; pulled forward from v0.1.
-- Each worker owns one containment copy ([0004](2026-08-14-shadow-copy-isolation.md));
+- Each worker owns one sandbox copy ([0004](2026-08-14-shadow-copy-isolation.md));
   mutants never share a mutated tree.
-- Only the baseline containment is built and `dart pub get`-ed, so dependency
+- Only the baseline sandbox is built and `dart pub get`-ed, so dependency
   resolution runs once per run. One pristine clone of it is taken before the
-  background reading; the workers are cloned from that template after
+  baseline; the workers are cloned from that template after
   generation, capped by the mutant count. No worker inherits what the reading's
   suite writes into the package tree, and a red reading
   ([0005](2026-08-14-mandatory-baseline-verification.md)) aborts having copied the
@@ -51,14 +51,14 @@ register:
 - Suite concurrency is divided among the requested jobs
   (`dart test --concurrency = cores ~/ jobs`): the total stays near the
   core count instead of oversubscribing multiplicatively.
-- The background reading runs once with that same per-suite concurrency, so
-  half-lives ([0006](2026-08-14-outcome-taxonomy.md)) are calibrated under the
+- The baseline runs once with that same per-suite concurrency, so
+  deadlines ([0006](2026-08-14-outcome-taxonomy.md)) are calibrated under the
   same conditions the mutant runs see. The first parallel self-run skipped
   this and drowned in load-induced timeouts (53 of 79).
 
 ## Rejected
 
-- Sharing one containment with a lock: serializes everything again.
+- Sharing one sandbox with a lock: serializes everything again.
 - Defaulting to all cores: nested test-runner parallelism already uses
   them; oversubscription inflates timings against a serial baseline.
 - Isolates instead of async workers: the work is process-spawning I/O, not

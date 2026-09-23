@@ -32,19 +32,19 @@ register:
 ## Decision
 
 - Mutants must compile; the engine verifies this statically instead of
-  trusting mutagen guards.
+  trusting mutator guards.
 - After generation, each covered mutant's file is re-resolved through an
   in-memory analyzer overlay; error diagnostics classify the mutant
   `unviable` with no test run.
 - Only `COMPILE_TIME_ERROR` and `SYNTACTIC_ERROR` diagnostics deny
   viability; warnings and lints escalated to error severity do not.
-- Only the mutated file is re-analyzed: mutagens rewrite expressions inside
-  bodies, which cannot change a file's API. Declaration-changing mutagens
+- Only the mutated file is re-analyzed: mutators rewrite expressions inside
+  bodies, which cannot change a file's API. Declaration-changing mutators
   must widen the check first.
 
 ## Consequences
 
-- Division of labor: mutagen guards minimize unviable mutants by reading
+- Division of labor: mutator guards minimize unviable mutants by reading
   promotion facts off the resolved AST (`PromotionDependence`); this filter
   eliminates the remainder. Guards err toward keeping a mutant.
 - The check reuses generation's analysis state and processes a file's
@@ -58,7 +58,7 @@ register:
 
 ## Rejected
 
-- Blanket null-comparison gates in mutagens: drop viable mutants and stay
+- Blanket null-comparison gates in mutators: drop viable mutants and stay
   unsound (`is` checks, definite assignment).
 - Reimplementing flow analysis at generation time: fragile duplication of
   the compiler.

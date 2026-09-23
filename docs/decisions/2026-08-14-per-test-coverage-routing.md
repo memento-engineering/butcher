@@ -37,8 +37,8 @@ register:
   ([0020](2026-08-18-zero-setup-provisioning.md)).
 - v0.1: route at suite granularity; one fail-fast run over the covering test
   files, cheapest first, so the first failure ends it.
-- v0.1: a routed run's half-life is the longer of the selection's own cost and
-  the background reading's, both on the `x 3` rule. Workers contend for the
+- v0.1: a routed run's deadline is the longer of the selection's own cost and
+  the baseline's, both on the `x 3` rule. Workers contend for the
   machine, so a routed run cannot count on the parallelism the reading
   measured and its suites effectively run one after another; the reading alone
   timed out 75 of 709 healthy mutants
