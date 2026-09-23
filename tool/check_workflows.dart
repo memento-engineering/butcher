@@ -53,6 +53,14 @@ const _reusablePublishWorkflow =
 /// The platforms the engine branches on, as runner-label prefixes.
 const _platforms = ['ubuntu', 'macos', 'windows'];
 
+/// Platforms kept off the slow job by policy rather than by accident.
+///
+/// While the repository is private, macOS runners bill at ten times Linux,
+/// and the slow suites are the long ones, so they run on the maintainer's
+/// Mac and stay out of the slow job by design (ruling 2026-09-23). At
+/// go-public this list becomes empty and the leg returns.
+const _slowSuitesRunLocally = ['macos'];
+
 /// Raised by a check that its subject violates, carrying the operator-readable
 /// reason.
 class CheckFailure implements Exception {
@@ -81,7 +89,7 @@ void main() {
     ),
     (name: 'the CI matrix covers all three platforms', run: _checkMatrix),
     (
-      name: 'the slow suites run on all three platforms and gate the build',
+      name: 'the slow suites run on every CI platform and gate the build',
       run: _checkSlowJob,
     ),
     (name: 'branch protection has one stable check name', run: _checkRequired),
@@ -291,7 +299,7 @@ List<String> _needsOf(YamlMap job) {
 }
 
 void _checkSlowJob() {
-  const check = 'the slow suites run on all three platforms and gate the build';
+  const check = 'the slow suites run on every CI platform and gate the build';
 
   final ci = _load(_ciPath, check);
   final jobs = ci['jobs'];
@@ -308,7 +316,32 @@ void _checkSlowJob() {
     );
   }
 
-  _checkPlatforms(_operatingSystems(slow, _slowJobName, check), check);
+  final runners = _operatingSystems(slow, _slowJobName, check);
+
+  for (final platform in _platforms) {
+    if (_slowSuitesRunLocally.contains(platform)) continue;
+
+    final covered = runners.any((runner) => runner.startsWith(platform));
+    if (!covered) {
+      throw CheckFailure(
+        check,
+        'no $platform runner in ${runners.join(', ')}; the slow job must '
+        'cover every CI platform except the ones _slowSuitesRunLocally '
+        'names',
+      );
+    }
+  }
+
+  for (final platform in _slowSuitesRunLocally) {
+    final present = runners.any((runner) => runner.startsWith(platform));
+    if (present) {
+      throw CheckFailure(
+        check,
+        '$platform is kept off the slow job while the repository is '
+        'private; remove it from _slowSuitesRunLocally to bring it back',
+      );
+    }
+  }
 
   final required = jobs[_requiredJobName];
   if (required is! YamlMap) {
