@@ -19,7 +19,7 @@ import 'dart:io';
 
 const _docsDir = 'docs';
 const _decisionsDir = '$_docsDir/decisions';
-const _decisionsIndex = '$_decisionsDir/index.md';
+const _decisionsIndex = '$_decisionsDir/views/index.md';
 const _retiredEntrySuffix = '-naming-and-vocabulary.md';
 
 /// Raised by a check that its subject violates, carrying the operator-readable
@@ -198,10 +198,15 @@ void _checkIndex() {
   for (final link in _linksIn(index)) {
     if (_isExternal(link.target)) continue;
 
+    // The index is a view one directory below the entries, so every entry
+    // link climbs out of `views/` first.
     final target = link.target.split('#').first;
-    if (target.contains('/') || !target.endsWith('.md')) continue;
+    if (!target.startsWith('../') || !target.endsWith('.md')) continue;
 
-    listed.add(target);
+    final name = target.substring('../'.length);
+    if (name.contains('/')) continue;
+
+    listed.add(name);
   }
 
   final onDisk = _entryFiles().toSet();

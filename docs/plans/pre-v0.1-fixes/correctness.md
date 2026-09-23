@@ -118,7 +118,7 @@ Ordered by severity. Part of [index.md](index.md).
 ## 13. Baseline runs after expensive analysis
 
 - Files: `lib/src/engine/engine.dart`,
-  [decisions/index.md](../../decisions/index.md).
+  [decisions/views/index.md](../../decisions/views/index.md).
 - Docs compose sandbox and baseline before generation and
   viability. Code does generation and viability first.
 - Effect: a red suite can waste minutes before the mandatory abort.
