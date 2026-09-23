@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
-import 'package:butcher/src/engine/containment.dart';
+import 'package:butcher/src/engine/sandbox.dart';
 import 'package:butcher/src/engine/mutant_generator.dart';
 import 'package:butcher/src/engine/rad_ignore.dart';
 import 'package:test/test.dart';
@@ -25,20 +25,20 @@ Future<void> roundtrip(String source) async {
   expect(mutants, isNotEmpty);
 
   final paths = await isolatedRadPaths('rad_roundtrip_state_');
-  final containment = await Containment.create(
+  final sandbox = await Sandbox.create(
     dir.path,
     paths: paths,
     ignore: RadIgnore.load(dir.path),
   );
-  final copy = File(p.join(containment.root, 'lib', 'a.dart'));
+  final copy = File(p.join(sandbox.root, 'lib', 'a.dart'));
   for (final mutant in mutants) {
-    await containment.apply(mutant.mutation);
+    await sandbox.apply(mutant.mutation);
     expect(
       copy.readAsStringSync(),
       isNot(source),
       reason: '${mutant.id} must change the copy',
     );
-    await containment.restore(mutant.mutation.filePath);
+    await sandbox.restore(mutant.mutation.filePath);
     expect(
       copy.readAsStringSync(),
       source,

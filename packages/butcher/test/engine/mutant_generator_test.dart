@@ -78,7 +78,7 @@ void main() {
     expect(
       mutants.map((m) => m.mutation.filePath),
       everyElement(isNot('lib/.dart_tool/cached.dart')),
-      reason: 'no containment copies it, so no mutant may target it',
+      reason: 'no sandbox copies it, so no mutant may target it',
     );
   });
 

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
+import 'package:butcher/src/engine/sandbox.dart';
 import 'package:test/test.dart';
 
 import 'helpers/paths.dart';
@@ -13,8 +14,8 @@ void main() {
 
   test('cleans leftover state and keeps the run-log directory', () {
     File(paths.toolLog).writeAsStringSync('from a previous run');
-    Directory(p.join(paths.root, 'containment_old')).createSync();
-    File(p.join(paths.runLogs, 'containment_old.log'))
+    Directory(p.join(paths.root, '${sandboxPrefix}old')).createSync();
+    File(p.join(paths.runLogs, '${sandboxPrefix}old.log'))
       ..parent.createSync(recursive: true)
       ..writeAsStringSync('stale evidence');
     File(p.join(paths.root, 'unrelated.txt')).writeAsStringSync('keep me');
@@ -23,7 +24,7 @@ void main() {
 
     expect(File(paths.toolLog).existsSync(), isFalse);
     expect(
-      Directory(p.join(paths.root, 'containment_old')).existsSync(),
+      Directory(p.join(paths.root, '${sandboxPrefix}old')).existsSync(),
       false,
     );
     expect(Directory(paths.runLogs).existsSync(), isTrue);

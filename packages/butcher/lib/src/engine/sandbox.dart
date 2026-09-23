@@ -6,27 +6,27 @@ import '../model/mutation.dart';
 import '../rad_paths.dart';
 import 'rad_ignore.dart';
 
-/// Top-level output directories never copied into a containment (ADR 0004).
-const defaultContainmentExcludes = ['build', 'coverage'];
+/// Top-level output directories never copied into a sandbox (ADR 0004).
+const defaultSandboxExcludes = ['build', 'coverage'];
 
 /// Tooling artefacts never copied, at any depth; generation skips the same
 /// names so the two exclusion sets cannot desync (ADR 0004).
-const toolingContainmentExcludes = ['.git', '.dart_tool'];
+const toolingSandboxExcludes = ['.git', '.dart_tool'];
 
-/// Prefix of every containment directory; startup cleanup matches on it.
-const containmentPrefix = 'containment_';
+/// Prefix of every sandbox directory; startup cleanup matches on it.
+const sandboxPrefix = 'sandbox_';
 
 /// A filtered temp-dir copy of the workspace around a selected project.
-final class Containment {
-  Containment._(this.root, this.projectRoot);
+final class Sandbox {
+  Sandbox._(this.root, this.projectRoot);
 
   /// Absolute path of the copied workspace root.
   final String root;
 
-  /// Absolute path of the selected package inside this containment.
+  /// Absolute path of the selected package inside this sandbox.
   final String projectRoot;
 
-  /// Random directory name of this containment; names its run log (ADR 0016).
+  /// Random directory name of this sandbox; names its run log (ADR 0016).
   String get name => p.basename(root);
 
   final Map<String, String> _pristine = {};
@@ -34,7 +34,7 @@ final class Containment {
   /// Copies [workspaceRoot], or [projectRoot] when absent, into a fresh temp
   /// dir. [workspaceIgnore] applies workspace-relative rules while [ignore]
   /// remains relative to the selected project.
-  static Future<Containment> create(
+  static Future<Sandbox> create(
     String projectRoot, {
     required RadPaths paths,
     required RadIgnore ignore,
@@ -52,7 +52,7 @@ final class Containment {
     }
     final projectRelative = p.relative(project, from: source);
     final tempRoot = Directory(paths.root)..createSync(recursive: true);
-    final target = await tempRoot.createTemp(containmentPrefix);
+    final target = await tempRoot.createTemp(sandboxPrefix);
     // An in-project rad root must never copy itself (recursive growth); a
     // rad root at or above the project only prunes the fresh target.
     final prune = p.isWithin(source, paths.root) ? paths.root : target.path;
@@ -77,7 +77,7 @@ final class Containment {
         workspaceIgnore,
       );
     });
-    return Containment._(
+    return Sandbox._(
       target.path,
       projectRelative == '.'
           ? target.path
@@ -85,15 +85,13 @@ final class Containment {
     );
   }
 
-  /// Copies this containment, resolved dependencies included, into a fresh
+  /// Copies this sandbox, resolved dependencies included, into a fresh
   /// independent one so `dart pub get` runs once per run instead of once per
   /// worker (ADR 0017).
-  Future<Containment> clone() async {
-    final target = await Directory(
-      p.dirname(root),
-    ).createTemp(containmentPrefix);
+  Future<Sandbox> clone() async {
+    final target = await Directory(p.dirname(root)).createTemp(sandboxPrefix);
     await _copyInto(Directory(root), target.path, '', (_, _, _) => false);
-    return Containment._(
+    return Sandbox._(
       target.path,
       p.join(target.path, p.relative(projectRoot, from: root)),
     );
@@ -133,9 +131,9 @@ final class Containment {
     RadIgnore ignore,
     RadIgnore? workspaceIgnore,
   ) {
-    if (toolingContainmentExcludes.contains(name) ||
+    if (toolingSandboxExcludes.contains(name) ||
         ((workspaceRelative == name || projectRelative == name) &&
-            defaultContainmentExcludes.contains(name))) {
+            defaultSandboxExcludes.contains(name))) {
       return true;
     }
     return (workspaceIgnore?.excludes(
@@ -156,14 +154,14 @@ final class Containment {
     final end = mutation.offset + mutation.length;
     if (end > content.length) {
       throw StateError(
-        'containment drift in ${mutation.filePath}@${mutation.offset}: '
+        'sandbox drift in ${mutation.filePath}@${mutation.offset}: '
         'expected "${mutation.original}", file ends at ${content.length}',
       );
     }
     final found = content.substring(mutation.offset, end);
     if (found != mutation.original) {
       throw StateError(
-        'containment drift in ${mutation.filePath}@${mutation.offset}: '
+        'sandbox drift in ${mutation.filePath}@${mutation.offset}: '
         'expected "${mutation.original}", found "$found"',
       );
     }

@@ -12,11 +12,11 @@ final class PubWorkspace {
   /// Absolute, normalized root of the package selected for irradiation.
   final String projectRoot;
 
-  /// Absolute, normalized root copied into each containment.
+  /// Absolute, normalized root copied into each sandbox.
   final String root;
 
   /// Resolves the workspace reference written by `dart pub get` for
-  /// [projectRoot], falling back to a single-package containment.
+  /// [projectRoot], falling back to a single-package sandbox.
   static PubWorkspace resolve(String projectRoot) {
     final project = p.normalize(p.absolute(projectRoot));
     final reference = File(

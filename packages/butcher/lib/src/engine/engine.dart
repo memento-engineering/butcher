@@ -12,7 +12,7 @@ import '../model/test_run.dart';
 import '../model/test_suite.dart';
 import '../mutators/mutator_registry.dart';
 import '../rad_paths.dart';
-import 'containment.dart';
+import 'sandbox.dart';
 import 'coverage_collector.dart';
 import 'coverage_provider.dart';
 import 'dart_test_runner.dart';
@@ -32,7 +32,7 @@ import 'viability_checker.dart';
 typedef ProgressCallback =
     void Function(int done, int total, MutantResult result);
 
-/// Builds a runner rooted at a containment; [suiteConcurrency] is this
+/// Builds a runner rooted at a sandbox; [suiteConcurrency] is this
 /// worker's share of the cores (ADR 0017).
 typedef RunnerFactory = TestRunner Function(String root, int suiteConcurrency);
 
@@ -73,13 +73,13 @@ final class Engine {
   /// Coverage seam; `null` collects coverage during the run (ADR 0020).
   final CoverageProvider? coverage;
 
-  /// Builds the runner for a containment root; seam for `flutter test`.
+  /// Builds the runner for a sandbox root; seam for `flutter test`.
   final RunnerFactory runnerFactory;
 
   /// Optional per-mutant progress hook, called in completion order.
   final ProgressCallback? onProgress;
 
-  /// Number of parallel workers, each owning a containment (ADR 0017).
+  /// Number of parallel workers, each owning a sandbox (ADR 0017).
   final int jobs;
 
   /// Receives engine wide events; `null` disables engine logging.
@@ -93,7 +93,7 @@ final class Engine {
   /// retained until the run ends (ADR 0016).
   static const outputExcerptLimit = 32 * 1024;
 
-  /// Directory inside the baseline containment holding the collected VM
+  /// Directory inside the baseline sandbox holding the collected VM
   /// coverage reports (ADR 0020).
   static const coverageDirName = '.rad_coverage';
 
@@ -119,14 +119,14 @@ final class Engine {
     // keep half-lives calibrated (ADR 0017).
     final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ jobs);
     final ignore = RadIgnore.load(projectRoot);
-    final baseline = await Containment.create(
+    final baseline = await Sandbox.create(
       projectRoot,
       paths: paths,
       ignore: ignore,
       workspaceRoot: workspace.root,
       workspaceIgnore: RadIgnore.load(workspace.root),
     );
-    await pubGet(baseline.projectRoot, label: 'the containment');
+    await pubGet(baseline.projectRoot, label: 'the sandbox');
     ensureTestVersion(baseline.root);
     // One pristine clone before the background reading; the workers are cloned
     // from it, so none inherits what that suite writes into the package tree
@@ -147,7 +147,7 @@ final class Engine {
       throw RunAborted(
         'background reading is red; a green suite is a precondition '
         '(ADR 0005). If a copy exclusion removed a required asset, fix '
-        '$containmentIgnoreFile.\n'
+        '$butcherIgnoreFile.\n'
         '$evidence',
       );
     }
@@ -166,29 +166,28 @@ final class Engine {
 
     prepareWatch.start();
     final workers = max(1, min(jobs, mutants.length));
-    final containments = [
+    final sandboxes = [
       template,
       ...await Future.wait([
         for (var i = 1; i < workers; i++) template.clone(),
       ]),
     ];
     final runners = [
-      for (final c in containments)
-        runnerFactory(c.projectRoot, suiteConcurrency),
+      for (final c in sandboxes) runnerFactory(c.projectRoot, suiteConcurrency),
     ];
     prepareWatch.stop();
     logger?.info(
-      'prepared {Containments} containments in {DurationMs} ms, '
+      'prepared {Sandboxes} sandboxes in {DurationMs} ms, '
       '{SuiteConcurrency} test threads each',
       {
-        'Containments': containments.length,
+        'Sandboxes': sandboxes.length,
         'SuiteConcurrency': suiteConcurrency,
         'DurationMs': prepareWatch.elapsedMilliseconds,
       },
     );
-    // One run log per containment, named after it (ADR 0016).
+    // One run log per sandbox, named after it (ADR 0016).
     final runLogs = [
-      for (final c in containments)
+      for (final c in sandboxes)
         RadLogger(
           verbose: false,
           path: p.join(paths.runLogs, '${c.name}.log'),
@@ -207,7 +206,7 @@ final class Engine {
         if (index >= mutants.length) return;
         final result = await _classify(
           mutants[index],
-          containments[slot],
+          sandboxes[slot],
           runners[slot],
           runLogs[slot],
           halfLife,
@@ -222,7 +221,7 @@ final class Engine {
           'Done': done,
           'Total': mutants.length,
           'Worker': slot,
-          'Containment': containments[slot].name,
+          'Sandbox': sandboxes[slot].name,
           'File': result.mutant.mutation.filePath,
           'Offset': result.mutant.mutation.offset,
           'Operator': result.mutant.mutation.mutatorId,
@@ -299,7 +298,7 @@ final class Engine {
 
   Future<MutantResult> _classify(
     Mutant mutant,
-    Containment containment,
+    Sandbox sandbox,
     TestRunner runner,
     RadLogger runLog,
     Duration halfLife,
@@ -313,7 +312,7 @@ final class Engine {
       return MutantResult(mutant: mutant, outcome: Outcome.unviable);
     }
     try {
-      await containment.apply(mutant.mutation);
+      await sandbox.apply(mutant.mutation);
       // Only the suites covering the mutant, cheapest first, in one
       // fail-fast run: the first failure ends it, so an early kill costs the
       // cheap suites only (ADR 0011). An unknown selection runs everything.
@@ -332,7 +331,7 @@ final class Engine {
         outcome: const OutcomeClassifier().classify(run, events),
         testRun: _excerpt(run),
       );
-      _logMutantRun(runLog, containment.name, result, events.errors, suites);
+      _logMutantRun(runLog, sandbox.name, result, events.errors, suites);
       return result;
       // Expected mutant-level failures are outcomes, never exceptions
       // (ADR 0006); their evidence lands in the run log (ADR 0016).
@@ -343,10 +342,10 @@ final class Engine {
         outcome: Outcome.runError,
         error: '$error\n$stackTrace',
       );
-      _logMutantRun(runLog, containment.name, result, const [], null);
+      _logMutantRun(runLog, sandbox.name, result, const [], null);
       return result;
     } finally {
-      await containment.restore(mutant.mutation.filePath);
+      await sandbox.restore(mutant.mutation.filePath);
     }
   }
 
@@ -374,7 +373,7 @@ final class Engine {
   /// an excerpt.
   void _logMutantRun(
     RadLogger runLog,
-    String containment,
+    String sandbox,
     MutantResult result,
     List<String> nestedErrors,
     List<TestSuite>? suites,
@@ -383,7 +382,7 @@ final class Engine {
     final mutation = result.mutant.mutation;
     final properties = {
       'MutantId': result.mutant.id,
-      'Containment': containment,
+      'Sandbox': sandbox,
       'Outcome': result.outcome.name,
       'Mutation': mutation.description,
       'File': mutation.filePath,
@@ -442,7 +441,7 @@ final class Engine {
   /// configuration would otherwise yield only unviable mutants (ADR 0020).
   Future<void> _provision() async {
     // A missing or non-package root reports better from the copy and
-    // containment stages than from `pub get` here.
+    // sandbox stages than from `pub get` here.
     if (!File(p.join(projectRoot, 'pubspec.yaml')).existsSync()) return;
     final watch = Stopwatch()..start();
     await pubGet(projectRoot, label: 'the project');
@@ -454,9 +453,9 @@ final class Engine {
 
   /// The routing coverage: the supplied provider, or one collected by an
   /// extra instrumented run of the green suite (ADR 0020). It reuses the
-  /// baseline containment, which the workers no longer clone from, so none
+  /// baseline sandbox, which the workers no longer clone from, so none
   /// of them inherits the coverage artefacts.
-  Future<CoverageProvider> _resolveCoverage(Containment baseline) async {
+  Future<CoverageProvider> _resolveCoverage(Sandbox baseline) async {
     final supplied = coverage;
     if (supplied != null) return supplied;
     final watch = Stopwatch()..start();

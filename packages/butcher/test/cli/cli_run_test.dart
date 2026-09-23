@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:butcher/src/cli/cli.dart';
+import 'package:butcher/src/engine/sandbox.dart';
 import 'package:test/test.dart';
 
 import '../helpers/fixtures.dart';
@@ -92,14 +93,14 @@ void main() {
     final runLogs = Directory(paths.runLogs).listSync().whereType<File>();
     expect(
       runLogs.map((file) => p.basename(file.path)),
-      everyElement(startsWith('containment_')),
-      reason: 'one run log per containment, named after it',
+      everyElement(startsWith(sandboxPrefix)),
+      reason: 'one run log per sandbox, named after it',
     );
     expect(runLogs, hasLength(2), reason: 'one per --jobs worker');
     expect(File(p.join(paths.runLogs, 'stale.log')).existsSync(), isFalse);
     expect(
       Directory(paths.root).listSync().whereType<Directory>().where(
-        (directory) => p.basename(directory.path).startsWith('containment_'),
+        (directory) => p.basename(directory.path).startsWith(sandboxPrefix),
       ),
       hasLength(3),
       reason:

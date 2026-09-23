@@ -23,13 +23,13 @@ final class RadPaths {
         : RadPaths(root: override);
   }
 
-  /// Root for containments and logs.
+  /// Root for sandboxes and logs.
   final String root;
 
   /// Tool-wide CLEF log file.
   final String toolLog;
 
-  /// Directory containing one CLEF log per containment.
+  /// Directory containing one CLEF log per sandbox.
   final String runLogs;
 
   /// Exclusive lock held for the duration of a run (ADR 0018).

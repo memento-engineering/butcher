@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
+import 'package:butcher/src/engine/sandbox.dart';
 import 'package:test/test.dart';
 
 import '../helpers/paths.dart';
@@ -89,7 +90,7 @@ final class CrashingRunner implements TestRunner {
   }
 }
 
-/// Writes a marker into its containment during the background reading, as a
+/// Writes a marker into its sandbox during the background reading, as a
 /// real suite writes incremental kernels and test fixtures into its tree.
 final class SuiteWritingRunner implements TestRunner {
   SuiteWritingRunner(this.root, this.runs);
@@ -152,10 +153,10 @@ final class RecordingCoverage implements CoverageProvider {
   void indexSources(Map<String, String> sources) => indexed = true;
 }
 
-List<Directory> _containmentsIn(RadPaths paths) => Directory(paths.root)
+List<Directory> _sandboxesIn(RadPaths paths) => Directory(paths.root)
     .listSync()
     .whereType<Directory>()
-    .where((dir) => p.basename(dir.path).startsWith('containment_'))
+    .where((dir) => p.basename(dir.path).startsWith(sandboxPrefix))
     .toList();
 
 Future<String> miniProject({
@@ -354,7 +355,7 @@ void main() {
       reason: 'generation and viability run after the reading',
     );
     expect(
-      _containmentsIn(paths),
+      _sandboxesIn(paths),
       hasLength(2),
       reason:
           'a red reading costs the baseline plus one template, not a copy '
@@ -362,32 +363,29 @@ void main() {
     );
   });
 
-  test(
-    'gives every worker its own containment, capped by mutant count',
-    () async {
-      final roots = <String>[];
-      final runner = FakeRunner();
-      final paths = await isolatedRadPaths('rad_engine_state_');
-      await Engine(
-        projectRoot: await miniProject(),
-        paths: paths,
-        jobs: 99,
-        runnerFactory: (root, _) {
-          roots.add(root);
-          return runner;
-        },
-      ).run();
+  test('gives every worker its own sandbox, capped by mutant count', () async {
+    final roots = <String>[];
+    final runner = FakeRunner();
+    final paths = await isolatedRadPaths('rad_engine_state_');
+    await Engine(
+      projectRoot: await miniProject(),
+      paths: paths,
+      jobs: 99,
+      runnerFactory: (root, _) {
+        roots.add(root);
+        return runner;
+      },
+    ).run();
 
-      // The first runner reads the background; the rest are the workers.
-      expect(
-        roots.skip(1),
-        hasLength(2),
-        reason: '2 mutants cap 99 jobs at 2 workers',
-      );
-      expect(roots.toSet(), hasLength(3), reason: 'containments are distinct');
-      expect(_containmentsIn(paths), hasLength(3));
-    },
-  );
+    // The first runner reads the background; the rest are the workers.
+    expect(
+      roots.skip(1),
+      hasLength(2),
+      reason: '2 mutants cap 99 jobs at 2 workers',
+    );
+    expect(roots.toSet(), hasLength(3), reason: 'sandboxes are distinct');
+    expect(_sandboxesIn(paths), hasLength(3));
+  });
 
   test('logs engine stages without removing existing run logs', () async {
     final temp = await Directory.systemTemp.createTemp('rad_engine_log_');
@@ -415,7 +413,7 @@ void main() {
     expect(log, contains('"@mt":"found {MutantCount} mutants in {File}"'));
     expect(log, contains('"@mt":"generated {MutantCount} mutants'));
     expect(log, contains('"@mt":"checked viability of {MutantCount} mutants'));
-    expect(log, contains('"@mt":"prepared {Containments} containments'));
+    expect(log, contains('"@mt":"prepared {Sandboxes} sandboxes'));
     expect(log, contains('"@mt":"background reading green'));
     expect(log, contains('"@mt":"classified {MutantId} as {Outcome}'));
     expect(log, contains('"Outcome":"runError"'));
@@ -430,7 +428,7 @@ void main() {
     expect(classified['Replacement'], isA<String>());
     expect(
       log,
-      contains('"Containment":"containment_'),
+      contains('"Sandbox":"$sandboxPrefix'),
       reason: 'the tool log points at the run log that holds the detail',
     );
 
@@ -441,8 +439,8 @@ void main() {
         .toList();
     expect(
       newLogs.map((file) => p.basename(file.path)),
-      everyElement(startsWith('containment_')),
-      reason: 'one run log per containment, named after it',
+      everyElement(startsWith(sandboxPrefix)),
+      reason: 'one run log per sandbox, named after it',
     );
     final events = [
       for (final file in newLogs)
@@ -455,7 +453,7 @@ void main() {
       expect(event['@l'], 'Error');
       expect(event['Outcome'], 'runError');
       expect(event['Output'], contains('venting core'));
-      expect(event['Containment'], startsWith('containment_'));
+      expect(event['Sandbox'], startsWith(sandboxPrefix));
       expect(
         event['RunId'],
         toolLogger.runId,

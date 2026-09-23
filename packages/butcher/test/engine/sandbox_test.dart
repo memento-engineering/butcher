@@ -2,14 +2,14 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
-import 'package:butcher/src/engine/containment.dart';
+import 'package:butcher/src/engine/sandbox.dart';
 import 'package:butcher/src/engine/rad_ignore.dart';
 import 'package:test/test.dart';
 
 import '../helpers/paths.dart';
 
 Future<Directory> fixtureProject() async {
-  final dir = await Directory.systemTemp.createTemp('rad_containment_src_');
+  final dir = await Directory.systemTemp.createTemp('rad_sandbox_src_');
   addTearDown(() => dir.delete(recursive: true));
   void write(String relative, String content) {
     final file = File(p.join(dir.path, relative));
@@ -42,12 +42,12 @@ Future<Directory> fixtureProject() async {
 void main() {
   late Directory source;
   late RadPaths paths;
-  late Containment containment;
+  late Sandbox sandbox;
 
   setUp(() async {
     source = await fixtureProject();
-    paths = await isolatedRadPaths('rad_containment_state_');
-    containment = await Containment.create(
+    paths = await isolatedRadPaths('rad_sandbox_state_');
+    sandbox = await Sandbox.create(
       source.path,
       paths: paths,
       ignore: RadIgnore.load(source.path),
@@ -55,12 +55,12 @@ void main() {
   });
 
   test('lives inside the configured temp folder', () {
-    expect(p.isWithin(paths.root, containment.root), isTrue);
+    expect(p.isWithin(paths.root, sandbox.root), isTrue);
   });
 
   test('copies the project without excluded paths', () {
     bool has(String relative) =>
-        File(p.join(containment.root, relative)).existsSync();
+        File(p.join(sandbox.root, relative)).existsSync();
     expect(has('lib/a.dart'), isTrue);
     expect(has('test/a_test.dart'), isTrue);
     expect(has('assets/small.txt'), isTrue);
@@ -74,7 +74,7 @@ void main() {
 
   test('prunes nested tooling directories only', () {
     bool has(String relative) =>
-        File(p.join(containment.root, relative)).existsSync();
+        File(p.join(sandbox.root, relative)).existsSync();
     expect(has('packages/sub/lib/b.dart'), isTrue);
     expect(has('packages/sub/.dart_tool/package_config.json'), isFalse);
     expect(has('packages/sub/.git/config'), isFalse);
@@ -88,9 +88,9 @@ void main() {
     File(
       p.join(project.path, '.radignore'),
     ).writeAsStringSync('assets/big/\n!assets/big/keep.txt\n');
-    final copy = await Containment.create(
+    final copy = await Sandbox.create(
       project.path,
-      paths: await isolatedRadPaths('rad_containment_rule_'),
+      paths: await isolatedRadPaths('rad_sandbox_rule_'),
       ignore: RadIgnore.load(project.path),
     );
     expect(Directory(p.join(copy.root, 'assets/big')).existsSync(), isFalse);
@@ -100,7 +100,7 @@ void main() {
   test('does not copy an in-project rad root', () async {
     final project = await fixtureProject();
     final inProject = RadPaths(root: p.join(project.path, '.rad_temp'));
-    final copy = await Containment.create(
+    final copy = await Sandbox.create(
       project.path,
       paths: inProject,
       ignore: RadIgnore.load(project.path),
@@ -111,7 +111,7 @@ void main() {
 
   test('copies the project when the rad root equals it', () async {
     final project = await fixtureProject();
-    final copy = await Containment.create(
+    final copy = await Sandbox.create(
       project.path,
       paths: RadPaths(root: project.path),
       ignore: RadIgnore.load(project.path),
@@ -120,14 +120,14 @@ void main() {
     expect(Directory(p.join(copy.root, copy.name)).existsSync(), isFalse);
   });
 
-  test('clones the copied tree into an independent containment', () async {
-    File(p.join(containment.root, '.dart_tool/package_config.json'))
+  test('clones the copied tree into an independent sandbox', () async {
+    File(p.join(sandbox.root, '.dart_tool/package_config.json'))
       ..parent.createSync(recursive: true)
       ..writeAsStringSync('{"resolved": true}');
-    final clone = await containment.clone();
+    final clone = await sandbox.clone();
 
     expect(p.isWithin(paths.root, clone.root), isTrue);
-    expect(clone.root, isNot(containment.root));
+    expect(clone.root, isNot(sandbox.root));
     expect(
       File(
         p.join(clone.root, '.dart_tool/package_config.json'),
@@ -150,12 +150,12 @@ void main() {
       contains('a - b'),
     );
     expect(
-      File(p.join(containment.root, 'lib/a.dart')).readAsStringSync(),
+      File(p.join(sandbox.root, 'lib/a.dart')).readAsStringSync(),
       contains('a + b'),
     );
 
-    await containment.apply(mutation);
-    await containment.restore('lib/a.dart');
+    await sandbox.apply(mutation);
+    await sandbox.restore('lib/a.dart');
     expect(
       File(p.join(clone.root, 'lib/a.dart')).readAsStringSync(),
       contains('a - b'),
@@ -164,7 +164,7 @@ void main() {
 
   test('copies a workspace while targeting only its member', () async {
     final workspace = await Directory.systemTemp.createTemp(
-      'rad_containment_workspace_',
+      'rad_sandbox_workspace_',
     );
     addTearDown(() => workspace.delete(recursive: true));
     final member = Directory(p.join(workspace.path, 'packages', 'member'));
@@ -188,11 +188,11 @@ void main() {
     write('packages/sibling/build/kept.txt', 'sibling source');
     write('packages/sibling/.git/config', 'metadata');
 
-    final copy = await Containment.create(
+    final copy = await Sandbox.create(
       member.path,
       workspaceRoot: workspace.path,
       workspaceIgnore: RadIgnore.load(workspace.path),
-      paths: await isolatedRadPaths('rad_containment_workspace_state_'),
+      paths: await isolatedRadPaths('rad_sandbox_workspace_state_'),
       ignore: RadIgnore.load(member.path),
     );
 
@@ -278,10 +278,10 @@ void main() {
     final member = await fixtureProject();
 
     await expectLater(
-      Containment.create(
+      Sandbox.create(
         member.path,
         workspaceRoot: workspace.path,
-        paths: await isolatedRadPaths('rad_containment_outside_'),
+        paths: await isolatedRadPaths('rad_sandbox_outside_'),
         ignore: RadIgnore.load(member.path),
       ),
       throwsArgumentError,
@@ -300,16 +300,16 @@ void main() {
         mutatorId: 'arithmetic',
         description: 'replace + with -',
       );
-      final copied = File(p.join(containment.root, 'lib/a.dart'));
+      final copied = File(p.join(sandbox.root, 'lib/a.dart'));
 
-      await containment.apply(mutation);
+      await sandbox.apply(mutation);
       expect(copied.readAsStringSync(), contains('a - b'));
       expect(
         File(p.join(source.path, 'lib/a.dart')).readAsStringSync(),
         contains('a + b'),
       );
 
-      await containment.restore('lib/a.dart');
+      await sandbox.restore('lib/a.dart');
       expect(copied.readAsStringSync(), contains('a + b'));
     },
   );
@@ -324,7 +324,7 @@ void main() {
       mutatorId: 'arithmetic',
       description: 'replace + with -',
     );
-    await expectLater(containment.apply(drifted), throwsStateError);
+    await expectLater(sandbox.apply(drifted), throwsStateError);
   });
 
   test('rejects a mutation past the end of the copied file', () async {
@@ -337,6 +337,6 @@ void main() {
       mutatorId: 'arithmetic',
       description: 'replace + with -',
     );
-    await expectLater(containment.apply(pastEnd), throwsStateError);
+    await expectLater(sandbox.apply(pastEnd), throwsStateError);
   });
 }

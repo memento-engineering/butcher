@@ -60,7 +60,7 @@ Future<int> radMain(
       'jobs',
       abbr: 'j',
       help:
-          'Parallel workers, each with its own containment copy. '
+          'Parallel workers, each with its own sandbox copy. '
           'Defaults to half the CPU cores.',
     )
     ..addFlag(
@@ -304,4 +304,4 @@ double? _threshold(ArgResults options) {
 String _usage(ArgParser parser) =>
     'Usage: rad [options] [project root]\n\n${parser.usage}'
     '\n\nEnvironment:\n'
-    'RAD_TEMP  Exact root for containments and logs.';
+    'RAD_TEMP  Exact root for sandboxes and logs.';

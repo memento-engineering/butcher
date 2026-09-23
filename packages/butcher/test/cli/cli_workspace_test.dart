@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:butcher/src/cli/cli.dart';
 import 'package:butcher/src/rad_paths.dart';
+import 'package:butcher/src/engine/sandbox.dart';
 import 'package:test/test.dart';
 
 import '../helpers/fixtures.dart';
@@ -49,7 +50,7 @@ void main() {
     expect(siblingSource.readAsBytesSync(), originalSibling);
   });
 
-  test('resolves sibling packages inside every containment', () async {
+  test('resolves sibling packages inside every sandbox', () async {
     final fixture = await createFixtureWorkspace();
     final memberSource = File(p.join(fixture.member.path, 'lib', 'calc.dart'));
     final siblingSource = File(
@@ -67,26 +68,23 @@ void main() {
 
     expect(exit, 0, reason: out.toString());
     expect(out.toString(), contains('MSI: 100.00%'));
-    final containments = Directory(paths.root)
+    final sandboxes = Directory(paths.root)
         .listSync()
         .whereType<Directory>()
         .where(
-          (directory) => p.basename(directory.path).startsWith('containment_'),
+          (directory) => p.basename(directory.path).startsWith(sandboxPrefix),
         )
         .toList();
-    expect(containments, isNotEmpty);
-    for (final containment in containments) {
-      final copiedMember = p.join(containment.path, 'packages', 'member');
-      final copiedSibling = p.join(containment.path, 'packages', 'sibling');
-      expect(
-        File(p.join(containment.path, 'pubspec.yaml')).existsSync(),
-        isTrue,
-      );
+    expect(sandboxes, isNotEmpty);
+    for (final sandbox in sandboxes) {
+      final copiedMember = p.join(sandbox.path, 'packages', 'member');
+      final copiedSibling = p.join(sandbox.path, 'packages', 'sibling');
+      expect(File(p.join(sandbox.path, 'pubspec.yaml')).existsSync(), isTrue);
       expect(File(p.join(copiedMember, 'pubspec.yaml')).existsSync(), isTrue);
       expect(File(p.join(copiedSibling, 'pubspec.yaml')).existsSync(), isTrue);
 
       final config = File(
-        p.join(containment.path, '.dart_tool', 'package_config.json'),
+        p.join(sandbox.path, '.dart_tool', 'package_config.json'),
       );
       expect(config.existsSync(), isTrue);
       final decoded =
@@ -101,11 +99,11 @@ void main() {
         ).resolve(package['rootUri'] as String).toFilePath();
         expect(
           p.isWithin(
-            Directory(containment.path).resolveSymbolicLinksSync(),
+            Directory(sandbox.path).resolveSymbolicLinksSync(),
             Directory(resolved).resolveSymbolicLinksSync(),
           ),
           isTrue,
-          reason: '$name must resolve inside ${containment.path}',
+          reason: '$name must resolve inside ${sandbox.path}',
         );
       }
 
@@ -121,7 +119,7 @@ void main() {
           workspaceReference['workspaceRoot'] as String,
         ),
       );
-      expect(p.equals(referencedRoot, containment.path), isTrue);
+      expect(p.equals(referencedRoot, sandbox.path), isTrue);
     }
     expect(memberSource.readAsBytesSync(), originalMember);
     expect(siblingSource.readAsBytesSync(), originalSibling);

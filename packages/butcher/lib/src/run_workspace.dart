@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import 'engine/containment.dart';
+import 'engine/sandbox.dart';
 import 'engine/run_aborted.dart';
 import 'rad_paths.dart';
 
@@ -31,7 +31,7 @@ final class RunWorkspace {
   /// Filesystem locations this workspace owns.
   final RadPaths paths;
 
-  /// Removes the previous tool log, leftover containments, and every run log,
+  /// Removes the previous tool log, leftover sandboxes, and every run log,
   /// keeping the run-log directory itself; aborts when a target survives.
   ///
   /// A failed cleanup releases the lock: the run never started, so leaving it
@@ -41,7 +41,7 @@ final class RunWorkspace {
       final toolLog = File(paths.toolLog);
       if (toolLog.existsSync()) toolLog.deleteSync();
       for (final entry in Directory(paths.root).listSync()) {
-        if (p.basename(entry.path).startsWith(containmentPrefix)) {
+        if (p.basename(entry.path).startsWith(sandboxPrefix)) {
           entry.deleteSync(recursive: true);
         }
       }

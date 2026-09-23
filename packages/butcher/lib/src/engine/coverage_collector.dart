@@ -11,7 +11,7 @@ import 'test_runner.dart';
 
 /// Collects per-line coverage from one instrumented suite run (ADR 0020).
 final class CoverageCollector {
-  /// Collects inside the containment at [root]; the suite writes its per-suite
+  /// Collects inside the sandbox at [root]; the suite writes its per-suite
   /// reports into [outputDir]. [packageConfigRoot] may name a containing pub
   /// workspace; it defaults to [root] for a single package.
   CoverageCollector({
@@ -124,8 +124,8 @@ final class CoverageCollector {
       )
       .replaceAll(r'\', '/');
 
-  /// Containment-relative posix path of [source], or `null` when it is not a
-  /// file inside the containment. Both sides are resolved through the
+  /// Sandbox-relative posix path of [source], or `null` when it is not a
+  /// file inside the sandbox. Both sides are resolved through the
   /// filesystem: the SDK spells temp paths differently than rad created them.
   String? _relative(String source, Map<String, Uri> packages, String realRoot) {
     final uri = Uri.tryParse(source);
@@ -151,7 +151,7 @@ final class CoverageCollector {
     return p.relative(real, from: realRoot).replaceAll(r'\', '/');
   }
 
-  /// Each package's library directory, per the containment's package config.
+  /// Each package's library directory, per the sandbox's package config.
   Map<String, Uri> _packageLibraries() {
     final file = File(
       p.join(packageConfigRoot, '.dart_tool', 'package_config.json'),

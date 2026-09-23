@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:butcher/src/cli/cli.dart';
+import 'package:butcher/src/engine/sandbox.dart';
 import 'package:test/test.dart';
 
 import '../helpers/fixtures.dart';
@@ -36,7 +37,7 @@ void main() {
   test('aborts with exit code 70 while another run holds the lock', () async {
     final held = RunWorkspace.acquire(paths);
     addTearDown(held.release);
-    final evidence = File(p.join(paths.runLogs, 'containment_active.log'))
+    final evidence = File(p.join(paths.runLogs, '${sandboxPrefix}active.log'))
       ..parent.createSync(recursive: true)
       ..writeAsStringSync('from the active run');
 
@@ -63,17 +64,17 @@ void main() {
     expect(Directory(paths.runLogs).listSync(), isEmpty);
     expect(
       Directory(paths.root).listSync().whereType<Directory>().any(
-        (directory) => p.basename(directory.path).startsWith('containment_'),
+        (directory) => p.basename(directory.path).startsWith(sandboxPrefix),
       ),
       isTrue,
-      reason: 'aborted-run containment remains until the next run starts',
+      reason: 'aborted-run sandbox remains until the next run starts',
     );
   });
 
   test('aborts with exit code 70 on a too-old package:test', () async {
     final dir = await createFixturePackage();
     // The project's lockfile still pins a new package:test; only the
-    // containment's re-resolved dependencies can tell.
+    // sandbox's re-resolved dependencies can tell.
     final pubspec = File(p.join(dir.path, 'pubspec.yaml'));
     pubspec.writeAsStringSync(
       pubspec.readAsStringSync().replaceFirst('test: any', 'test: 1.24.5'),
@@ -86,7 +87,7 @@ void main() {
     );
     expect(
       Directory(paths.root).listSync().whereType<Directory>().where(
-        (directory) => p.basename(directory.path).startsWith('containment_'),
+        (directory) => p.basename(directory.path).startsWith(sandboxPrefix),
       ),
       hasLength(1),
       reason: 'the version check precedes the template clone',

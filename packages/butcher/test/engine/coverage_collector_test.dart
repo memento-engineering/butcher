@@ -49,28 +49,28 @@ Map<String, Object?> _entry(String source, List<int> hits) => {
 };
 
 void main() {
-  late Directory containment;
+  late Directory sandbox;
   late String coverageDir;
 
   Future<SuiteCoverageProvider> collect(
     Map<String, List<Map<String, Object?>>> reports,
   ) => CoverageCollector(
-    root: containment.path,
+    root: sandbox.path,
     outputDir: coverageDir,
   ).collect(_ReportingRunner(reports));
 
   setUp(() async {
-    containment = await Directory.systemTemp.createTemp('rad_collect_');
-    addTearDown(() => containment.delete(recursive: true));
-    coverageDir = p.join(containment.path, 'coverage');
-    void write(String relative) => File(p.join(containment.path, relative))
+    sandbox = await Directory.systemTemp.createTemp('rad_collect_');
+    addTearDown(() => sandbox.delete(recursive: true));
+    coverageDir = p.join(sandbox.path, 'coverage');
+    void write(String relative) => File(p.join(sandbox.path, relative))
       ..parent.createSync(recursive: true)
       ..writeAsStringSync('');
 
     write('lib/calc.dart');
     write('lib/other.dart');
     write('test/calc_test.dart');
-    File(p.join(containment.path, '.dart_tool', 'package_config.json'))
+    File(p.join(sandbox.path, '.dart_tool', 'package_config.json'))
       ..parent.createSync(recursive: true)
       ..writeAsStringSync(
         jsonEncode({
@@ -101,7 +101,7 @@ void main() {
 
   test('resolves file: sources directly', () async {
     final source = Uri.file(
-      p.join(containment.path, 'test', 'calc_test.dart'),
+      p.join(sandbox.path, 'test', 'calc_test.dart'),
     ).toString();
 
     final provider = await collect({
@@ -130,7 +130,7 @@ void main() {
     });
   });
 
-  test('drops sources outside the containment', () async {
+  test('drops sources outside the sandbox', () async {
     final provider = await collect({
       'calc_test.vm.json': [
         _entry('package:test/test.dart', [1, 1]),
@@ -233,7 +233,7 @@ void main() {
   test('aborts when the instrumented run fails', () async {
     await expectLater(
       CoverageCollector(
-        root: containment.path,
+        root: sandbox.path,
         outputDir: coverageDir,
       ).collect(_ReportingRunner(const {}, exitCode: 1, output: 'boom')),
       throwsA(

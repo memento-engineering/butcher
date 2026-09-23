@@ -6,7 +6,7 @@ import 'package:path/path.dart' as p;
 import '../model/mutant.dart';
 import '../model/mutation.dart';
 import '../mutators/mutator_registry.dart';
-import 'containment.dart';
+import 'sandbox.dart';
 import 'mutation_visitor.dart';
 import 'project_analysis.dart';
 import 'rad_ignore.dart';
@@ -39,7 +39,7 @@ final class MutantGenerator {
   /// The active mutator set.
   final MutatorRegistry registry;
 
-  /// Consumer exclusions shared with containment (ADR 0004).
+  /// Consumer exclusions shared with sandbox (ADR 0004).
   final RadIgnore ignore;
 
   /// Analyzer state the viability check reuses (ADR 0019).
@@ -63,8 +63,7 @@ final class MutantGenerator {
             .map((f) => p.normalize(f.absolute.path))
             .map((f) => (f, p.relative(f, from: root).replaceAll(r'\', '/')))
             .where(
-              (f) =>
-                  !p.posix.split(f.$2).any(toolingContainmentExcludes.contains),
+              (f) => !p.posix.split(f.$2).any(toolingSandboxExcludes.contains),
             )
             .where((f) => !ignore.excludes(f.$2, isDirectory: false))
             .toList()
