@@ -76,13 +76,13 @@ register:
 
 | Enumeration | Files | Bytes |
 | --- | --- | --- |
-| `git ls-files --cached --others --exclude-standard --deduplicate -z` | 218 | 663,910 |
-| `find . \( -name .git -o -name .dart_tool -o -path ./build -o -path ./coverage \) -prune -o -type f -print0` | 219 | 675,097 |
+| `git ls-files --cached --others --exclude-standard --deduplicate -z` | 223 | 691,112 |
+| `find . \( -name .git -o -name .dart_tool -o -path ./build -o -path ./coverage \) -prune -o -type f -print0` | 224 | 702,299 |
 
   Each is piped through `xargs -0 stat -f%z | awk '{n++; b+=$1} END {print n, b}'`.
   The one file between them is the gitignored `pubspec.lock` (11,187 bytes),
   which the always-include rule puts back, so this repository's sandbox copies
-  the same 219 files either way: it gitignores nothing but tooling output,
+  the same 224 files either way: it gitignores nothing but tooling output,
   which the walk already excluded.
 
 ## Rejected
