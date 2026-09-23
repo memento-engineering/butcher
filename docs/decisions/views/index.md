@@ -20,7 +20,7 @@ flowchart TD
     H --> I[reports + criticality gate]
 ```
 
-| ADR | Title | Status |
+| Entry | Title | Status |
 |---|---|---|
 | [0001](../2026-08-14-implement-in-dart.md) | Implement in Dart | accepted |
 | [0002](../2026-08-14-parse-with-official-analyzer.md) | Parse with the official analyzer | accepted |
@@ -44,5 +44,9 @@ flowchart TD
 | [0020](../2026-08-18-zero-setup-provisioning.md) | Zero-setup provisioning | accepted, staged v0.1-v0.2 |
 | [0021](../2026-08-21-beamline-execution.md) | Beamline execution | accepted, planned v1.0 |
 | [0022](../2026-08-21-process-interlock.md) | Process interlock | accepted |
+| [value-equality-boundary](../2026-09-22-value-equality-boundary.md) | Value-equality boundary | accepted |
+| [two-mechanism-configuration](../2026-09-22-two-mechanism-configuration.md) | Two-mechanism configuration | accepted |
+| [live-event-surface](../2026-09-22-live-event-surface.md) | Live event surface | accepted |
+| [workspace-shape](../2026-09-22-workspace-shape.md) | Workspace shape | accepted |
 
 Feature staging: [../../roadmap/index.md](../../roadmap/index.md).
