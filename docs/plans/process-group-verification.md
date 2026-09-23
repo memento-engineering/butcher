@@ -31,3 +31,22 @@ child`, `the started process leads its own process group`, `a deadline returns
 null and leaves nothing alive`, and `terminate-all reaps independently started
 processes`.
 
+## `butcher`, after the deletion
+
+`test/engine/kill_tree_test.dart` is the runner's own proof and is run by name,
+never excluded: a suite spawns a hanging child, the deadline fires, and neither
+the suite nor the child survives.
+
+| Suite | macOS host | Linux container |
+|---|---|---|
+| `test/engine/kill_tree_test.dart` | 1 passed | 1 passed |
+| `test/engine/dart_test_runner_test.dart` | 7 passed | 7 passed |
+| `test/cli/signal_watcher_test.dart` | 3 passed | 3 passed |
+
+## Running the suites in a container
+
+| Setting | Why |
+|---|---|
+| `--memory 8g` | the default leaves a nested `dart test` too little; suites die before their deadline and load errors report no reason |
+| `procps` in the image | `dart:3.13.3` has no `ps`, which the process suite checks a pid with |
+| a `PUB_CACHE` volume | each `container run` is a fresh filesystem otherwise |

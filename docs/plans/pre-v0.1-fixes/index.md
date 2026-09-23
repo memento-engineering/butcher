@@ -34,9 +34,12 @@ further defects, all fixed; the ones worth remembering:
 Two decisions deviate from the text above:
 
 - Item 8's matcher stayed hand-written: `package:ignore` does not exist.
-- Item 12 kills the tree best effort from a `ps` snapshot, not a process
+- Item 12 killed the tree best effort from a `ps` snapshot, not a process
   group ([ADR 0006](../../decisions/2026-08-14-outcome-taxonomy.md)); `setsid` is
-  absent from minimal images and Dart cannot spawn a process group.
+  absent from macOS and Dart cannot spawn a process group. The item's own fix
+  landed later: `butcher_process` starts the suite through a shim that leads a
+  group, and the snapshot is gone
+  ([../process-group-verification.md](../process-group-verification.md)).
 
 A final review of the complete fix range found five remaining defects:
 
