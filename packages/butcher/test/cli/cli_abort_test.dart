@@ -101,18 +101,16 @@ void main() {
     );
   });
 
-  test('releases the lock when the run fails unexpectedly', () async {
+  test('releases the lock when the project root does not exist', () async {
     final missing = p.join(paths.root, 'no_such_project');
 
-    await expectLater(
-      butcherMain([missing], out: StringBuffer(), paths: paths),
-      throwsA(isA<FileSystemException>()),
-    );
+    expect(await butcherMain([missing], out: StringBuffer(), paths: paths), 70);
 
+    expect(File(paths.toolLog).readAsStringSync(), contains(missing));
     expect(
       File(paths.lockFile).existsSync(),
       isFalse,
-      reason: 'an exception escaping the run must not strand the lock',
+      reason: 'an aborted run must not strand the lock',
     );
   });
 

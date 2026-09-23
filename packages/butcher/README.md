@@ -104,16 +104,43 @@ MSI but leaves the covered-code MSI intact. Coverage comes from, in order:
 - Project dependencies are resolved first: butcher runs `dart pub get`,
   refreshing stale configuration or writing `pubspec.lock` and `.dart_tool/`
   when absent.
-- Each worker tests in its own sandbox, a filtered temp-directory copy of the
-  project. Selecting a pub workspace member copies the whole workspace into
-  each sandbox; tests, mutant generation, coverage paths, report output, and
-  the member's `.butcherignore` stay rooted at the selected member.
-- A workspace root `.butcherignore` prunes workspace-relative paths from the
-  larger copy. Excluding a file the member needs turns the baseline red.
-- `.butcherignore` (gitignore-style rules including negation and directory
-  patterns, project root) excludes paths from the sandbox tests run in. An
-  excluded directory is never descended into, so `!` cannot re-include a file
-  below it, just like git.
+- Each worker tests in its own sandbox, a temp-directory copy of the project
+  holding what the repository's git listing names. Selecting a pub workspace
+  member copies the whole workspace into each sandbox; tests, mutant
+  generation, coverage paths and report output stay rooted at the selected
+  member.
+
+## Exclusions
+
+Two independent mechanisms. Neither reads `analysis_options.yaml`.
+
+| Mechanism | Decides | Where |
+|---|---|---|
+| The repository's git listing | What a sandbox copies | The project's own gitignore rules |
+| The `exclude` glob list | What butcher mutates | `butcher.yaml` at the project root |
+
+- The copy set is one `git ls-files` at the workspace root: everything git
+  tracks, plus everything it reports as untracked and not ignored. Excluding a
+  file the suite needs turns the baseline red.
+- Copied whether gitignored or not: every `pubspec.lock` beside a package
+  manifest, so no sandbox re-resolves its dependencies, and generated sources
+  (`.g.dart`, `.freezed.dart`, `.mocks.dart` and the rest).
+- Symlinks are recreated as symlinks; one whose target resolves outside the
+  workspace is skipped and logged.
+- A project outside a git repository falls back to a plain walk excluding only
+  `.git`, `.dart_tool` and a top-level `build` or `coverage`, and logs one line
+  saying so.
+- The bespoke ignore dotfile butcher used to read at the project root is gone,
+  and with it its gitignore-style negation. A path that must stay out of the
+  sandbox is gitignored instead.
+- `exclude` in `butcher.yaml` narrows mutation scope only: an excluded file is
+  still copied, still compiled and still runs its tests.
+
+Measured on butcher's own repository, the listing names 179 files (462 KiB)
+against the walk's 180 files (473 KiB) — the same tree, because this
+repository gitignores nothing but tooling output the walk already skipped. The
+reduction scales with what a project gitignores: a generated or vendored tree
+the walk copied in full is not copied at all now, once per worker.
 
 ## Temp root
 

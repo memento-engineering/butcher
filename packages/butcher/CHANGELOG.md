@@ -22,10 +22,11 @@
   picked up automatically, `--coverage` supplies one, and otherwise coverage
   is collected in one extra suite run; `--no-collect-coverage` treats all code
   as covered.
-- Each worker tests in its own sandbox, a filtered temp-directory copy of the
-  project, with `.butcherignore` exclusions that also skip mutant generation.
-  Selecting a pub workspace member copies the whole workspace while keeping
-  tests, generation, coverage and report output rooted at that member.
+- Each worker tests in its own sandbox, a temp-directory copy of the project
+  holding what the repository's git listing names, so the project's own
+  gitignore rules decide it. Selecting a pub workspace member copies the whole
+  workspace while keeping tests, generation, coverage and report output rooted
+  at that member.
 - A red baseline aborts the run before generation; the green baseline's
   duration sets each mutant's deadline, so a slow selection is not a timeout.
 - `--jobs` classifies in parallel, one sandbox per worker. A timed-out suite
