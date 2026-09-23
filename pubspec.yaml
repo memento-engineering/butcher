@@ -12,6 +12,49 @@ workspace:
 
 dev_dependencies:
   lints: ^6.0.0
+  # Developer tooling only (Nico, 2026-09-23): melos scripts below are a
+  # convenience for local iteration, mirroring the org's other pub
+  # workspaces (lenny, the_grid, power_station). CI
+  # (.github/workflows/ci.yaml) and every bead validation_plan stay plain
+  # `dart` commands — a per-bead worktree's validation lane cannot see a
+  # script the same branch adds, so nothing here may be load-bearing for
+  # either of those.
+  melos: ^7.7.0
   test: ^1.25.6
   # `tool/check_workflows.dart` parses the GitHub workflow files with this.
   yaml: ^3.1.2
+
+melos:
+  scripts:
+    analyze:
+      description: >-
+        Run dart analyze on the entire workspace.
+      run: dart analyze
+
+    format:
+      description: >-
+        Check formatting for all Dart files. Fails if any file needs changes.
+      run: dart format --output=none --set-exit-if-changed .
+
+    test:fast:
+      description: >-
+        Run the quick suite for local iteration: packages/butcher's -x slow
+        selection plus butcher_process and butcher_report's full suites.
+        Mirrors the `test` job in .github/workflows/ci.yaml.
+      run: >-
+        (cd packages/butcher && dart test -x slow) &&
+        (cd packages/butcher_process && dart test) &&
+        (cd packages/butcher_report && dart test)
+
+    test:slow:
+      description: >-
+        Run the real-subprocess suites. Only packages/butcher tags any
+        suite slow. Mirrors the `slow` job in .github/workflows/ci.yaml.
+      run: cd packages/butcher && dart test -t slow
+
+    checks:
+      description: >-
+        Run the workflow-shape and docs-shape checkers.
+      run: >-
+        dart run tool/check_workflows.dart &&
+        dart run tool/check_docs.dart
