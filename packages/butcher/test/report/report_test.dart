@@ -53,8 +53,9 @@ void main() {
 
   test('ConsoleReportSink prints counts and both scores', () async {
     final out = StringBuffer();
-    await ConsoleReportSink(out: out)
-        .write([result(Outcome.killed), result(Outcome.survived)]);
+    await ConsoleReportSink(
+      out: out,
+    ).write([result(Outcome.killed), result(Outcome.survived)]);
     final text = out.toString();
     expect(text, contains('2 mutants:'));
     expect(text, contains('killed: 1'));

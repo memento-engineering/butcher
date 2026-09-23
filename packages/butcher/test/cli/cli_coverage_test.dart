@@ -44,8 +44,9 @@ void main() {
 
   test('collects coverage and skips what no test reaches', () async {
     final dir = await createFixturePackage(calc: fixturePartiallyTestedCalc);
-    File(p.join(dir.path, 'lib', 'unused.dart'))
-        .writeAsStringSync('int mul(int a, int b) => a * b;\n');
+    File(
+      p.join(dir.path, 'lib', 'unused.dart'),
+    ).writeAsStringSync('int mul(int a, int b) => a * b;\n');
     final out = StringBuffer();
 
     final exit = await radMain(

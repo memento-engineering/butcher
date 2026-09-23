@@ -46,7 +46,10 @@ typedef Check = ({String name, void Function() run});
 void main() {
   final checks = <Check>[
     (name: 'the CI workflow uses the yaml spelling', run: _checkCiFileName),
-    (name: 'the release workflow calls CI by that name', run: _checkPublishCall),
+    (
+      name: 'the release workflow calls CI by that name',
+      run: _checkPublishCall,
+    ),
     (name: 'the CI matrix covers all three platforms', run: _checkMatrix),
     (name: 'branch protection has one stable check name', run: _checkRequired),
   ];

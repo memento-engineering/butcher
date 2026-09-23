@@ -22,8 +22,9 @@ String label(int? level) => level == null ? 'INF' : 'ERR';
 Future<String> fixtureProject(Map<String, String> files) async {
   final dir = await Directory.systemTemp.createTemp('rad_viability_');
   addTearDown(() => dir.delete(recursive: true));
-  File(p.join(dir.path, 'pubspec.yaml'))
-      .writeAsStringSync('name: fixture\nenvironment:\n  sdk: ^3.0.0\n');
+  File(
+    p.join(dir.path, 'pubspec.yaml'),
+  ).writeAsStringSync('name: fixture\nenvironment:\n  sdk: ^3.0.0\n');
   files.forEach(
     (name, source) => File(p.join(dir.path, 'lib', name))
       ..parent.createSync(recursive: true)
@@ -74,11 +75,12 @@ void main() {
     final broken = flipAt('a.dart', _guarded, '==', '!=');
     final fine = flipAt('b.dart', _unguarded, '==', '!=');
     final unviable =
-        await ViabilityChecker(analysis: ProjectAnalysis(projectRoot: root))
-            .unviable(
-              [broken, fine],
-              {'lib/a.dart': _guarded, 'lib/b.dart': _unguarded},
-            );
+        await ViabilityChecker(
+          analysis: ProjectAnalysis(projectRoot: root),
+        ).unviable(
+          [broken, fine],
+          {'lib/a.dart': _guarded, 'lib/b.dart': _unguarded},
+        );
     expect(unviable, {broken.id});
     expect(File(p.join(root, 'lib', 'a.dart')).readAsStringSync(), _guarded);
     expect(File(p.join(root, 'lib', 'b.dart')).readAsStringSync(), _unguarded);
@@ -92,8 +94,9 @@ void main() {
       ignore: RadIgnore.load(root),
     );
     final (mutants, sources) = await generator.generate();
-    final unviable = await ViabilityChecker(analysis: generator.analysis)
-        .unviable(mutants, sources);
+    final unviable = await ViabilityChecker(
+      analysis: generator.analysis,
+    ).unviable(mutants, sources);
     expect(mutants, isNotEmpty);
     expect(unviable.length, lessThan(mutants.length));
 

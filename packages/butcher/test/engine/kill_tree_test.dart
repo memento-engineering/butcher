@@ -49,8 +49,9 @@ void main() {
     final dir = await createFixturePackage(testSource: _spawningTest);
     File(p.join(dir.path, 'spinner.dart')).writeAsStringSync(_spinner);
 
-    final run = await DartTestRunner(dir.path)
-        .run(timeout: const Duration(seconds: 25));
+    final run = await DartTestRunner(
+      dir.path,
+    ).run(timeout: const Duration(seconds: 25));
 
     expect(run.timedOut, isTrue);
     final record = File(p.join(dir.path, 'child.pid'));

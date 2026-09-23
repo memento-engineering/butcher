@@ -11,12 +11,15 @@ Future<Directory> fixtureProject() async {
   addTearDown(() => dir.delete(recursive: true));
   final src = Directory(p.join(dir.path, 'lib', 'src'))
     ..createSync(recursive: true);
-  File(p.join(dir.path, 'lib', 'a.dart'))
-      .writeAsStringSync('int add(int a, int b) => a + b;\n');
-  File(p.join(src.path, 'b.dart'))
-      .writeAsStringSync('bool both(bool a, bool b) => a && b;\n');
-  File(p.join(dir.path, 'lib', 'gen.g.dart'))
-      .writeAsStringSync('int genAdd(int a, int b) => a + b;\n');
+  File(
+    p.join(dir.path, 'lib', 'a.dart'),
+  ).writeAsStringSync('int add(int a, int b) => a + b;\n');
+  File(
+    p.join(src.path, 'b.dart'),
+  ).writeAsStringSync('bool both(bool a, bool b) => a && b;\n');
+  File(
+    p.join(dir.path, 'lib', 'gen.g.dart'),
+  ).writeAsStringSync('int genAdd(int a, int b) => a + b;\n');
   return dir;
 }
 

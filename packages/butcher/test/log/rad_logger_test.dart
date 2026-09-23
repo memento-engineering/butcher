@@ -14,11 +14,10 @@ void main() {
     path = p.join(dir.path, 'rad.log');
   });
 
-  List<Map<String, dynamic>> events() =>
-      File(path)
-          .readAsLinesSync()
-          .map((line) => jsonDecode(line) as Map<String, dynamic>)
-          .toList();
+  List<Map<String, dynamic>> events() => File(path)
+      .readAsLinesSync()
+      .map((line) => jsonDecode(line) as Map<String, dynamic>)
+      .toList();
 
   RadLogger logger({bool verbose = false, StringSink? console, bool? colors}) =>
       RadLogger(
@@ -131,9 +130,9 @@ void main() {
       runId: 'parent-run',
     )..info('child event');
     expect(correlated.runId, 'parent-run');
-    final line = jsonDecode(
-      File('$path.child').readAsLinesSync().single,
-    ) as Map<String, dynamic>;
+    final line =
+        jsonDecode(File('$path.child').readAsLinesSync().single)
+            as Map<String, dynamic>;
     expect(line['RunId'], 'parent-run');
   });
 

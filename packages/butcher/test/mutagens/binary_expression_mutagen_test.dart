@@ -25,9 +25,11 @@ Future<BinaryExpression> binaryOf(String source) async {
   final file = File(p.join(dir.path, 'main.dart'));
   await file.writeAsString(source);
   final path = p.normalize(file.absolute.path);
-  final result = await AnalysisContextCollection(
-    includedPaths: [path],
-  ).contextFor(path).currentSession.getResolvedUnit(path) as ResolvedUnitResult;
+  final result =
+      await AnalysisContextCollection(
+            includedPaths: [path],
+          ).contextFor(path).currentSession.getResolvedUnit(path)
+          as ResolvedUnitResult;
   final function = result.unit.declarations.single as FunctionDeclaration;
   final body = function.functionExpression.body as ExpressionFunctionBody;
   return body.expression as BinaryExpression;

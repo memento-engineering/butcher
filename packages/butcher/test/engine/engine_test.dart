@@ -152,20 +152,20 @@ final class RecordingCoverage implements CoverageProvider {
   void indexSources(Map<String, String> sources) => indexed = true;
 }
 
-List<Directory> _containmentsIn(RadPaths paths) =>
-    Directory(paths.root)
-        .listSync()
-        .whereType<Directory>()
-        .where((dir) => p.basename(dir.path).startsWith('containment_'))
-        .toList();
+List<Directory> _containmentsIn(RadPaths paths) => Directory(paths.root)
+    .listSync()
+    .whereType<Directory>()
+    .where((dir) => p.basename(dir.path).startsWith('containment_'))
+    .toList();
 
 Future<String> miniProject({
   String calc = 'int add(int a, int b) => a + b;\n',
 }) async {
   final dir = await Directory.systemTemp.createTemp('rad_engine_');
   addTearDown(() => dir.delete(recursive: true));
-  File(p.join(dir.path, 'pubspec.yaml'))
-      .writeAsStringSync('name: fixture\nenvironment:\n  sdk: ^3.0.0\n');
+  File(
+    p.join(dir.path, 'pubspec.yaml'),
+  ).writeAsStringSync('name: fixture\nenvironment:\n  sdk: ^3.0.0\n');
   File(p.join(dir.path, 'lib', 'calc.dart'))
     ..parent.createSync(recursive: true)
     ..writeAsStringSync(calc);
@@ -191,11 +191,11 @@ void main() {
       expect(result.halfLife, const Duration(seconds: 10));
       expect(progress, ['1/2 killed', '2/2 killed']);
       expect(runner.timeouts, [null, result.halfLife, result.halfLife]);
-      expect(runner.failFasts, [
-        false,
-        true,
-        true,
-      ], reason: 'mutant runs stop at the first failure, the reading does not');
+      expect(
+        runner.failFasts,
+        [false, true, true],
+        reason: 'mutant runs stop at the first failure, the reading does not',
+      );
     },
   );
 
@@ -212,11 +212,15 @@ void main() {
     ).run();
 
     expect(result.results.map((r) => r.outcome).toSet(), {Outcome.killed});
-    expect(runner.selections, [
-      const <String>[],
-      const ['test/fast_test.dart', 'test/slow_test.dart'],
-      const ['test/fast_test.dart', 'test/slow_test.dart'],
-    ], reason: 'the reading runs everything, the mutants only their suites');
+    expect(
+      runner.selections,
+      [
+        const <String>[],
+        const ['test/fast_test.dart', 'test/slow_test.dart'],
+        const ['test/fast_test.dart', 'test/slow_test.dart'],
+      ],
+      reason: 'the reading runs everything, the mutants only their suites',
+    );
     expect(
       runner.timeouts.skip(1),
       everyElement(const Duration(seconds: 180)),

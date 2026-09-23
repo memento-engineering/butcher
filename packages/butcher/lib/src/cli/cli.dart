@@ -146,17 +146,15 @@ Future<int> radMain(
       path: resolvedPaths.toolLog,
       console: sink,
     );
-    logger.info(
-      'starting rad {ToolVersion} on {ProjectRoot} with {Jobs} jobs',
-      {
-        'ToolVersion': packageVersion,
-        'ProjectRoot': projectRoot,
-        'Jobs': jobs ?? Engine.defaultJobs,
-        'Dart': Platform.version,
-        'Os': Platform.operatingSystem,
-        'Argv': arguments,
-      },
-    );
+    logger
+        .info('starting rad {ToolVersion} on {ProjectRoot} with {Jobs} jobs', {
+          'ToolVersion': packageVersion,
+          'ProjectRoot': projectRoot,
+          'Jobs': jobs ?? Engine.defaultJobs,
+          'Dart': Platform.version,
+          'Os': Platform.operatingSystem,
+          'Argv': arguments,
+        });
 
     if (ingested != null) {
       logger.info('ingested coverage for {FileCount} files from {Path}', {

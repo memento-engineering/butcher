@@ -88,8 +88,9 @@ void main() {
 }
 ''');
 
-    final run = await DartTestRunner(dir.path)
-        .run(suites: ['test/calc_test.dart']);
+    final run = await DartTestRunner(
+      dir.path,
+    ).run(suites: ['test/calc_test.dart']);
 
     expect(run.exitCode, 0, reason: run.output);
   });
@@ -191,8 +192,9 @@ void main() {
 }
 ''',
     );
-    final run = await DartTestRunner(dir.path)
-        .run(timeout: const Duration(seconds: 10));
+    final run = await DartTestRunner(
+      dir.path,
+    ).run(timeout: const Duration(seconds: 10));
     expect(run.timedOut, isTrue);
     expect(run.exitCode, -1);
     expect(classify(run), Outcome.timeout);
