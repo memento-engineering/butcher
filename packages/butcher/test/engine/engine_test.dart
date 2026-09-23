@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -8,6 +9,13 @@ import 'package:butcher/src/engine/sandbox.dart';
 import 'package:test/test.dart';
 
 import '../helpers/paths.dart';
+
+/// Fixture source yielding more mutants than a single expression does, so a
+/// stream assertion has several classifications to count.
+const _twoFunctionCalc = '''
+int add(int a, int b) => a + b;
+int scale(int a, int b) => a * b + 1;
+''';
 
 const _killedOutput = '''
 {"test":{"id":3,"name":"adds"},"type":"testStart"}
@@ -619,5 +627,101 @@ void main() {
       'lib/calc.dart:27:arithmetic:-',
     ], reason: 'results follow mutant order, not completion order');
     expect(completionOrder.toSet(), reportIds.toSet());
+  });
+
+  group('the live event stream', () {
+    test('publishes a start, one event per mutant, and a completion', () async {
+      final progressCalls = <String>[];
+      final engine = Engine(
+        projectRoot: await miniProject(calc: _twoFunctionCalc),
+        paths: await isolatedButcherPaths('butcher_engine_state_'),
+        jobs: 2,
+        runnerFactory: (_, _) => FakeRunner(),
+        onProgress: (done, total, r) => progressCalls.add(r.mutant.id),
+      );
+      // Subscribing before the run is the only moment a consumer has, so the
+      // start event has to survive it.
+      final published = engine.events.toList();
+
+      final result = await engine.run();
+
+      final events = await published;
+      expect(result.results.length, greaterThan(1));
+      expect(
+        events.whereType<RunStarted>(),
+        [
+          RunStarted(
+            mutantCount: result.results.length,
+            baseline: result.baseline,
+            deadline: result.deadline,
+          ),
+        ],
+        reason: 'one start, carrying the count and the run result timings',
+      );
+      expect(
+        events.whereType<MutantClassified>().map((e) => e.result).toSet(),
+        result.results.toSet(),
+        reason: 'one classified event per mutant, carrying its result',
+      );
+      expect(events.whereType<RunCompleted>(), [const RunCompleted()]);
+      expect(events.first, isA<RunStarted>());
+      expect(events.last, isA<RunCompleted>());
+      expect(
+        progressCalls,
+        hasLength(result.results.length),
+        reason: 'the untyped callback still fires once per mutant',
+      );
+    });
+
+    test('a listener that throws changes neither results nor run', () async {
+      final quiet = await Engine(
+        projectRoot: await miniProject(calc: _twoFunctionCalc),
+        paths: await isolatedButcherPaths('butcher_engine_state_'),
+        runnerFactory: (_, _) => FakeRunner(),
+      ).run();
+
+      final engine = Engine(
+        projectRoot: await miniProject(calc: _twoFunctionCalc),
+        paths: await isolatedButcherPaths('butcher_engine_state_'),
+        runnerFactory: (_, _) => FakeRunner(),
+      );
+      final errors = <Object>[];
+      // A broadcast controller delivers asynchronously, so the throw never
+      // reaches the engine: it surfaces in the zone the listener subscribed
+      // in, which is why the proof is a guarded zone rather than a try.
+      final published = runZonedGuarded(() {
+        final all = engine.events.toList();
+        engine.events.listen((event) => throw StateError('listener exploded'));
+        return all;
+      }, (error, stack) => errors.add(error));
+
+      final result = await engine.run();
+
+      expect(result.results, quiet.results, reason: 'the run is unaffected');
+      final events = await published!;
+      // The zone's handler runs after delivery; let the queue drain.
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        errors,
+        hasLength(events.length),
+        reason: 'every delivery threw and every throw landed in the zone',
+      );
+      expect(errors, everyElement(isA<StateError>()));
+    });
+
+    test('closes the stream when the baseline aborts the run', () async {
+      final engine = Engine(
+        projectRoot: await miniProject(),
+        paths: await isolatedButcherPaths('butcher_engine_state_'),
+        runnerFactory: (_, _) => FakeRunner(baselineExitCode: 1),
+      );
+      // Without the close in the run's finally this future never completes
+      // and the test times out.
+      final published = engine.events.toList();
+
+      await expectLater(engine.run(), throwsA(isA<RunAborted>()));
+
+      expect(await published, isEmpty, reason: 'nothing was classified');
+    });
   });
 }

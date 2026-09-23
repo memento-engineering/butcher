@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -23,6 +24,7 @@ import 'outcome_classifier.dart';
 import 'pub_get.dart';
 import 'pub_workspace.dart';
 import 'run_aborted.dart';
+import 'run_events.dart';
 import 'run_result.dart';
 import 'test_runner.dart';
 import 'test_version_check.dart';
@@ -88,6 +90,36 @@ final class Engine {
   /// Correlates and namespaces every mutant-run log from this engine run.
   final String runId;
 
+  /// Created with the engine rather than inside [run], so a consumer can
+  /// subscribe first and still receive the opening event. Asynchronous on
+  /// purpose: a synchronous controller would let a listener reenter the
+  /// worker loop.
+  final StreamController<RunEvent> _events =
+      StreamController<RunEvent>.broadcast();
+
+  /// Live progress of [run], beside the end-of-run [RunResult].
+  ///
+  /// Subscribe before calling [run]: the stream carries one [RunStarted], one
+  /// [MutantClassified] per mutant, and one [RunCompleted], and [run] closes
+  /// it in a `finally`, so an aborted run closes the stream instead of leaving
+  /// a listener hanging. That makes an engine instance single-use for its
+  /// stream: once [run] has finished or thrown, the stream stays closed.
+  ///
+  /// Event order is NON-DETERMINISTIC: the workers classify in parallel and
+  /// publish as they finish. The [RunResult] returned by [run] keeps the
+  /// slot-indexed order and is the stable view of the run.
+  ///
+  /// Delivery is asynchronous, so a listener that throws does not throw inside
+  /// the engine: its exception surfaces later in the zone where it subscribed
+  /// and never reaches [run], which neither swallows nor observes it.
+  Stream<RunEvent> get events => _events.stream;
+
+  /// Publishes [event] unless the run has already closed the controller.
+  void _emit(RunEvent event) {
+    if (_events.isClosed) return;
+    _events.add(event);
+  }
+
   /// Characters of each suite stream kept per mutant. The live stream stays
   /// generous so nothing is parsed truncated, but every mutant's excerpt is
   /// retained until the run ends (ADR 0016).
@@ -106,7 +138,18 @@ final class Engine {
   };
 
   /// Runs the whole pipeline and returns every classified result.
+  ///
+  /// Publishes progress on [events] as it goes and closes that stream before
+  /// returning or throwing.
   Future<RunResult> run() async {
+    try {
+      return await _run();
+    } finally {
+      await _events.close();
+    }
+  }
+
+  Future<RunResult> _run() async {
     Directory(paths.runLogs).createSync(recursive: true);
     await _provision();
     final workspace = PubWorkspace.resolve(projectRoot);
@@ -161,6 +204,15 @@ final class Engine {
 
     final routing = await _resolveCoverage(baseline);
     final (mutants, sources, unviable) = await _generate(routing);
+    // The earliest point carrying all three of the event's fields: the
+    // baseline and its deadline are known above, the count only here.
+    _emit(
+      RunStarted(
+        mutantCount: mutants.length,
+        baseline: background.duration,
+        deadline: deadline,
+      ),
+    );
 
     prepareWatch.start();
     final workers = max(1, min(jobs, mutants.length));
@@ -229,10 +281,12 @@ final class Engine {
           'DurationMs': result.testRun?.duration.inMilliseconds,
         });
         onProgress?.call(done, mutants.length, result);
+        _emit(MutantClassified(result));
       }
     }
 
     await Future.wait([for (var i = 0; i < workers; i++) worker(i)]);
+    _emit(const RunCompleted());
     return RunResult(
       results: results.cast<MutantResult>(),
       sources: sources,
