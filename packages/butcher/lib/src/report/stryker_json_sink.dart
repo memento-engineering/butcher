@@ -11,7 +11,7 @@ final class StrykerJsonSink implements ReportSink {
   /// Creates a sink over generation-time [sources], writing [outputPath].
   const StrykerJsonSink({required this.sources, required this.outputPath});
 
-  /// Pristine source per irradiated file; offsets refer to these texts.
+  /// Pristine source per mutated file; offsets refer to these texts.
   final Map<String, String> sources;
 
   /// Destination file of the JSON report.

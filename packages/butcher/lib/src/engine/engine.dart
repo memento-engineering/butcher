@@ -36,7 +36,7 @@ typedef ProgressCallback =
 /// worker's share of the cores (ADR 0017).
 typedef RunnerFactory = TestRunner Function(String root, int suiteConcurrency);
 
-/// Orchestrates a full run: contain, verify, generate, irradiate, classify.
+/// Orchestrates a full run: sandbox, verify, generate, mutate, classify.
 final class Engine {
   /// Creates an engine for the project at [projectRoot].
   Engine({
@@ -111,7 +111,7 @@ final class Engine {
     await _provision();
     final workspace = PubWorkspace.resolve(projectRoot);
 
-    // Contain and verify before the expensive analysis stages so a red
+    // Sandbox and verify before the expensive analysis stages so a red
     // suite aborts within the baseline's duration (ADR 0005).
     final prepareWatch = Stopwatch()..start();
     // Divide the cores among the requested jobs so parallel suites do not

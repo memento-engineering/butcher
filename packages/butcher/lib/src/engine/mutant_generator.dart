@@ -11,7 +11,7 @@ import 'mutation_visitor.dart';
 import 'project_analysis.dart';
 import 'butcher_ignore.dart';
 
-/// Suffixes of generated files never irradiated.
+/// Suffixes of generated files never mutated.
 const generatedFileSuffixes = [
   '.g.dart',
   '.freezed.dart',
@@ -46,7 +46,7 @@ final class MutantGenerator {
   late final analysis = ProjectAnalysis(projectRoot: projectRoot);
 
   /// All mutants, sorted with stable ids (ADR 0007), plus the pristine
-  /// source per irradiated file so reports stay aligned even when the
+  /// source per mutated file so reports stay aligned even when the
   /// working tree changes mid-run.
   Future<(List<Mutant>, Map<String, String>)> generate() async {
     final sources = <String, String>{};

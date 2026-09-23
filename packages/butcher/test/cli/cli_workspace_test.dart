@@ -19,7 +19,7 @@ void main() {
 
   setUp(() async => paths = await isolatedButcherPaths('rad_cli_workspace_'));
 
-  test('irradiates only the selected workspace member', () async {
+  test('mutates only the selected workspace member', () async {
     final fixture = await createFixtureWorkspace();
     final memberSource = File(p.join(fixture.member.path, 'lib', 'calc.dart'));
     final siblingSource = File(

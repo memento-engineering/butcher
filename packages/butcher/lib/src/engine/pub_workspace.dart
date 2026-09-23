@@ -9,7 +9,7 @@ import 'run_aborted.dart';
 final class PubWorkspace {
   PubWorkspace._({required this.projectRoot, required this.root});
 
-  /// Absolute, normalized root of the package selected for irradiation.
+  /// Absolute, normalized root of the package selected for the mutation run.
   final String projectRoot;
 
   /// Absolute, normalized root copied into each sandbox.

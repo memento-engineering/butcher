@@ -13,7 +13,7 @@ final class RunResult {
   /// One classified result per generated mutant.
   final List<MutantResult> results;
 
-  /// Pristine source per irradiated file, captured at generation time.
+  /// Pristine source per mutated file, captured at generation time.
   final Map<String, String> sources;
 
   /// Duration of the green baseline suite run (ADR 0005).

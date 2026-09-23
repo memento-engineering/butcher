@@ -183,7 +183,7 @@ Future<int> radMain(
 
   int exitCode;
   try {
-    sink.writeln('irradiating $projectRoot');
+    sink.writeln('mutating $projectRoot');
     final result = await engine.run();
     sink.writeln(
       'baseline: ${result.baseline.inSeconds}s, '
