@@ -3,19 +3,19 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 /// Name of the consumer exclusion file, gitignore-style, at the project root.
-const butcherIgnoreFile = '.radignore';
+const butcherIgnoreFile = '.butcherignore';
 
 /// Gitignore-style exclusion rules shared by generation and sandbox
 /// (ADR 0004): comments, negation, directory rules, and anchoring.
-final class RadIgnore {
+final class ButcherIgnore {
   /// Parses [lines] in order; later rules win.
-  RadIgnore(List<String> lines)
+  ButcherIgnore(List<String> lines)
     : _rules = lines.map(_Rule.parse).nonNulls.toList();
 
-  /// Loads the project's `.radignore`; missing file means no rules.
-  factory RadIgnore.load(String projectRoot) {
+  /// Loads the project's `.butcherignore`; missing file means no rules.
+  factory ButcherIgnore.load(String projectRoot) {
     final file = File(p.join(projectRoot, butcherIgnoreFile));
-    return RadIgnore(file.existsSync() ? file.readAsLinesSync() : const []);
+    return ButcherIgnore(file.existsSync() ? file.readAsLinesSync() : const []);
   }
 
   final List<_Rule> _rules;

@@ -9,7 +9,7 @@ import '../mutators/mutator_registry.dart';
 import 'sandbox.dart';
 import 'mutation_visitor.dart';
 import 'project_analysis.dart';
-import 'rad_ignore.dart';
+import 'butcher_ignore.dart';
 
 /// Suffixes of generated files never irradiated.
 const generatedFileSuffixes = [
@@ -40,7 +40,7 @@ final class MutantGenerator {
   final MutatorRegistry registry;
 
   /// Consumer exclusions shared with sandbox (ADR 0004).
-  final RadIgnore ignore;
+  final ButcherIgnore ignore;
 
   /// Analyzer state the viability check reuses (ADR 0019).
   late final analysis = ProjectAnalysis(projectRoot: projectRoot);

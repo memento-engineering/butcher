@@ -4,7 +4,7 @@ import 'package:path/path.dart' as p;
 
 import '../model/mutation.dart';
 import '../butcher_paths.dart';
-import 'rad_ignore.dart';
+import 'butcher_ignore.dart';
 
 /// Top-level output directories never copied into a sandbox (ADR 0004).
 const defaultSandboxExcludes = ['build', 'coverage'];
@@ -37,9 +37,9 @@ final class Sandbox {
   static Future<Sandbox> create(
     String projectRoot, {
     required ButcherPaths paths,
-    required RadIgnore ignore,
+    required ButcherIgnore ignore,
     String? workspaceRoot,
-    RadIgnore? workspaceIgnore,
+    ButcherIgnore? workspaceIgnore,
   }) async {
     final project = p.normalize(p.absolute(projectRoot));
     final source = p.normalize(p.absolute(workspaceRoot ?? project));
@@ -128,8 +128,8 @@ final class Sandbox {
     String workspaceRelative,
     String? projectRelative,
     bool isDirectory,
-    RadIgnore ignore,
-    RadIgnore? workspaceIgnore,
+    ButcherIgnore ignore,
+    ButcherIgnore? workspaceIgnore,
   ) {
     if (toolingSandboxExcludes.contains(name) ||
         ((workspaceRelative == name || projectRelative == name) &&

@@ -21,7 +21,7 @@ import 'mutant_generator.dart';
 import 'outcome_classifier.dart';
 import 'pub_get.dart';
 import 'pub_workspace.dart';
-import 'rad_ignore.dart';
+import 'butcher_ignore.dart';
 import 'run_aborted.dart';
 import 'run_result.dart';
 import 'test_runner.dart';
@@ -118,13 +118,13 @@ final class Engine {
     // oversubscribe; the baseline uses the same concurrency to
     // keep deadlines calibrated (ADR 0017).
     final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ jobs);
-    final ignore = RadIgnore.load(projectRoot);
+    final ignore = ButcherIgnore.load(projectRoot);
     final baseline = await Sandbox.create(
       projectRoot,
       paths: paths,
       ignore: ignore,
       workspaceRoot: workspace.root,
-      workspaceIgnore: RadIgnore.load(workspace.root),
+      workspaceIgnore: ButcherIgnore.load(workspace.root),
     );
     await pubGet(baseline.projectRoot, label: 'the sandbox');
     ensureTestVersion(baseline.root);
@@ -250,7 +250,7 @@ final class Engine {
   /// The analyzer state lives and dies inside this method, so its resolved
   /// units are collectible before the first worker runs (ADR 0016).
   Future<(List<Mutant>, Map<String, String>, Set<String>)> _generate(
-    RadIgnore ignore,
+    ButcherIgnore ignore,
     CoverageProvider coverage,
   ) async {
     final watch = Stopwatch()..start();

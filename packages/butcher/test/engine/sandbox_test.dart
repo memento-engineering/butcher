@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:butcher/src/engine/sandbox.dart';
-import 'package:butcher/src/engine/rad_ignore.dart';
+import 'package:butcher/src/engine/butcher_ignore.dart';
 import 'package:test/test.dart';
 
 import '../helpers/paths.dart';
@@ -33,7 +33,7 @@ Future<Directory> fixtureProject() async {
   write('assets/small.txt', 'keep');
   write('deep/nested/trace.log', 'x');
   write(
-    '.radignore',
+    '.butcherignore',
     '# comment\n\n*.log\nassets/big/**\n!assets/big/keep.txt\n',
   );
   return dir;
@@ -50,7 +50,7 @@ void main() {
     sandbox = await Sandbox.create(
       source.path,
       paths: paths,
-      ignore: RadIgnore.load(source.path),
+      ignore: ButcherIgnore.load(source.path),
     );
   });
 
@@ -86,12 +86,12 @@ void main() {
   test('keeps a directory rule from being undone below it', () async {
     final project = await fixtureProject();
     File(
-      p.join(project.path, '.radignore'),
+      p.join(project.path, '.butcherignore'),
     ).writeAsStringSync('assets/big/\n!assets/big/keep.txt\n');
     final copy = await Sandbox.create(
       project.path,
       paths: await isolatedButcherPaths('rad_sandbox_rule_'),
-      ignore: RadIgnore.load(project.path),
+      ignore: ButcherIgnore.load(project.path),
     );
     expect(Directory(p.join(copy.root, 'assets/big')).existsSync(), isFalse);
     expect(File(p.join(copy.root, 'assets/small.txt')).existsSync(), isTrue);
@@ -103,7 +103,7 @@ void main() {
     final copy = await Sandbox.create(
       project.path,
       paths: inProject,
-      ignore: RadIgnore.load(project.path),
+      ignore: ButcherIgnore.load(project.path),
     );
     expect(Directory(p.join(copy.root, '.rad_temp')).existsSync(), isFalse);
     expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
@@ -114,7 +114,7 @@ void main() {
     final copy = await Sandbox.create(
       project.path,
       paths: ButcherPaths(root: project.path),
-      ignore: RadIgnore.load(project.path),
+      ignore: ButcherIgnore.load(project.path),
     );
     expect(File(p.join(copy.root, 'lib/a.dart')).existsSync(), isTrue);
     expect(Directory(p.join(copy.root, copy.name)).existsSync(), isFalse);
@@ -175,11 +175,11 @@ void main() {
     }
 
     write('pubspec.yaml', 'name: workspace\n');
-    write('.radignore', 'bulk/\n');
+    write('.butcherignore', 'bulk/\n');
     write('bulk/blob.bin', 'workspace bulk');
     write('build/root.txt', 'root output');
     write('packages/member/pubspec.yaml', 'name: member\n');
-    write('packages/member/.radignore', 'assets/\n');
+    write('packages/member/.butcherignore', 'assets/\n');
     write('packages/member/lib/a.dart', 'int add(int a, int b) => a + b;\n');
     write('packages/member/assets/blob.bin', 'member bulk');
     write('packages/member/build/member.txt', 'member output');
@@ -191,9 +191,9 @@ void main() {
     final copy = await Sandbox.create(
       member.path,
       workspaceRoot: workspace.path,
-      workspaceIgnore: RadIgnore.load(workspace.path),
+      workspaceIgnore: ButcherIgnore.load(workspace.path),
       paths: await isolatedButcherPaths('rad_sandbox_workspace_state_'),
-      ignore: RadIgnore.load(member.path),
+      ignore: ButcherIgnore.load(member.path),
     );
 
     expect(copy.projectRoot, p.join(copy.root, 'packages', 'member'));
@@ -282,7 +282,7 @@ void main() {
         member.path,
         workspaceRoot: workspace.path,
         paths: await isolatedButcherPaths('rad_sandbox_outside_'),
-        ignore: RadIgnore.load(member.path),
+        ignore: ButcherIgnore.load(member.path),
       ),
       throwsArgumentError,
     );

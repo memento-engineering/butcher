@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:butcher/src/engine/mutant_generator.dart';
-import 'package:butcher/src/engine/rad_ignore.dart';
+import 'package:butcher/src/engine/butcher_ignore.dart';
 import 'package:test/test.dart';
 
 Future<Directory> fixtureProject() async {
@@ -31,7 +31,7 @@ void main() {
       final generator = MutantGenerator(
         projectRoot: dir.path,
         registry: MutatorRegistry.defaults(),
-        ignore: RadIgnore.load(dir.path),
+        ignore: ButcherIgnore.load(dir.path),
       );
       final (mutants, sources) = await generator.generate();
 
@@ -52,13 +52,13 @@ void main() {
     },
   );
 
-  test('skips files excluded by .radignore', () async {
+  test('skips files excluded by .butcherignore', () async {
     final dir = await fixtureProject();
-    File(p.join(dir.path, '.radignore')).writeAsStringSync('lib/src/\n');
+    File(p.join(dir.path, '.butcherignore')).writeAsStringSync('lib/src/\n');
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
       registry: MutatorRegistry.defaults(),
-      ignore: RadIgnore.load(dir.path),
+      ignore: ButcherIgnore.load(dir.path),
     ).generate();
     expect(sources.keys, ['lib/a.dart']);
     expect(mutants.map((m) => m.mutation.filePath), everyElement('lib/a.dart'));
@@ -72,7 +72,7 @@ void main() {
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
       registry: MutatorRegistry.defaults(),
-      ignore: RadIgnore.load(dir.path),
+      ignore: ButcherIgnore.load(dir.path),
     ).generate();
     expect(sources.keys, isNot(contains('lib/.dart_tool/cached.dart')));
     expect(
@@ -97,7 +97,7 @@ void main() {
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
       registry: MutatorRegistry.defaults(),
-      ignore: RadIgnore.load(dir.path),
+      ignore: ButcherIgnore.load(dir.path),
     ).generate();
     expect(sources.keys, isNot(contains('lib/linked.dart')));
     expect(
@@ -112,7 +112,7 @@ void main() {
     final (mutants, sources) = await MutantGenerator(
       projectRoot: dir.path,
       registry: MutatorRegistry.defaults(),
-      ignore: RadIgnore.load(dir.path),
+      ignore: ButcherIgnore.load(dir.path),
     ).generate();
     expect(mutants, isEmpty);
     expect(sources, isEmpty);

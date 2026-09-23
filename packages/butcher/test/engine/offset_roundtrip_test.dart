@@ -4,7 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:butcher/src/engine/sandbox.dart';
 import 'package:butcher/src/engine/mutant_generator.dart';
-import 'package:butcher/src/engine/rad_ignore.dart';
+import 'package:butcher/src/engine/butcher_ignore.dart';
 import 'package:test/test.dart';
 
 import '../helpers/paths.dart';
@@ -20,7 +20,7 @@ Future<void> roundtrip(String source) async {
   final (mutants, _) = await MutantGenerator(
     projectRoot: dir.path,
     registry: MutatorRegistry.defaults(),
-    ignore: RadIgnore.load(dir.path),
+    ignore: ButcherIgnore.load(dir.path),
   ).generate();
   expect(mutants, isNotEmpty);
 
@@ -28,7 +28,7 @@ Future<void> roundtrip(String source) async {
   final sandbox = await Sandbox.create(
     dir.path,
     paths: paths,
-    ignore: RadIgnore.load(dir.path),
+    ignore: ButcherIgnore.load(dir.path),
   );
   final copy = File(p.join(sandbox.root, 'lib', 'a.dart'));
   for (final mutant in mutants) {
