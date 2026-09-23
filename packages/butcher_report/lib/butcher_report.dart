@@ -7,4 +7,5 @@
 /// without depending on the mutation engine.
 library;
 
+export 'src/location.dart';
 export 'src/mutant_status.dart';
