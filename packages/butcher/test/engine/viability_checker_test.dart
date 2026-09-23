@@ -4,7 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:butcher/src/engine/mutant_generator.dart';
 import 'package:butcher/src/engine/project_analysis.dart';
-import 'package:butcher/src/engine/butcher_ignore.dart';
+import 'package:butcher/src/config/mutation_scope.dart';
 import 'package:butcher/src/engine/viability_checker.dart';
 import 'package:test/test.dart';
 
@@ -91,7 +91,7 @@ void main() {
     final generator = MutantGenerator(
       projectRoot: root,
       registry: MutatorRegistry.defaults(),
-      ignore: ButcherIgnore.load(root),
+      isExcluded: MutationScope.load(root).excludes,
     );
     final (mutants, sources) = await generator.generate();
     final unviable = await ViabilityChecker(

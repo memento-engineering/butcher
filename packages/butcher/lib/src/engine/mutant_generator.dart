@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:path/path.dart' as p;
 
+import '../config/mutation_scope.dart';
 import '../model/mutant.dart';
 import '../model/mutation.dart';
 import '../mutators/mutator_registry.dart';
 import 'sandbox.dart';
 import 'mutation_visitor.dart';
 import 'project_analysis.dart';
-import 'butcher_ignore.dart';
 
 /// Suffixes of generated files never mutated.
 const generatedFileSuffixes = [
@@ -25,12 +25,12 @@ const generatedFileSuffixes = [
 
 /// Enumerates mutants for a project's `lib/` via one resolved AST walk.
 final class MutantGenerator {
-  /// Creates a generator over [projectRoot] using [registry], skipping what
-  /// [ignore] excludes.
+  /// Creates a generator over [projectRoot] using [registry], skipping every
+  /// path [isExcluded] rejects.
   MutantGenerator({
     required this.projectRoot,
     required this.registry,
-    required this.ignore,
+    required this.isExcluded,
   });
 
   /// Absolute path of the project under test.
@@ -39,8 +39,8 @@ final class MutantGenerator {
   /// The active mutator set.
   final MutatorRegistry registry;
 
-  /// Consumer exclusions shared with sandbox (ADR 0004).
-  final ButcherIgnore ignore;
+  /// Consumer exclusions from `butcher.yaml` (ADR 0004).
+  final MutationExclusion isExcluded;
 
   /// Analyzer state the viability check reuses (ADR 0019).
   late final analysis = ProjectAnalysis(projectRoot: projectRoot);
@@ -65,7 +65,7 @@ final class MutantGenerator {
             .where(
               (f) => !p.posix.split(f.$2).any(toolingSandboxExcludes.contains),
             )
-            .where((f) => !ignore.excludes(f.$2, isDirectory: false))
+            .where((f) => !isExcluded(f.$2))
             .toList()
           ..sort((a, b) => a.$1.compareTo(b.$1));
 

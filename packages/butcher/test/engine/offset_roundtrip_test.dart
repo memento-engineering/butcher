@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:butcher/src/engine/sandbox.dart';
 import 'package:butcher/src/engine/mutant_generator.dart';
+import 'package:butcher/src/config/mutation_scope.dart';
 import 'package:butcher/src/engine/butcher_ignore.dart';
 import 'package:test/test.dart';
 
@@ -20,7 +21,7 @@ Future<void> roundtrip(String source) async {
   final (mutants, _) = await MutantGenerator(
     projectRoot: dir.path,
     registry: MutatorRegistry.defaults(),
-    ignore: ButcherIgnore.load(dir.path),
+    isExcluded: MutationScope.load(dir.path).excludes,
   ).generate();
   expect(mutants, isNotEmpty);
 
