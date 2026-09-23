@@ -2,6 +2,7 @@
 library;
 
 export 'src/butcher_paths.dart';
+export 'src/config/butcher_config.dart';
 export 'src/engine/coverage_provider.dart';
 export 'src/engine/dart_test_runner.dart';
 export 'src/engine/engine.dart';

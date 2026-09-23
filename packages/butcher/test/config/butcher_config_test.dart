@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:butcher/src/config/butcher_config.dart';
+import 'package:butcher/butcher.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

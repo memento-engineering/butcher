@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:butcher/src/engine/mutant_generator.dart';
-import 'package:butcher/src/config/butcher_config.dart';
 import 'package:butcher/src/config/mutation_scope.dart';
 import 'package:test/test.dart';
 
