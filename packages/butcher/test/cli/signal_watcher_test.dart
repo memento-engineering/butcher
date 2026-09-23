@@ -40,6 +40,10 @@ void main() {
     final signals = RecordedSignals();
     final paths = await isolatedButcherPaths('butcher_signal_');
 
+    // A missing project root is the cheapest run that still takes the lock:
+    // the git listing cannot enumerate it, so the run aborts (exit 70, the
+    // same path cli_abort_test pins) after the watcher is installed and
+    // through the finally that stops it.
     await expectLater(
       butcherMain(
         [p.join(paths.root, 'no_such_project')],
@@ -47,7 +51,7 @@ void main() {
         paths: paths,
         signals: signals.watcher(),
       ),
-      throwsA(isA<FileSystemException>()),
+      completion(70),
     );
     await pumpEventQueue();
 
