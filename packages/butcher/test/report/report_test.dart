@@ -3,19 +3,21 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
+import 'package:butcher_report/butcher_report.dart' as schema;
 import 'package:test/test.dart';
 
 MutantResult result(
   Outcome outcome, {
   int offset = 27,
   String id = 'm',
+  String filePath = 'lib/a.dart',
   TestRun? testRun,
   String? error,
 }) => MutantResult(
   mutant: Mutant(
     id: id,
     mutation: Mutation(
-      filePath: 'lib/a.dart',
+      filePath: filePath,
       offset: offset,
       length: 1,
       original: '+',
@@ -297,5 +299,86 @@ void main() {
       contains('PathNotFoundException: no such directory'),
     );
     expect(mutants.single['statusReason'], isNot(contains('#0 main')));
+  });
+
+  test('StrykerJsonSink writes a document the schema package parses', () async {
+    TestRun ran(int milliseconds) => TestRun(
+      exitCode: 1,
+      timedOut: false,
+      output: '',
+      duration: Duration(milliseconds: milliseconds),
+    );
+    final results = [
+      result(Outcome.killed, offset: 37, id: 'a', testRun: ran(12)),
+      result(Outcome.survived, offset: 39, id: 'b', testRun: ran(345)),
+      result(Outcome.unviable, offset: 37, id: 'c'),
+      result(
+        Outcome.runError,
+        offset: 39,
+        id: 'd',
+        error: 'StateError: the sandbox vanished',
+      ),
+      result(Outcome.memoryError, offset: 37, id: 'e'),
+      result(
+        Outcome.noCoverage,
+        offset: 12,
+        id: 'f',
+        filePath: 'lib/b.dart',
+        testRun: ran(7),
+      ),
+    ];
+
+    // Round trip: the written bytes go back through the report package's own
+    // parser, which reds if any field the schema requires went missing.
+    final parsed = schema.parseMutationTestReport(
+      await writeReport(
+        results,
+        sources: const {
+          'lib/a.dart': '// header\nint add(int a, int b) => a + b;\n',
+          'lib/b.dart': 'bool ok() => true;\n',
+        },
+      ),
+    );
+
+    expect(parsed.schemaVersion, strykerSchemaVersion);
+    expect(
+      parsed.thresholds,
+      const schema.Thresholds(
+        high: strykerHighThreshold,
+        low: strykerLowThreshold,
+      ),
+    );
+    expect(parsed.files.keys, ['lib/a.dart', 'lib/b.dart']);
+    expect(parsed.files['lib/b.dart']!.source, 'bool ok() => true;\n');
+
+    final mutants = [for (final file in parsed.files.values) ...file.mutants];
+    expect(mutants, hasLength(results.length));
+    expect(
+      {for (final mutant in mutants) mutant.id: mutant.status.wireName},
+      {
+        'a': 'Killed',
+        'b': 'Survived',
+        'c': 'CompileError',
+        'd': 'RuntimeError',
+        'e': 'RuntimeError',
+        'f': 'NoCoverage',
+      },
+    );
+    expect(
+      {for (final mutant in mutants) mutant.id: mutant.duration},
+      {'a': 12, 'b': 345, 'c': null, 'd': null, 'e': null, 'f': 7},
+    );
+    final reasons = {
+      for (final mutant in mutants) mutant.id: mutant.statusReason,
+    };
+    expect(reasons['a'], isNull);
+    expect(reasons['b'], isNull);
+    expect(reasons['f'], isNull);
+    expect(reasons['d'], contains('StateError: the sandbox vanished'));
+    expect(
+      {reasons['c'], reasons['d'], reasons['e']}.length,
+      3,
+      reason: 'the three explained failures stay distinguishable',
+    );
   });
 }
