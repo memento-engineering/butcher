@@ -39,6 +39,7 @@ const _licenses = [
   'LICENSE',
   '../butcher_process/LICENSE',
   '../butcher_report/LICENSE',
+  '../../LICENSE',
 ];
 
 String _read(String relativePath) {
