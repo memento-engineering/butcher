@@ -6,7 +6,7 @@ register:
   spec: 1
   slug: deterministic-execution
   surfaces:
-    - "lib/src/engine/mutant_generator.dart"
+    - "packages/butcher/lib/src/engine/mutant_generator.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null

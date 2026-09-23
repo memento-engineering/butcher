@@ -6,8 +6,8 @@ register:
   spec: 1
   slug: run-workspace-lifecycle
   surfaces:
-    - "lib/src/run_workspace.dart"
-    - "lib/src/butcher_paths.dart"
+    - "packages/butcher/lib/src/run_workspace.dart"
+    - "packages/butcher/lib/src/butcher_paths.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null

@@ -6,7 +6,7 @@ register:
   spec: 1
   slug: score-and-honesty-metrics
   surfaces:
-    - "lib/src/report/metrics.dart"
+    - "packages/butcher/lib/src/report/metrics.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null

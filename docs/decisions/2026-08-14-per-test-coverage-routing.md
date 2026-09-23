@@ -6,8 +6,8 @@ register:
   spec: 1
   slug: per-test-coverage-routing
   surfaces:
-    - "lib/src/engine/coverage_provider.dart"
-    - "lib/src/engine/lcov_coverage_provider.dart"
+    - "packages/butcher/lib/src/engine/coverage_provider.dart"
+    - "packages/butcher/lib/src/engine/lcov_coverage_provider.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null

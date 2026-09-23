@@ -6,8 +6,8 @@ register:
   spec: 1
   slug: zero-setup-provisioning
   surfaces:
-    - "lib/src/engine/coverage_collector.dart"
-    - "lib/src/cli/cli.dart"
+    - "packages/butcher/lib/src/engine/coverage_collector.dart"
+    - "packages/butcher/lib/src/cli/cli.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null

@@ -6,7 +6,7 @@ register:
   spec: 1
   slug: distribution-and-sdk-resolution
   surfaces:
-    - "lib/src/engine/dart_test_runner.dart"
+    - "packages/butcher/lib/src/engine/dart_test_runner.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null

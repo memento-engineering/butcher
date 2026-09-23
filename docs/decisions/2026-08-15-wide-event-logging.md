@@ -6,7 +6,7 @@ register:
   spec: 1
   slug: wide-event-logging
   surfaces:
-    - "lib/src/log/butcher_logger.dart"
+    - "packages/butcher/lib/src/log/butcher_logger.dart"
   obsoletes: []
   updates: []
   obsoleted-by: null
