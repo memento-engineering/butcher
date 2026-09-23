@@ -9,8 +9,44 @@ shape a contract rather than an implementation detail: a dashboard or a CI
 gate should be able to parse it without depending on the tool that produced
 it.
 
-The typed models land here with the report work; today the package publishes
-its name and nothing else.
+## What is here
+
+Every type of the draft-07 `MutationTestResult` schema, at all four nesting
+levels, with its required fields enforced on parse and its optional fields
+omitted — never written as null — on emit. `MutantStatus` carries all eight
+wire spellings, including `Pending`, which butcher never emits but another
+producer may.
+
+```dart
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:butcher_report/butcher_report.dart';
+
+void main() {
+  final report = parseMutationTestReport(
+    File('reports/mutation.json').readAsStringSync(),
+  );
+  final survived = <ReportMutant>[
+    for (final file in report.files.values)
+      for (final mutant in file.mutants)
+        if (mutant.status == MutantStatus.survived) mutant,
+  ];
+  print('${survived.length} mutants survived');
+
+  File('reports/copy.json').writeAsStringSync(jsonEncode(report.toJson()));
+}
+```
+
+The package itself does no file and no network I/O: the two entry points take
+a JSON string or an already-decoded map, and `toJson` returns a map. Opening
+the files above is the caller's job, as the example shows. Every type compares
+by value, hand-written, so a CLI toolchain takes no code-generation
+dependency to use them.
+
+`test/fixtures/mutation-testing-report-schema.json` is a verbatim copy of the
+published schema, and the suite checks the models against it rather than
+against prose.
 
 ## License
 
