@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:path/path.dart' as p;
 
+import '../config/mutation_scope.dart';
 import '../log/butcher_logger.dart';
 import '../model/mutant.dart';
 import '../model/mutant_result.dart';
@@ -162,7 +163,7 @@ final class Engine {
     );
 
     final routing = await _resolveCoverage(baseline);
-    final (mutants, sources, unviable) = await _generate(ignore, routing);
+    final (mutants, sources, unviable) = await _generate(routing);
 
     prepareWatch.start();
     final workers = max(1, min(jobs, mutants.length));
@@ -250,14 +251,13 @@ final class Engine {
   /// The analyzer state lives and dies inside this method, so its resolved
   /// units are collectible before the first worker runs (ADR 0016).
   Future<(List<Mutant>, Map<String, String>, Set<String>)> _generate(
-    ButcherIgnore ignore,
     CoverageProvider coverage,
   ) async {
     final watch = Stopwatch()..start();
     final generator = MutantGenerator(
       projectRoot: projectRoot,
       registry: registry,
-      ignore: ignore,
+      isExcluded: MutationScope.load(projectRoot).excludes,
     );
     final (mutants, sources) = await generator.generate();
     coverage.indexSources(sources);
