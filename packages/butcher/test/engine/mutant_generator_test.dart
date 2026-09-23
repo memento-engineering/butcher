@@ -84,6 +84,58 @@ void main() {
     );
   });
 
+  test('skips dart files inside a git directory', () async {
+    final dir = await fixtureProject();
+    File(p.join(dir.path, 'lib', '.git', 'hook.dart'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('int mul(int a, int b) => a * b;\n');
+    final (mutants, sources) = await MutantGenerator(
+      projectRoot: dir.path,
+      registry: MutatorRegistry.defaults(),
+      isExcluded: MutationScope.load(dir.path).excludes,
+    ).generate();
+    expect(sources.keys, isNot(contains('lib/.git/hook.dart')));
+    expect(
+      mutants.map((m) => m.mutation.filePath),
+      everyElement(isNot('lib/.git/hook.dart')),
+      reason: 'no sandbox copies it, so no mutant may target it',
+    );
+  });
+
+  test('skips files that are not dart sources', () async {
+    final dir = await fixtureProject();
+    File(
+      p.join(dir.path, 'lib', 'notes.txt'),
+    ).writeAsStringSync('int add(int a, int b) => a + b;\n');
+    final (mutants, sources) = await MutantGenerator(
+      projectRoot: dir.path,
+      registry: MutatorRegistry.defaults(),
+      isExcluded: MutationScope.load(dir.path).excludes,
+    ).generate();
+    expect(sources.keys, isNot(contains('lib/notes.txt')));
+    expect(
+      mutants.map((m) => m.mutation.filePath),
+      everyElement(isNot('lib/notes.txt')),
+    );
+  });
+
+  test('skips generated dart files under lib', () async {
+    final dir = await fixtureProject();
+    File(
+      p.join(dir.path, 'lib', 'model.freezed.dart'),
+    ).writeAsStringSync('int add(int a, int b) => a + b;\n');
+    final (mutants, sources) = await MutantGenerator(
+      projectRoot: dir.path,
+      registry: MutatorRegistry.defaults(),
+      isExcluded: MutationScope.load(dir.path).excludes,
+    ).generate();
+    expect(sources.keys, isNot(contains('lib/model.freezed.dart')));
+    expect(
+      mutants.map((m) => m.mutation.filePath),
+      everyElement(isNot('lib/model.freezed.dart')),
+    );
+  });
+
   test('does not follow symlinks', () async {
     final dir = await fixtureProject();
     final outside = await Directory.systemTemp.createTemp('butcher_gen_link_');
