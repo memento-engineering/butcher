@@ -11,3 +11,9 @@ self-run.log
 
 # the_grid live-arm worktrees + station artifacts
 .grid/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/

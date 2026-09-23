@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "proxied-server",
+  "dolt_database": "butcher",
+  "project_id": "866d68d1-7ca9-483a-b0ad-03acae0b76ff"
+}
