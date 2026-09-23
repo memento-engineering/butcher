@@ -65,12 +65,9 @@ jobs:
     needs: [test]
     strategy:
       fail-fast: false
-      # No macOS leg here while the repository is private: macOS runners bill
-      # at ten times Linux and the slow suites are the long ones. They run on
-      # the maintainer's Mac instead (dart test -t slow in packages/butcher),
-      # which is the macOS receipt until go-public, when the leg comes back.
+      # The slow suites run on every platform the engine branches on.
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7

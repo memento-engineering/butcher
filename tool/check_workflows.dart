@@ -55,11 +55,12 @@ const _platforms = ['ubuntu', 'macos', 'windows'];
 
 /// Platforms kept off the slow job by policy rather than by accident.
 ///
-/// While the repository is private, macOS runners bill at ten times Linux,
-/// and the slow suites are the long ones, so they run on the maintainer's
-/// Mac and stay out of the slow job by design (ruling 2026-09-23). At
-/// go-public this list becomes empty and the leg returns.
-const _slowSuitesRunLocally = ['macos'];
+/// Empty while the repository is public: Actions minutes are free on a
+/// public repository, so the slow suites run on every platform the engine
+/// branches on. This list is populated only when the repository goes
+/// private again and macOS runner billing (ten times Linux) makes the slow
+/// suites worth keeping local to the maintainer's Mac.
+const _slowSuitesRunLocally = <String>[];
 
 /// Raised by a check that its subject violates, carrying the operator-readable
 /// reason.
