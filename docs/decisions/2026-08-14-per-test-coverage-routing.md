@@ -38,11 +38,9 @@ register:
 - v0.1: route at suite granularity; one fail-fast run over the covering test
   files, cheapest first, so the first failure ends it.
 - v0.1: a routed run's deadline is the longer of the selection's own cost and
-  the baseline's, both on the `x 3` rule. Workers contend for the
-  machine, so a routed run cannot count on the parallelism the reading
-  measured and its suites effectively run one after another; the reading alone
-  timed out 75 of 709 healthy mutants
-  ([../plans/self-run-performance.md](../plans/self-run-performance.md)).
+  the baseline's, both on the `x 3` rule
+  ([0006](2026-08-14-outcome-taxonomy.md), which records the self-run receipt
+  behind it).
 - v0.1: routing may never under-select. An ingested `lcov.info` carries no
   suite identity, and a file no report mentions has no covering suite; both
   fall back to the whole suite.
