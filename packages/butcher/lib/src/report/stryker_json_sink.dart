@@ -27,7 +27,8 @@ final class StrykerJsonSink implements ReportSink {
   ///
   /// The eight outcomes map onto seven statuses: [Outcome.runError] and
   /// [Outcome.memoryError] both carry `RuntimeError`, because the schema has
-  /// no memory status of its own.
+  /// no memory status of its own. That collapse stays; [statusReasonFor] is
+  /// what keeps it from erasing which of the two happened.
   ///
   /// The values are [MutantStatus], whose [MutantStatus.wireName] is the
   /// exact spelling the document carries, so the wire names are the schema
@@ -42,6 +43,37 @@ final class StrykerJsonSink implements ReportSink {
     Outcome.memoryError: MutantStatus.runtimeError,
     Outcome.equivalent: MutantStatus.ignored,
   };
+
+  /// Why [result] carries the status [statusOf] gives it, or `null` when the
+  /// status already says everything the document can say.
+  ///
+  /// Three outcomes need a reason, and for two different sorts of reason.
+  /// [Outcome.runError] and [Outcome.memoryError] share the `RuntimeError`
+  /// wire status, so without one the document cannot tell a process that
+  /// crashed from one that ran out of memory. [Outcome.unviable] shares its
+  /// status with nothing, but `CompileError` on its own never says whether
+  /// the mutant failed to compile or the tool did, so it is just as opaque
+  /// unexplained.
+  ///
+  /// [Outcome.memoryError] is RESERVED. The taxonomy declares it and this
+  /// mapping covers it, but no classification path in the tool assigns it
+  /// today and nothing captures a memory-specific diagnostic, so its reason
+  /// names the category and nothing more. A producer that can actually raise
+  /// the outcome is what earns it a measured reason.
+  static String? statusReasonFor(MutantResult result) =>
+      switch (result.outcome) {
+        Outcome.runError => _runErrorReason(result),
+        Outcome.memoryError =>
+          'The test process ran out of memory. Reserved: no classification '
+              'path assigns this outcome yet.',
+        Outcome.unviable =>
+          'The mutant does not compile; its test suite failed to load.',
+        Outcome.killed ||
+        Outcome.survived ||
+        Outcome.noCoverage ||
+        Outcome.timeout ||
+        Outcome.equivalent => null,
+      };
 
   @override
   Future<void> write(List<MutantResult> results) async {
@@ -66,6 +98,7 @@ final class StrykerJsonSink implements ReportSink {
               status: statusOf[result.outcome]!,
               description: mutation.description,
               replacement: mutation.replacement,
+              statusReason: statusReasonFor(result),
             ),
           );
     }
@@ -89,6 +122,31 @@ final class StrykerJsonSink implements ReportSink {
       const JsonEncoder.withIndent('  ').convert(document.toJson()),
     );
   }
+
+  /// The reason for an [Outcome.runError], carrying the diagnostic the
+  /// classification path captured when there is one.
+  static String _runErrorReason(MutantResult result) {
+    const summary = 'The test process failed without reporting a test failure.';
+    final detail = _firstLine(result.error ?? result.testRun?.errorOutput);
+    return detail == null ? summary : '$summary $detail';
+  }
+
+  /// The first non-blank line of [diagnostic], bounded so a stack trace
+  /// cannot push a whole process dump into the document.
+  static String? _firstLine(String? diagnostic) {
+    if (diagnostic == null) return null;
+    for (final line in const LineSplitter().convert(diagnostic)) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      return trimmed.length <= _reasonDetailLimit
+          ? trimmed
+          : '${trimmed.substring(0, _reasonDetailLimit)}...';
+    }
+    return null;
+  }
+
+  /// Longest captured diagnostic a status reason quotes.
+  static const _reasonDetailLimit = 200;
 
   static Position _position(LineIndex index, int offset) =>
       Position(line: index.lineAt(offset), column: index.columnAt(offset));

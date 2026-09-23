@@ -5,22 +5,61 @@ import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:test/test.dart';
 
-MutantResult result(Outcome outcome, {int offset = 27, String id = 'm'}) =>
-    MutantResult(
-      mutant: Mutant(
-        id: id,
-        mutation: Mutation(
-          filePath: 'lib/a.dart',
-          offset: offset,
-          length: 1,
-          original: '+',
-          replacement: '-',
-          mutatorId: 'arithmetic',
-          description: 'replace + with -',
-        ),
-      ),
-      outcome: outcome,
-    );
+MutantResult result(
+  Outcome outcome, {
+  int offset = 27,
+  String id = 'm',
+  TestRun? testRun,
+  String? error,
+}) => MutantResult(
+  mutant: Mutant(
+    id: id,
+    mutation: Mutation(
+      filePath: 'lib/a.dart',
+      offset: offset,
+      length: 1,
+      original: '+',
+      replacement: '-',
+      mutatorId: 'arithmetic',
+      description: 'replace + with -',
+    ),
+  ),
+  outcome: outcome,
+  testRun: testRun,
+  error: error,
+);
+
+/// Writes [results] through the sink and returns the JSON text it wrote.
+Future<String> writeReport(
+  List<MutantResult> results, {
+  Map<String, String> sources = const {
+    'lib/a.dart': '// header\nint add(int a, int b) => a + b;\n',
+  },
+}) async {
+  final dir = await Directory.systemTemp.createTemp('butcher_report_');
+  addTearDown(() => dir.delete(recursive: true));
+  final output = p.join(dir.path, 'report.json');
+  await StrykerJsonSink(sources: sources, outputPath: output).write(results);
+  return File(output).readAsStringSync();
+}
+
+/// The mutant entries of `lib/a.dart` in a decoded [report].
+List<Map<String, dynamic>> mutantsOf(Map<String, dynamic> report) =>
+    (((report['files'] as Map<String, dynamic>)['lib/a.dart']
+                as Map<String, dynamic>)['mutants']
+            as List<dynamic>)
+        .cast<Map<String, dynamic>>();
+
+/// Every outcome's mutant, written in taxonomy order under one id each.
+Future<List<Map<String, dynamic>>> everyOutcomeWritten() async => mutantsOf(
+  jsonDecode(
+        await writeReport([
+          for (final outcome in Outcome.values)
+            result(outcome, offset: 37, id: outcome.name),
+        ]),
+      )
+      as Map<String, dynamic>,
+);
 
 void main() {
   group('Metrics', () {
@@ -137,30 +176,70 @@ void main() {
       reason: 'every outcome maps to a wire name',
     );
 
-    final dir = await Directory.systemTemp.createTemp('butcher_status_');
-    addTearDown(() => dir.delete(recursive: true));
-    final output = p.join(dir.path, 'report.json');
-
-    await StrykerJsonSink(
-      sources: {'lib/a.dart': '// header\nint add(int a, int b) => a + b;\n'},
-      outputPath: output,
-    ).write([
-      for (final outcome in Outcome.values)
-        result(outcome, offset: 37, id: outcome.name),
-    ]);
-
-    final report =
-        jsonDecode(File(output).readAsStringSync()) as Map<String, dynamic>;
-    final mutants =
-        ((report['files'] as Map<String, dynamic>)['lib/a.dart']
-                as Map<String, dynamic>)['mutants']
-            as List<dynamic>;
+    final mutants = await everyOutcomeWritten();
     expect(
       {
-        for (final mutant in mutants.cast<Map<String, dynamic>>())
+        for (final mutant in mutants)
           mutant['id'] as String: mutant['status'] as String,
       },
       {for (final outcome in Outcome.values) outcome.name: expected[outcome]!},
     );
+  });
+
+  test('StrykerJsonSink explains the failures a status cannot', () async {
+    // Two outcomes collapse onto RuntimeError and a third, unviable, has a
+    // status nobody can read; all three get a reason. The memory error is
+    // reserved — no classification path assigns it — so this result is
+    // constructed directly rather than driven through a run.
+    final mutants = await everyOutcomeWritten();
+    final reasons = {
+      for (final mutant in mutants)
+        mutant['id'] as String: mutant['statusReason'],
+    };
+
+    const explained = [Outcome.runError, Outcome.memoryError, Outcome.unviable];
+    for (final outcome in explained) {
+      expect(
+        reasons[outcome.name],
+        allOf(isA<String>(), isNotEmpty),
+        reason: '${outcome.name} must say why',
+      );
+    }
+    expect(
+      {for (final outcome in explained) reasons[outcome.name]}.length,
+      explained.length,
+      reason: 'the collapse onto RuntimeError must stay distinguishable',
+    );
+
+    for (final outcome in Outcome.values.toSet().difference(
+      explained.toSet(),
+    )) {
+      expect(
+        reasons[outcome.name],
+        isNull,
+        reason: '${outcome.name} speaks for itself',
+      );
+    }
+  });
+
+  test('StrykerJsonSink quotes the diagnostic behind a run error', () async {
+    final mutants = mutantsOf(
+      jsonDecode(
+            await writeReport([
+              result(
+                Outcome.runError,
+                offset: 37,
+                id: 'crashed',
+                error: 'PathNotFoundException: no such directory\n  #0 main',
+              ),
+            ]),
+          )
+          as Map<String, dynamic>,
+    );
+    expect(
+      mutants.single['statusReason'],
+      contains('PathNotFoundException: no such directory'),
+    );
+    expect(mutants.single['statusReason'], isNot(contains('#0 main')));
   });
 }
