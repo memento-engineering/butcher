@@ -38,3 +38,4 @@
   mutant's suite output kept as a capped excerpt; `--verbose` renders the
   events on a terminal. All temp data lives under one root, redirectable with
   `BUTCHER_TEMP`, cleaned at the next run's startup under an exclusive lock.
+- Published to pub.dev on 2026-09-23.

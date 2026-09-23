@@ -65,15 +65,17 @@ jobs:
       # threshold below is the largest deduction measured on this tree rather
       # than a guess, and these are the measurements it was set from.
       #
-      # pana measurements (pana 0.23.15, Dart 3.12.2, 2026-09-22):
+      # pana measurements (pana 0.23.15, Dart 3.12.2):
       #   packages/butcher_process  160/160  deduction 0
       #   packages/butcher_report   160/160  deduction 0
+      #   packages/butcher          160/160  deduction 0
       #
-      # packages/butcher is deferred to the first-publish bead: it declares
-      # caret constraints on the two leaves, and pana resolves those from
-      # pub.dev exactly as a publish does, so it cannot be scored honestly
-      # until they are live. That bead measures it, raises this threshold if
-      # its deduction is larger, and records the measurement in this comment.
+      # The two leaves were measured on 2026-09-22. packages/butcher was held
+      # back until they were live, because it declares caret constraints on
+      # them and pana resolves those from pub.dev exactly as a publish does.
+      # Both leaves published at 0.1.0 on 2026-09-23, so its measurement was
+      # taken that day against the hosted siblings rather than the workspace.
+      # Its deduction is 0, so the threshold below stays at 0.
       - name: Score with pana
         working-directory: ${{ needs.parse.outputs.directory }}
         run: |

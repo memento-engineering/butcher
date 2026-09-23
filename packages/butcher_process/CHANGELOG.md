@@ -8,3 +8,4 @@
 - `SupervisedProcess` and `terminateAllSupervisedProcesses` own the lifetime of
   a started tree.
 - `hostProcessCount` reports the host's live process count as a diagnostic.
+- Published to pub.dev on 2026-09-23.

@@ -10,3 +10,4 @@
   as null.
 - Every public type compares by value, hand-written, with no code-generation
   dependency.
+- Published to pub.dev on 2026-09-23.
