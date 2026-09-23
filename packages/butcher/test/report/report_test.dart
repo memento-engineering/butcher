@@ -117,4 +117,50 @@ void main() {
       });
     },
   );
+
+  test('StrykerJsonSink emits the interop status names unchanged', () async {
+    // Wire names on a published schema: they survive every rename of the
+    // tool's own vocabulary, so each one is pinned as it is emitted.
+    const expected = {
+      Outcome.killed: 'Killed',
+      Outcome.survived: 'Survived',
+      Outcome.noCoverage: 'NoCoverage',
+      Outcome.timeout: 'Timeout',
+      Outcome.unviable: 'CompileError',
+      Outcome.runError: 'RuntimeError',
+      Outcome.memoryError: 'RuntimeError',
+      Outcome.equivalent: 'Ignored',
+    };
+    expect(
+      expected.keys,
+      containsAll(Outcome.values),
+      reason: 'every outcome maps to a wire name',
+    );
+
+    final dir = await Directory.systemTemp.createTemp('butcher_status_');
+    addTearDown(() => dir.delete(recursive: true));
+    final output = p.join(dir.path, 'report.json');
+
+    await StrykerJsonSink(
+      sources: {'lib/a.dart': '// header\nint add(int a, int b) => a + b;\n'},
+      outputPath: output,
+    ).write([
+      for (final outcome in Outcome.values)
+        result(outcome, offset: 37, id: outcome.name),
+    ]);
+
+    final report =
+        jsonDecode(File(output).readAsStringSync()) as Map<String, dynamic>;
+    final mutants =
+        ((report['files'] as Map<String, dynamic>)['lib/a.dart']
+                as Map<String, dynamic>)['mutants']
+            as List<dynamic>;
+    expect(
+      {
+        for (final mutant in mutants.cast<Map<String, dynamic>>())
+          mutant['id'] as String: mutant['status'] as String,
+      },
+      {for (final outcome in Outcome.values) outcome.name: expected[outcome]!},
+    );
+  });
 }
