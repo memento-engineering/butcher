@@ -85,6 +85,13 @@ register:
   either: such a process is reparented to pid 1, which destroys the parent
   link, so it was equally unreachable from the process-listing sweep it
   replaces.
+- The boundaries also answer "did this run leak", read-only: `liveDescendants`
+  lists the live pids inside the groups and jobs the run started, so the
+  question is scoped to the run instead of asked of a whole-host count, which
+  cannot tell the run's descendants from the machine's. That accounting lists
+  processes and never kills one; no kill path lists anything. A descendant
+  outside the boundary is outside the census for the same reason it is outside
+  the kill.
 - The contract is the process GROUP, not the session. Whether the started
   process also leads a new session differs between the ladder's rungs and is
   deliberately unspecified: both output streams are always piped, so the

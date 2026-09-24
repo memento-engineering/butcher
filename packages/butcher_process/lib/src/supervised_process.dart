@@ -1,13 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'process_census.dart';
 import 'process_interlock.dart';
 
 /// A process whose whole tree has one owner.
 ///
 /// Every instance holds its own [ProcessInterlock] and registers itself while
 /// it is alive, so [terminateAllSupervisedProcesses] can reap the tree of a
-/// run without a handle on whatever pool started it.
+/// run without a handle on whatever pool started it, and every start records
+/// its kill boundary so [liveDescendants] can account for the whole run.
 final class SupervisedProcess {
   SupervisedProcess._(this._process, this._interlock);
 
@@ -26,12 +28,26 @@ final class SupervisedProcess {
     );
     final supervised = SupervisedProcess._(process, interlock);
     _live.add(supervised);
+    _boundaries.add(process.pid);
     return supervised;
   }
 
   /// Every started process that has neither exited nor been killed, shared by
   /// all instances.
   static final Set<SupervisedProcess> _live = {};
+
+  /// The pid leading the kill boundary of every process this run started.
+  ///
+  /// The started pid is the boundary: the POSIX shim makes it the leader of
+  /// its own process group, and on Windows it is the first process admitted
+  /// to its job. Read back rather than derived from `getpgid` at start, which
+  /// races the shim's own group call.
+  ///
+  /// An entry stays after its process is released, because a descendant can
+  /// outlive the process it was started from and is still the run's to
+  /// account for. Two runs in one isolate therefore share a census, and a
+  /// recycled pid can be mistaken for a boundary the run started.
+  static final Set<int> _boundaries = {};
 
   final Process _process;
   final ProcessInterlock _interlock;
@@ -88,3 +104,14 @@ Future<void> terminateAllSupervisedProcesses() async {
       supervised.kill(),
   ]);
 }
+
+/// The live pids inside the kill boundaries this run started, whether the
+/// process each boundary was started for is still supervised or not.
+///
+/// The hermetic answer to "did this run leak": it is read over the same
+/// boundaries the interlocks kill by, so nothing else on the host can move it,
+/// and it lists nothing it cannot attribute. A descendant that left its
+/// boundary is outside this census by design, exactly as it is outside the
+/// kill — see [pidsInsideBoundaries].
+Future<Set<int>> liveDescendants() =>
+    pidsInsideBoundaries(SupervisedProcess._boundaries);

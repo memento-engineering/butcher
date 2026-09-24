@@ -3,11 +3,11 @@
 /// A consumer starts work through [SupervisedProcess], which owns the spawn
 /// through a [ProcessInterlock] so the started process is a kill boundary from
 /// the moment it exists. [terminateAllSupervisedProcesses] reaps whatever is
-/// still running, and [hostProcessCount] is the diagnostic that says whether
-/// anything leaked.
+/// still running, [liveDescendants] says whether the run itself leaked, and
+/// [hostProcessCount] is a whole-host diagnostic that judges nothing.
 library;
 
 export 'src/process_census.dart' show hostProcessCount;
 export 'src/process_interlock.dart' show ProcessInterlock;
 export 'src/supervised_process.dart'
-    show SupervisedProcess, terminateAllSupervisedProcesses;
+    show SupervisedProcess, liveDescendants, terminateAllSupervisedProcesses;

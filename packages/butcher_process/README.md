@@ -16,7 +16,8 @@ owns.
 | `ProcessInterlock` | Owns the spawn, so the started process is a kill boundary; a job object on Windows, a process group on POSIX. |
 | `SupervisedProcess` | One process tree with one owner: streams, a deadline, an idempotent kill. |
 | `terminateAllSupervisedProcesses` | Reaps every live tree, so a signal handler needs no handle on a worker pool. |
-| `hostProcessCount` | A diagnostic count of live processes on the host, never a kill path. |
+| `liveDescendants` | The live pids inside the kill boundaries this run started: read-only accounting, and the only honest answer to "did the run leak". |
+| `hostProcessCount` | A diagnostic count of live processes on the host, never a kill path and never a gate. |
 
 ```dart
 final process = await SupervisedProcess.start('dart', ['test']);
@@ -28,7 +29,7 @@ if (code == null) print('the tree was killed on its deadline');
 
 - A descendant that creates a session of its own leaves the group and survives
   the kill. Such a process is reparented to pid 1, so it is unreachable from a
-  process listing too.
+  process listing too, and `liveDescendants` does not claim to see it.
 - On POSIX the group is entered by an exec-in-place shim: `setsid` where it
   exists, otherwise `perl`. Without either, the kill reaches only the started
   process and says so once, loudly.
