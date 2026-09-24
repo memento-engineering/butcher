@@ -56,6 +56,26 @@ void main() {
     expect(await settledDescendants(), isEmpty);
   }, testOn: 'posix');
 
+  test('lists a grandchild that outlived the process it came from', () async {
+    // The leak the end-to-end suite is guarding against: the started process
+    // exits cleanly and is released, and something it spawned keeps running
+    // inside the boundary it left behind.
+    final process = await SupervisedProcess.start('/bin/sh', [
+      '-c',
+      r'sleep 120 & echo $!',
+    ]);
+    final grandchild = (await reportedPids(process.output, 1)).single;
+    addTearDown(() => Process.killPid(grandchild, ProcessSignal.sigkill));
+
+    expect(await process.wait(), 0);
+
+    expect(await liveDescendants(), {grandchild});
+
+    Process.killPid(grandchild, ProcessSignal.sigkill);
+
+    expect(await settledDescendants(), isEmpty);
+  }, testOn: 'posix');
+
   test('lists a child and its grandchildren through the job', () async {
     final process = await SupervisedProcess.start('powershell', [
       '-NoProfile',
