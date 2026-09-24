@@ -49,10 +49,6 @@ void main() {
 
     _narrowScopeTo(projectRoot, _inScope);
 
-    // The census counts the whole host, so it is only ever compared against
-    // another reading taken the same way — see [hostProcessCount].
-    final processesBefore = await hostProcessCount();
-
     // One worker: this suite proves the pipeline composes, not that it
     // scales, and every extra worker is another whole-workspace clone.
     final engine = Engine(projectRoot: projectRoot, paths: paths, jobs: 1);
@@ -66,8 +62,7 @@ void main() {
     watch.stop();
     final events = await published;
 
-    final processCeiling = processesBefore + _censusTolerance;
-    final processesAfter = await _settledHostProcessCount(processCeiling);
+    final leaked = await _settledDescendants();
 
     printOnFailure(
       'self run took ${watch.elapsed} over ${result.results.length} mutants',
@@ -120,46 +115,37 @@ void main() {
 
     await _expectSandboxIsFiltered(paths.root, workspaceRoot);
 
-    // A leaked suite descendant outlives the run and shows up here.
+    // A leaked suite descendant outlives the run and shows up here. The
+    // census is run-scoped — only processes this run started, read over the
+    // boundaries the interlock kills by — so nothing else on the host can
+    // move it and there is no tolerance to set.
     expect(
-      processesAfter,
-      lessThanOrEqualTo(processCeiling),
-      reason:
-          'host process count went from $processesBefore to $processesAfter '
-          'and stayed there; the run leaked descendants',
+      leaked,
+      isEmpty,
+      reason: 'the run left $leaked running; it leaked descendants',
     );
   });
 }
 
-/// Host processes the census may drift by over a run without that meaning a
-/// leak.
+/// How long the census is given to come back empty before what is left counts
+/// as a leak.
 ///
-/// Measured on an idle macOS host: `ps -A` moved by at most one over six
-/// consecutive readings a second apart.
-const _censusTolerance = 2;
+/// Reaping is asynchronous: the engine's last kill returns before the kernel
+/// has finished tearing the group down. That delay is short and a leak is not,
+/// which is what this window separates. It replaces a two-minute settle window
+/// that existed only because the old reading counted the whole host.
+const _reapGrace = Duration(seconds: 10);
 
-/// How long the census is given to come back down before a rise counts as a
-/// leak.
-///
-/// The census counts the whole host, so anything else spawning processes
-/// raises it too: running this file inside the package's full `dart test` put
-/// it 12 above its starting point while the kill-tree and CLI suites were
-/// running, and even on its own it took up to 55 s to come back down on a
-/// developer machine. That rise is transient and a leak is not, which is what
-/// this window separates. Measured over five runs: three settled on the first
-/// reading, two inside a minute, and none of them left anything behind.
-const _censusSettleWindow = Duration(minutes: 2);
-
-/// The host process count once it is at or below [ceiling], or its last
-/// reading when it never gets there within [_censusSettleWindow].
-Future<int> _settledHostProcessCount(int ceiling) async {
+/// The run's live descendants once there are none, or the last reading after
+/// [_reapGrace].
+Future<Set<int>> _settledDescendants() async {
   final waited = Stopwatch()..start();
-  var reading = await hostProcessCount();
-  while (reading > ceiling && waited.elapsed < _censusSettleWindow) {
-    await Future<void>.delayed(const Duration(seconds: 1));
-    reading = await hostProcessCount();
+  var live = await liveDescendants();
+  while (live.isNotEmpty && waited.elapsed < _reapGrace) {
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    live = await liveDescendants();
   }
-  return reading;
+  return live;
 }
 
 /// The workspace root, found by walking up from the directory the suite runs
