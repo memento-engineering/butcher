@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:butcher_process/butcher_process.dart';
+import 'package:butcher_process/src/posix_interlock.dart';
 import 'package:test/test.dart';
 
 /// Whether [pid] is still listed by the OS.
@@ -53,6 +54,20 @@ void main() {
     expect(await process.wait(), 0);
     expect(await output, 'out\n');
     expect(await errors, 'err\n');
+  });
+
+  test('the started pid is the group the census records', () async {
+    final process = await SupervisedProcess.start('/bin/sh', [
+      '-c',
+      'echo up; sleep 120',
+    ]);
+    addTearDown(process.kill);
+    // Drained before the group is read: the shim's own group call lands
+    // between the start returning and the target running, so a read taken
+    // any earlier races it.
+    await process.output.transform(utf8.decoder).first;
+
+    expect(PosixInterlock.processGroupOf(process.pid), process.pid);
   });
 
   test('a deadline returns null and leaves nothing alive', () async {

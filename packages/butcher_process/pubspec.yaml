@@ -1,6 +1,6 @@
 name: butcher_process
 description: Process-tree lifetime and kill primitives, so a consumer can take the process abstraction without the mutation engine.
-version: 0.1.1-dev.1
+version: 0.1.1-dev.2
 repository: https://github.com/memento-engineering/butcher
 
 environment:
