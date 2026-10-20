@@ -182,6 +182,9 @@ All temp data — sandbox copies and logs — lives under one butcher temp root.
   tool run's files.
 - Sandboxes and logs survive the run that made them, until the next run's
   startup cleanup.
+- `butcher.log` records each mutant as `started` before its suite runs, so a
+  run killed outright still names the mutants it was running. An interrupted
+  or aborted run also prints them to stderr.
 
 ## Windows performance
 

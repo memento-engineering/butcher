@@ -214,6 +214,7 @@ Future<int> butcherMain(
     workspace.release();
     rethrow;
   }
+  watcher.onSignal = () => _reportInFlight(engine, logger);
 
   int exitCode;
   try {
@@ -278,12 +279,27 @@ Future<int> butcherMain(
       'DurationMs': watch.elapsedMilliseconds,
     });
     stderr.writeln(abort.message);
+    _reportInFlight(engine, logger);
     exitCode = 70;
   } finally {
     watcher.stop();
     workspace.release();
   }
   return exitCode;
+}
+
+/// Names the mutants [engine] was running when the run stopped early.
+void _reportInFlight(Engine engine, ButcherLogger logger) {
+  final ids = [...engine.inFlight];
+  if (ids.isEmpty) return;
+  logger.error('stopped with {MutantCount} mutants in flight', {
+    'MutantCount': ids.length,
+    'MutantIds': ids,
+  });
+  stderr.writeln('mutants in flight:');
+  for (final id in ids) {
+    stderr.writeln('  $id');
+  }
 }
 
 double? _rounded(double? value) =>

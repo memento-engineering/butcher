@@ -119,6 +119,12 @@ final class Engine {
   /// and never reaches [run], which neither swallows nor observes it.
   Stream<RunEvent> get events => _events.stream;
 
+  final _inFlight = <String>{};
+
+  /// Ids of the mutants whose suites are running right now, so a run that
+  /// dies can name the mutants it died on.
+  Iterable<String> get inFlight => _inFlight;
+
   /// Publishes [event] unless the run has already closed the controller.
   void _emit(RunEvent event) {
     if (_events.isClosed) return;
@@ -370,6 +376,16 @@ final class Engine {
     if (unviable.contains(mutant.id)) {
       return MutantResult(mutant: mutant, outcome: Outcome.unviable);
     }
+    // Logged before the suite starts: a run killed mid-suite leaves only
+    // this line naming the mutant it died on.
+    logger?.info('started {MutantId} in {Sandbox}', {
+      'MutantId': mutant.id,
+      'Sandbox': sandbox.name,
+      'File': mutant.mutation.filePath,
+      'Offset': mutant.mutation.offset,
+      'Operator': mutant.mutation.mutatorId,
+    });
+    _inFlight.add(mutant.id);
     try {
       await sandbox.apply(mutant.mutation);
       // Only the suites covering the mutant, cheapest first, in one
@@ -404,6 +420,7 @@ final class Engine {
       _logMutantRun(runLog, sandbox.name, result, const [], null);
       return result;
     } finally {
+      _inFlight.remove(mutant.id);
       await sandbox.restore(mutant.mutation.filePath);
     }
   }

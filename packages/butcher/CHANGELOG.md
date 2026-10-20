@@ -5,6 +5,9 @@
 - `--files` mutates only the named `lib/` files, and `--diff-base <ref>` only
   the `lib/` files changed since a git ref, uncommitted and untracked ones
   included. A scoped run records its scope under the report's `config.scope`.
+- `butcher.log` records each mutant as started before its suite runs, and an
+  interrupted or aborted run prints the mutants still in flight, so a crashed
+  run shows which mutants it was running.
 
 ## 0.1.0
 
