@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:butcher/src/engine/capped_output.dart';
 import 'package:butcher/src/engine/outcome_classifier.dart';
+import 'package:butcher/src/engine/suite_process.dart';
 import 'package:test/test.dart';
 
 import '../helpers/fixtures.dart';
@@ -147,14 +148,14 @@ void main() {
 
     final run = await DartTestRunner(dir.path).run();
 
-    expect(run.errorOutput.length, lessThan(DartTestRunner.stderrLimit + 64));
+    expect(run.errorOutput.length, lessThan(suiteStderrLimit + 64));
     expect(run.errorOutput, contains('[butcher] truncated'));
     expect(run.output, isNot(contains('[butcher] truncated')));
     expect(classify(run), Outcome.killed);
   });
 
   test('parses a mid-stream failure before capping its raw evidence', () {
-    final buffer = CappedOutput(limit: DartTestRunner.stdoutLimit);
+    final buffer = CappedOutput(limit: suiteStdoutLimit);
     final events = TestEvents();
     void add(String chunk) {
       events.add(chunk);
