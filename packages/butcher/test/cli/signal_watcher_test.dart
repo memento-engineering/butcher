@@ -80,6 +80,20 @@ void main() {
     expect(watcher.watching, isFalse, reason: 'the handler reaps once');
   });
 
+  test('reports through onSignal before it exits', () async {
+    final signals = RecordedSignals();
+    final reported = <int>[];
+    final watcher = signals.watcher()
+      ..onSignal = (() => reported.add(signals.exits.length));
+    watcher.start();
+
+    signals.raise(ProcessSignal.sigint);
+    await pumpEventQueue();
+
+    expect(reported, [0], reason: 'called once, before the exit');
+    expect(signals.exits, [130]);
+  });
+
   test('installs its handler once', () {
     final signals = RecordedSignals();
     final watcher = signals.watcher()

@@ -3,6 +3,7 @@ import 'package:butcher/butcher.dart';
 import 'package:butcher/src/cli/cli.dart';
 import 'package:test/test.dart';
 
+import '../helpers/fixtures.dart';
 import '../helpers/paths.dart';
 
 void main() {
@@ -83,6 +84,62 @@ void main() {
       await butcherMain(['--jobs', 'many'], out: StringBuffer(), paths: paths),
       64,
     );
+  });
+
+  test('rejects --files together with --diff-base with exit code 64', () async {
+    expect(
+      await butcherMain(
+        ['--files', 'lib/calc.dart', '--diff-base', 'HEAD'],
+        out: StringBuffer(),
+        paths: paths,
+      ),
+      64,
+    );
+  });
+
+  test('rejects --files outside lib or missing with exit code 64', () async {
+    final dir = await createFixturePackage(resolve: false);
+    for (final file in [
+      'test/calc_test.dart',
+      'lib/nope.dart',
+      'pubspec.yaml',
+    ]) {
+      expect(
+        await butcherMain(
+          ['--files', file, dir.path],
+          out: StringBuffer(),
+          paths: paths,
+        ),
+        64,
+        reason: file,
+      );
+    }
+  });
+
+  test('rejects an unresolvable --diff-base with exit code 64', () async {
+    final dir = await createFixturePackage(resolve: false);
+    expect(
+      await butcherMain(
+        ['--diff-base', 'no-such-ref', dir.path],
+        out: StringBuffer(),
+        paths: paths,
+      ),
+      64,
+    );
+  });
+
+  test('rejects an invalid heap cap with exit code 64', () async {
+    for (final value in ['0', 'lots']) {
+      expect(
+        await butcherMain(
+          ['--max-heap-mb', value],
+          out: StringBuffer(),
+          paths: paths,
+        ),
+        64,
+        reason: value,
+      );
+    }
   });
 
   test('prints usage with exit code 0 for --help', () async {

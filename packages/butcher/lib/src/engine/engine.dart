@@ -49,6 +49,7 @@ final class Engine {
     this.runnerFactory = _defaultRunnerFactory,
     this.onProgress,
     this.logger,
+    this.scope,
     int? jobs,
   }) : registry = registry ?? MutatorRegistry.defaults(),
        jobs = jobs ?? defaultJobs,
@@ -87,6 +88,10 @@ final class Engine {
   /// Receives engine wide events; `null` disables engine logging.
   final ButcherLogger? logger;
 
+  /// Project-relative posix paths the run may mutate; `null` mutates all of
+  /// `lib/`. `butcher.yaml` exclusions still apply inside it.
+  final Set<String>? scope;
+
   /// Correlates and namespaces every mutant-run log from this engine run.
   final String runId;
 
@@ -113,6 +118,12 @@ final class Engine {
   /// the engine: its exception surfaces later in the zone where it subscribed
   /// and never reaches [run], which neither swallows nor observes it.
   Stream<RunEvent> get events => _events.stream;
+
+  final _inFlight = <String>{};
+
+  /// Ids of the mutants whose suites are running right now, so a run that
+  /// dies can name the mutants it died on.
+  Iterable<String> get inFlight => _inFlight;
 
   /// Publishes [event] unless the run has already closed the controller.
   void _emit(RunEvent event) {
@@ -305,10 +316,13 @@ final class Engine {
     CoverageProvider coverage,
   ) async {
     final watch = Stopwatch()..start();
+    final excluded = MutationScope.load(projectRoot).excludes;
+    final scope = this.scope;
     final generator = MutantGenerator(
       projectRoot: projectRoot,
       registry: registry,
-      isExcluded: MutationScope.load(projectRoot).excludes,
+      isExcluded: (path) =>
+          excluded(path) || (scope != null && !scope.contains(path)),
     );
     final (mutants, sources) = await generator.generate();
     coverage.indexSources(sources);
@@ -362,6 +376,16 @@ final class Engine {
     if (unviable.contains(mutant.id)) {
       return MutantResult(mutant: mutant, outcome: Outcome.unviable);
     }
+    // Logged before the suite starts: a run killed mid-suite leaves only
+    // this line naming the mutant it died on.
+    logger?.info('started {MutantId} in {Sandbox}', {
+      'MutantId': mutant.id,
+      'Sandbox': sandbox.name,
+      'File': mutant.mutation.filePath,
+      'Offset': mutant.mutation.offset,
+      'Operator': mutant.mutation.mutatorId,
+    });
+    _inFlight.add(mutant.id);
     try {
       await sandbox.apply(mutant.mutation);
       // Only the suites covering the mutant, cheapest first, in one
@@ -396,6 +420,7 @@ final class Engine {
       _logMutantRun(runLog, sandbox.name, result, const [], null);
       return result;
     } finally {
+      _inFlight.remove(mutant.id);
       await sandbox.restore(mutant.mutation.filePath);
     }
   }

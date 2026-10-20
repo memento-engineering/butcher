@@ -40,7 +40,17 @@ const strykerLowThreshold = 60;
 /// tests.
 final class StrykerJsonSink implements ReportSink {
   /// Creates a sink over generation-time [sources], writing [outputPath].
-  const StrykerJsonSink({required this.sources, required this.outputPath});
+  ///
+  /// A run narrowed to [scope] records it under the document's `config`, so
+  /// a reader never mistakes its score for the whole package's.
+  const StrykerJsonSink({
+    required this.sources,
+    required this.outputPath,
+    this.scope,
+  });
+
+  /// Project-relative paths a scoped run mutated; `null` for a full run.
+  final Set<String>? scope;
 
   /// Pristine source per mutated file; offsets refer to these texts.
   final Map<String, String> sources;
@@ -79,18 +89,11 @@ final class StrykerJsonSink implements ReportSink {
   /// status with nothing, but `CompileError` on its own never says whether
   /// the mutant failed to compile or the tool did, so it is just as opaque
   /// unexplained.
-  ///
-  /// [Outcome.memoryError] is RESERVED. The taxonomy declares it and this
-  /// mapping covers it, but no classification path in the tool assigns it
-  /// today and nothing captures a memory-specific diagnostic, so its reason
-  /// names the category and nothing more. A producer that can actually raise
-  /// the outcome is what earns it a measured reason.
   static String? statusReasonFor(MutantResult result) =>
       switch (result.outcome) {
         Outcome.runError => _runErrorReason(result),
         Outcome.memoryError =>
-          'The test process ran out of memory. Reserved: no classification '
-              'path assigns this outcome yet.',
+          'The test process ran out of memory under the --max-heap-mb cap.',
         Outcome.unviable =>
           'The mutant does not compile; its test suite failed to load.',
         Outcome.killed ||
@@ -137,6 +140,10 @@ final class StrykerJsonSink implements ReportSink {
         high: strykerHighThreshold,
         low: strykerLowThreshold,
       ),
+      config: switch (scope) {
+        final scope? => {'scope': scope.toList()..sort()},
+        null => null,
+      },
       files: {
         for (final entry in mutantsOf.entries)
           entry.key: FileResult(

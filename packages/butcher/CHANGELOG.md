@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- `--files` mutates only the named `lib/` files, and `--diff-base <ref>` only
+  the `lib/` files changed since a git ref, uncommitted and untracked ones
+  included. A scoped run records its scope under the report's `config.scope`.
+- `butcher.log` records each mutant as started before its suite runs, and an
+  interrupted or aborted run prints the mutants still in flight, so a crashed
+  run shows which mutants it was running.
+- `--max-heap-mb` caps the heap of every test process butcher starts. A
+  mutant that exhausts it is reported as `memoryError` instead of taking the
+  host down, and scores as neither killed nor survived.
 - A `coverage/lcov.info` older than any file in `lib/` or `test/` is skipped
   as stale and coverage is collected instead, so new lines are no longer
   reported as noCoverage. The console names the coverage source of every run.
@@ -33,6 +42,9 @@
   gitignore rules decide it. Selecting a pub workspace member copies the whole
   workspace while keeping tests, generation, coverage and report output rooted
   at that member.
+- `exclude` in a `butcher.yaml` at the project root lists globs of files never
+  mutated; generated sources such as `.g.dart` and `.freezed.dart` are skipped
+  without it.
 - A red baseline aborts the run before generation; the green baseline's
   duration sets each mutant's deadline, so a slow selection is not a timeout.
 - `--jobs` classifies in parallel, one sandbox per worker. A timed-out suite

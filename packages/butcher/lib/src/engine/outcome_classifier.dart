@@ -13,6 +13,12 @@ final class OutcomeClassifier {
     if (run.timedOut) return Outcome.timeout;
     if (run.exitCode == 0) return Outcome.survived;
     if (events.testFailures.isNotEmpty) return Outcome.killed;
+    // An exhausted heap is no evidence about the mutant's behaviour, so it
+    // never counts as a kill (ADR 0013).
+    if (events.memoryFailures.isNotEmpty ||
+        run.errorOutput.contains('Exhausted heap space')) {
+      return Outcome.memoryError;
+    }
     if (events.loadFailures.isNotEmpty) return Outcome.unviable;
     return Outcome.runError;
   }

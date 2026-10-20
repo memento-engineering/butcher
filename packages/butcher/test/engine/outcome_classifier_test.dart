@@ -23,13 +23,25 @@ const _pollutedFailure = '''
 {"testID":4,"result":"failure","skipped":false,"hidden":false,"type":"testDone"}
 ''';
 
-TestRun run({int exitCode = 0, bool timedOut = false, String output = ''}) =>
-    TestRun(
-      exitCode: exitCode,
-      timedOut: timedOut,
-      output: output,
-      duration: const Duration(seconds: 1),
-    );
+/// The stream `dart test` writes when a capped VM runs out of memory.
+const _outOfMemory = '''
+{"test":{"id":3,"name":"drains"},"type":"testStart"}
+{"testID":3,"error":"Out of Memory","isFailure":false,"type":"error"}
+{"testID":3,"result":"error","skipped":false,"hidden":false,"type":"testDone"}
+''';
+
+TestRun run({
+  int exitCode = 0,
+  bool timedOut = false,
+  String output = '',
+  String errorOutput = '',
+}) => TestRun(
+  exitCode: exitCode,
+  timedOut: timedOut,
+  output: output,
+  errorOutput: errorOutput,
+  duration: const Duration(seconds: 1),
+);
 
 Outcome classify(TestRun run) =>
     const OutcomeClassifier().classify(run, TestEvents.parse(run.output));
@@ -112,5 +124,31 @@ void main() {
       );
       expect(Engine.deadlineFor(Duration.zero), const Duration(seconds: 10));
     });
+  });
+
+  test('classifies an exhausted heap as a memory error, never a kill', () {
+    expect(
+      classify(run(exitCode: 1, output: _outOfMemory)),
+      Outcome.memoryError,
+    );
+  });
+
+  test('classifies a VM that died of an exhausted heap as a memory error', () {
+    expect(
+      classify(
+        run(
+          exitCode: 255,
+          errorOutput: 'Exhausted heap space, trying to allocate 32 bytes.',
+        ),
+      ),
+      Outcome.memoryError,
+    );
+  });
+
+  test('still kills when another test failed beside the exhausted heap', () {
+    expect(
+      classify(run(exitCode: 1, output: '$_outOfMemory$_failedTest')),
+      Outcome.killed,
+    );
   });
 }

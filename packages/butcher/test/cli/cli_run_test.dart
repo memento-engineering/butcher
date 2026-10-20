@@ -33,6 +33,38 @@ void main() {
 }
 ''';
 
+/// An iterator that ends after one element; flipping either literal in
+/// `moveNext` makes it endless, so draining it allocates without bound.
+const _onceCalc = '''
+class Once implements Iterator<int> {
+  var _done = false;
+
+  @override
+  int get current => 1;
+
+  @override
+  bool moveNext() {
+    if (_done) return false;
+    _done = true;
+    return true;
+  }
+}
+
+class Ones extends Iterable<int> {
+  @override
+  Iterator<int> get iterator => Once();
+}
+''';
+
+const _onceTest = '''
+import 'package:fixture/calc.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test('drains', () => expect(Ones().toList(), [1]));
+}
+''';
+
 /// Collects what the CLI writes to `stderr` under [IOOverrides].
 final class _CapturedStderr implements Stdout {
   final _buffer = StringBuffer();
@@ -175,6 +207,27 @@ void main() {
     expect(out.toString(), contains('Timeout rate: 100.00%'));
   });
 
+  test(
+    'reports a runaway mutant under --max-heap-mb as a memory error',
+    () async {
+      final dir = await createFixturePackage(
+        calc: _onceCalc,
+        testSource: _onceTest,
+      );
+      final out = StringBuffer();
+
+      final exit = await butcherMain(
+        ['--max-heap-mb', '256', '--no-collect-coverage', dir.path],
+        out: out,
+        paths: paths,
+      );
+
+      expect(exit, 0, reason: out.toString());
+      expect(out.toString(), contains('memoryError: '));
+      expect(out.toString(), isNot(contains('runError: ')));
+    },
+  );
+
   test('fails the threshold closed when no mutant is scoreable', () async {
     final dir = await createFixturePackage(calc: 'int add(int a, int b) => 5;');
     final captured = _CapturedStderr();
@@ -193,5 +246,34 @@ void main() {
       captured.toString(),
       contains('no scoreable mutants, so no MSI: the 50.00% threshold'),
     );
+  });
+
+  test('mutates only the files --files names', () async {
+    final dir = await createFixturePackage();
+    File(
+      p.join(dir.path, 'lib', 'other.dart'),
+    ).writeAsStringSync('int sub(int a, int b) => a - b;\n');
+
+    final exit = await butcherMain(
+      [
+        '--files',
+        'lib/calc.dart',
+        '--output',
+        'report.json',
+        '--no-collect-coverage',
+        dir.path,
+      ],
+      out: StringBuffer(),
+      paths: paths,
+    );
+
+    expect(exit, 0);
+    final report =
+        jsonDecode(File(p.join(dir.path, 'report.json')).readAsStringSync())
+            as Map<String, dynamic>;
+    expect((report['files'] as Map<String, dynamic>).keys, ['lib/calc.dart']);
+    expect(report['config'], {
+      'scope': ['lib/calc.dart'],
+    });
   });
 }

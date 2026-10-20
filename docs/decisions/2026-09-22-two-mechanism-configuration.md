@@ -13,7 +13,8 @@ register:
   obsoletes: []
   updates: []
   obsoleted-by: null
-  updated-by: []
+  updated-by:
+    - scoped-runs
   bead: null
 ---
 # Two-mechanism configuration
