@@ -37,6 +37,7 @@ Usage: butcher [options] [project root]
     --diff-base=<ref>          Mutate only the lib/ files changed since this git ref, uncommitted and untracked ones included.
     --max-timeouts             Exit 1 when more mutants than this time out. Timeouts are inconclusive and score as neither killed nor survived.
 -j, --jobs                     Parallel workers, each with its own sandbox copy. Defaults to half the CPU cores.
+    --max-heap-mb              Cap the heap of every test process at this many megabytes. A mutant that exhausts it is a memoryError, scored as neither killed nor survived.
     --[no-]collect-coverage    Collect coverage with an extra instrumented suite run when no report is given or found. Disabling treats all code as covered.
                                (defaults to on)
 -v, --verbose                  Also stream structured log events to the console.
@@ -53,6 +54,10 @@ BUTCHER_TEMP  Exact root for sandboxes and logs.
   survived, and a timeout rate is printed whenever any occur.
 - With no scoreable mutants there is no MSI: scores print as `none` and
   `--threshold` fails.
+- A mutant that allocates without bound can exhaust the host before its
+  deadline. `--max-heap-mb` caps every test process, the baseline included,
+  so such a mutant fails in its own VM as `memoryError` and scores as neither
+  killed nor survived. Peak memory is roughly `--jobs` times the cap.
 - Writes a Stryker JSON report (`mutation-report.json`); view it with the
   [Stryker report viewer](https://microsoft.github.io/mutation-testing-elements/).
 
@@ -87,6 +92,7 @@ MSI but leaves the covered-code MSI intact. Coverage comes from, in order:
 | `--max-timeouts` | Exit 1 when more mutants than this time out | None |
 | `-o, --output` | Report path, relative to the project root | `mutation-report.json` |
 | `-j, --jobs` | Parallel workers, each with its own sandbox copy | Half the CPU cores |
+| `--max-heap-mb` | Heap cap per test process, in megabytes | Uncapped |
 | `-v, --verbose` | Also stream structured log events to the console | Off |
 
 ## Scoped runs

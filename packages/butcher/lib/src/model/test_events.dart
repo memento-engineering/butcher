@@ -23,6 +23,7 @@ final class TestEvents {
   final Map<int, String> _suitePaths = {};
   final Map<int, String> _testSuites = {};
   final Map<String, ({int first, int last})> _spans = {};
+  final Set<Object?> _outOfMemory = {};
   final _pending = StringBuffer();
   var _closed = false;
   var _discardingLine = false;
@@ -100,12 +101,23 @@ final class TestEvents {
             decoded['hidden'] != true &&
             decoded['skipped'] != true) {
           final name = _names[decoded['testID']] ?? '';
-          (name.startsWith('loading ') ? loadFailures : testFailures).add(name);
+          final failures = switch (name) {
+            _ when name.startsWith('loading ') => loadFailures,
+            _ when _outOfMemory.contains(decoded['testID']) => memoryFailures,
+            _ => testFailures,
+          };
+          failures.add(name);
         }
         _names.remove(decoded['testID']);
+        _outOfMemory.remove(decoded['testID']);
         final path = _testSuites.remove(decoded['testID']);
         if (path != null) _mark(path, decoded['time']);
       case 'error':
+        // The VM's OutOfMemoryError, raised inside the test's isolate when a
+        // heap cap is reached.
+        if (decoded['error'] == 'Out of Memory') {
+          _outOfMemory.add(decoded['testID']);
+        }
         final name = _names[decoded['testID']] ?? '';
         errors.add('$name: ${decoded['error']}');
     }
@@ -130,6 +142,10 @@ final class TestEvents {
 
   /// Names of failed tests: assertion failures and in-test errors.
   final List<String> testFailures = [];
+
+  /// Names of tests that failed by running out of memory; never also in
+  /// [testFailures].
+  final List<String> memoryFailures = [];
 
   /// Names of suites that failed to compile or load.
   final List<String> loadFailures = [];

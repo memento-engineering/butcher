@@ -8,6 +8,9 @@
 - `butcher.log` records each mutant as started before its suite runs, and an
   interrupted or aborted run prints the mutants still in flight, so a crashed
   run shows which mutants it was running.
+- `--max-heap-mb` caps the heap of every test process butcher starts. A
+  mutant that exhausts it is reported as `memoryError` instead of taking the
+  host down, and scores as neither killed nor survived.
 
 ## 0.1.0
 

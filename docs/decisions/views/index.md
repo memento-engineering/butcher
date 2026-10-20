@@ -50,5 +50,6 @@ flowchart TD
 | [workspace-shape](../2026-09-22-workspace-shape.md) | Workspace shape | accepted |
 | [standard-mutation-vocabulary](../2026-09-22-standard-mutation-vocabulary.md) | Standard mutation-testing vocabulary | accepted |
 | [scoped-runs](../2026-10-20-scoped-runs.md) | Scoped runs | accepted |
+| [memory-cap](../2026-10-20-memory-cap.md) | Memory cap | accepted |
 
 Feature staging: [../../roadmap/index.md](../../roadmap/index.md).

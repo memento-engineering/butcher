@@ -209,9 +209,7 @@ void main() {
 
   test('StrykerJsonSink explains the failures a status cannot', () async {
     // Two outcomes collapse onto RuntimeError and a third, unviable, has a
-    // status nobody can read; all three get a reason. The memory error is
-    // reserved — no classification path assigns it — so this result is
-    // constructed directly rather than driven through a run.
+    // status nobody can read; all three get a reason.
     final mutants = await everyOutcomeWritten();
     final reasons = {
       for (final mutant in mutants)
