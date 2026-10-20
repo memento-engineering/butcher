@@ -98,6 +98,11 @@ void main() {
 
     expect(exit, 0, reason: out.toString());
     expect(out.toString(), contains('noCoverage: 3'));
+    expect(
+      out.toString(),
+      contains('coverage: ${p.join(dir.path, 'coverage', 'lcov.info')} ('),
+      reason: 'the console names the report that routed the run',
+    );
     final logText = File(paths.toolLog).readAsStringSync();
     expect(logText, contains('"@mt":"ingested coverage for {FileCount} files'));
     expect(
@@ -132,5 +137,28 @@ void main() {
       contains('"@mt":"collected coverage for {FileCount} files'),
     );
     expect(logText, isNot(contains('ingested coverage')));
+  });
+
+  test('collects when coverage/lcov.info predates the sources', () async {
+    final dir = await createFixturePackage(calc: fixturePartiallyTestedCalc);
+    File(p.join(dir.path, 'coverage', 'lcov.info'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('SF:lib/calc.dart\nDA:1,4\nDA:2,0\nend_of_record\n')
+      ..setLastModifiedSync(DateTime(2000));
+    final out = StringBuffer();
+
+    final exit = await butcherMain(
+      ['--jobs', '1', dir.path],
+      out: out,
+      paths: paths,
+    );
+
+    expect(exit, 0, reason: out.toString());
+    expect(out.toString(), contains('coverage: skipping stale'));
+    expect(
+      out.toString(),
+      contains('killed: 2'),
+      reason: 'the second function is no longer reported as noCoverage',
+    );
   });
 }
