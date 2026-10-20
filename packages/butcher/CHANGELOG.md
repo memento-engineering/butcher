@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `butcher.log` records each mutant as started before its suite runs, and an
+  interrupted or aborted run prints the mutants still in flight, so a crashed
+  run shows which mutants it was running.
+
 ## 0.1.0
 
 - First release. butcher is a fork of the MIT-licensed `radioactive_dart`
