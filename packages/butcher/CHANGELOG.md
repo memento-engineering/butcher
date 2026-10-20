@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Flutter packages: a package depending on the Flutter SDK runs its suites
+  with `flutter test` and resolves with `flutter pub get`, using the `flutter`
+  beside the running `dart` or under `FLUTTER_ROOT`. Covered mutants run the
+  whole suite for now; `--max-heap-mb` is not supported for them yet.
 - `--files` mutates only the named `lib/` files, and `--diff-base <ref>` only
   the `lib/` files changed since a git ref, uncommitted and untracked ones
   included. A scoped run records its scope under the report's `config.scope`.

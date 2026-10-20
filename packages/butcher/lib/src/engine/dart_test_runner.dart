@@ -1,11 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:butcher_process/butcher_process.dart';
-
-import '../model/test_events.dart';
 import '../model/test_run.dart';
-import 'capped_output.dart';
+import 'suite_process.dart';
 import 'test_runner.dart';
 
 /// Runs `dart test` via [Platform.resolvedExecutable] (ADR 0003).
@@ -28,25 +24,15 @@ final class DartTestRunner implements TestRunner {
   /// Heap cap in megabytes; `null` leaves the VM uncapped.
   final int? maxHeapMb;
 
-  /// Characters retained from stdout. Every verdict is parsed out of this
-  /// stream, so the bound sits above any real suite (~16k tests' events) and
-  /// only catches a runaway mutant.
-  static const stdoutLimit = 8 * 1024 * 1024;
-
-  /// Characters retained from stderr; nothing is parsed from it.
-  static const stderrLimit = 256 * 1024;
-
   @override
   Future<TestRun> run({
     List<String> suites = const [],
     Duration? timeout,
     bool failFast = false,
     String? coverageDir,
-  }) async {
-    final watch = Stopwatch()..start();
-    // The suite is a kill boundary from the moment it exists, so what it
-    // spawns afterwards dies with it in one call (ADR 0022).
-    final process = await SupervisedProcess.start(Platform.resolvedExecutable, [
+  }) => runSuite(
+    Platform.resolvedExecutable,
+    [
       // DART_VM_OPTIONS does not reach the VM `dart test` runs in; only a
       // flag before the command does.
       if (maxHeapMb != null) '--old_gen_heap_size=$maxHeapMb',
@@ -57,33 +43,8 @@ final class DartTestRunner implements TestRunner {
       if (coverageDir != null) '--coverage=$coverageDir',
       if (concurrency != null) '--concurrency=$concurrency',
       ...suites,
-    ], workingDirectory: root);
-
-    const decoder = Utf8Decoder(allowMalformed: true);
-    final output = CappedOutput(limit: stdoutLimit);
-    final errors = CappedOutput(limit: stderrLimit);
-    final events = TestEvents();
-    final drained = Future.wait([
-      process.output.transform(decoder).forEach((chunk) {
-        events.add(chunk);
-        output.write(chunk);
-      }),
-      process.errorOutput.transform(decoder).forEach(errors.write),
-    ]);
-
-    final code = await process.wait(deadline: timeout);
-    await drained.timeout(const Duration(seconds: 5), onTimeout: () => []);
-    events.close();
-
-    return TestRun(
-      // A deadline leaves no exit code to report; the classifier reads the
-      // timeout marker instead.
-      exitCode: code ?? -1,
-      timedOut: code == null,
-      output: output.toString(),
-      errorOutput: errors.toString(),
-      events: events,
-      duration: watch.elapsed,
-    );
-  }
+    ],
+    root: root,
+    timeout: timeout,
+  );
 }

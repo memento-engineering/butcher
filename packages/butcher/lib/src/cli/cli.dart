@@ -4,7 +4,7 @@ import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
 import '../config/diff_scope.dart';
-import '../engine/dart_test_runner.dart';
+import '../engine/flutter_sdk.dart';
 import '../engine/engine.dart';
 import '../engine/full_coverage_provider.dart';
 import '../engine/lcov_coverage_provider.dart';
@@ -145,11 +145,22 @@ Future<int> butcherMain(
     p.absolute(options.rest.isEmpty ? '.' : options.rest.single),
   );
   final Set<String>? scope;
+  final String? flutter;
   try {
     scope = await _scope(options, projectRoot);
+    flutter = flutterFor(projectRoot);
+    if (flutter != null && maxHeapMb != null) {
+      throw const FormatException(
+        '--max-heap-mb does not reach flutter test yet; drop it for a '
+        'Flutter package',
+      );
+    }
   } on FormatException catch (error) {
     stderr.writeln(error.message);
     return 64;
+  } on RunAborted catch (abort) {
+    stderr.writeln(abort.message);
+    return 70;
   }
   final resolvedPaths = paths ?? ButcherPaths.production();
   // Given, then found, then collected by the engine (ADR 0020).
@@ -207,6 +218,7 @@ Future<int> butcherMain(
         'Argv': arguments,
         'Scope': ?scope?.toList(),
         'MaxHeapMb': ?maxHeapMb,
+        'Flutter': ?flutter,
       },
     );
 
@@ -223,8 +235,8 @@ Future<int> butcherMain(
       jobs: jobs,
       coverage: coverage,
       scope: scope,
-      runnerFactory: (root, concurrency) =>
-          DartTestRunner(root, concurrency: concurrency, maxHeapMb: maxHeapMb),
+      flutter: flutter,
+      maxHeapMb: maxHeapMb,
       trimWorkspace: options.option('sandbox-scope') == 'package',
       logger: logger,
       onProgress: verbose

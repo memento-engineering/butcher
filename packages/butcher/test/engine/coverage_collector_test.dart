@@ -42,6 +42,32 @@ final class _ReportingRunner implements TestRunner {
   }
 }
 
+/// Writes one merged `lcov.info`, as `flutter test --coverage-path` does.
+final class _LcovRunner implements TestRunner {
+  _LcovRunner([this.source = 'lib/calc.dart']);
+
+  /// The `SF:` path the report records.
+  final String source;
+
+  @override
+  Future<TestRun> run({
+    List<String> suites = const [],
+    Duration? timeout,
+    bool failFast = false,
+    String? coverageDir,
+  }) async {
+    File(p.join(coverageDir!, 'lcov.info'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('SF:$source\nDA:1,2\nDA:2,0\nend_of_record\n');
+    return TestRun(
+      exitCode: 0,
+      timedOut: false,
+      output: '',
+      duration: const Duration(seconds: 1),
+    );
+  }
+}
+
 Map<String, Object?> _entry(String source, List<int> hits) => {
   'source': source,
   'script': <String, Object?>{},
@@ -228,6 +254,40 @@ void main() {
       ),
       reason: 'an unmeasured run must not pass as fully uncovered code',
     );
+  });
+
+  test('reads the merged lcov.info a flutter suite writes', () async {
+    final provider = await CoverageCollector(
+      root: sandbox.path,
+      outputDir: coverageDir,
+    ).collect(_LcovRunner());
+
+    expect(provider.merged.hits, {
+      'lib/calc.dart': {1: 2, 2: 0},
+    });
+  });
+
+  test('resolves an absolute lcov path the root spells differently', () async {
+    // The VM's spelling of a temp dir need not be butcher's: a symlinked
+    // root, or an 8.3 short name on Windows.
+    final link = Link(
+      p.join(
+        Directory.systemTemp.path,
+        'butcher_lcov_link_'
+        '${DateTime.now().microsecondsSinceEpoch}',
+      ),
+    )..createSync(sandbox.path);
+    addTearDown(link.deleteSync);
+    final real = File(
+      p.join(sandbox.path, 'lib', 'calc.dart'),
+    ).resolveSymbolicLinksSync();
+
+    final provider = await CoverageCollector(
+      root: link.path,
+      outputDir: p.join(link.path, 'coverage'),
+    ).collect(_LcovRunner(real));
+
+    expect(provider.merged.hits.keys, ['lib/calc.dart']);
   });
 
   test('aborts when the instrumented run fails', () async {

@@ -124,7 +124,7 @@ instead of the whole package. They are mutually exclusive.
 | 0 | The run finished and every gate passed |
 | 1 | A gate failed (`--threshold` or `--max-timeouts`) |
 | 64 | Usage error, including a `--files` path outside `lib/` or a `--diff-base` git cannot resolve |
-| 70 | The run aborted: held lock, red baseline, failed `pub get` or coverage collection |
+| 70 | The run aborted: held lock, red baseline, failed `pub get` or coverage collection, no `flutter` for a Flutter package |
 
 ## Baseline and sandbox
 
@@ -133,7 +133,8 @@ instead of the whole package. They are mutually exclusive.
   is given.
 - The project must resolve `package:test` 1.24.6 or newer; older versions abort
   the run.
-- Project dependencies are resolved first: butcher runs `dart pub get`,
+- Project dependencies are resolved first: butcher runs `dart pub get`
+  (`flutter pub get` for a Flutter package),
   refreshing stale configuration or writing `pubspec.lock` and `.dart_tool/`
   when absent.
 - Each worker tests in its own sandbox, a temp-directory copy of the project
@@ -146,6 +147,25 @@ instead of the whole package. They are mutually exclusive.
   narrows the sandbox's root `workspace:` list to match. Files outside every
   member, such as root-level tooling, are still copied. If the baseline goes
   red because a test reads an unreachable member, use the default scope.
+
+## Flutter packages
+
+A package with any dependency on the Flutter SDK (`flutter`, or
+`flutter_test` alone) runs its suites with `flutter test` instead of
+`dart test`. Nothing to configure.
+
+| Topic | Behaviour |
+|---|---|
+| Finding `flutter` | The command beside the `dart` butcher runs on, else `FLUTTER_ROOT`; never `PATH` |
+| Dependencies | `flutter pub get` |
+| Coverage | One merged `lcov.info`: uncovered mutants are skipped, covered ones run the whole suite |
+| `--max-heap-mb` | Not supported yet; exits 64 |
+
+- Run butcher with Flutter's own `dart` (`dart pub global activate butcher`
+  with Flutter's `dart` on the `PATH`), or set `FLUTTER_ROOT`. Without
+  either, a Flutter package aborts with exit 70.
+- Golden files must match the host they run on, like any other test: a
+  failing golden turns the baseline red.
 
 ## Exclusions
 

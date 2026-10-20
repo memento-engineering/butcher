@@ -53,5 +53,6 @@ flowchart TD
 | [memory-cap](../2026-10-20-memory-cap.md) | Memory cap | accepted |
 | [stale-coverage-check](../2026-10-20-stale-coverage-check.md) | Stale coverage check | accepted |
 | [sandbox-scope](../2026-10-20-sandbox-scope.md) | Sandbox scope | accepted |
+| [flutter-test-runner](../2026-10-20-flutter-test-runner.md) | Flutter test runner | accepted |
 
 Feature staging: [../../roadmap/index.md](../../roadmap/index.md).

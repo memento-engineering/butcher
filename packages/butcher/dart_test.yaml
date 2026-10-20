@@ -21,5 +21,9 @@
 #
 # A selection that names test files explicitly must NOT also pass `-x slow`, or
 # a tagged file silently selects nothing.
+#
+# `flutter` marks the suites that need a Flutter SDK; they skip themselves
+# where butcher cannot reach one, and CI's Flutter job runs them.
 tags:
   slow:
+  flutter:

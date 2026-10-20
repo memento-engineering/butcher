@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import '../model/test_events.dart';
+import 'flutter_test_runner.dart';
 import 'lcov_coverage_provider.dart';
 import 'run_aborted.dart';
 import 'suite_coverage_provider.dart';
@@ -43,7 +44,12 @@ final class CoverageCollector {
       );
     }
     final perSuite = _read();
-    final hits = <String, Map<int, int>>{};
+    // `flutter test` writes one merged report instead: no suite split, so
+    // every covered mutant routes to the whole suite.
+    final lcov = File(p.join(outputDir, flutterLcovName));
+    final hits = lcov.existsSync()
+        ? _readLcov(lcov)
+        : <String, Map<int, int>>{};
     for (final files in perSuite.values) {
       files.forEach((file, lines) {
         final merged = hits.putIfAbsent(file, () => {});
@@ -114,6 +120,29 @@ final class CoverageCollector {
       }
     }
     return perSuite;
+  }
+
+  /// The hits of the merged [lcov] report, keyed by sandbox-relative posix
+  /// path. Each path resolves through the filesystem like the VM reports'
+  /// do: an `SF:` path may spell the sandbox differently than [root] does.
+  Map<String, Map<int, int>> _readLcov(File lcov) {
+    final realRoot = Directory(root).resolveSymbolicLinksSync();
+    final parsed = LcovCoverageProvider.parse(
+      lcov.readAsStringSync(),
+      projectRoot: root,
+    ).hits;
+    String key(String relative) {
+      try {
+        final real = File(
+          p.normalize(p.join(root, relative)),
+        ).resolveSymbolicLinksSync();
+        return p.relative(real, from: realRoot).replaceAll(r'\', '/');
+      } on FileSystemException {
+        return relative;
+      }
+    }
+
+    return {for (final entry in parsed.entries) key(entry.key): entry.value};
   }
 
   /// Suite a report belongs to: `dart test` names each `<suite>.<runtime>.json`
