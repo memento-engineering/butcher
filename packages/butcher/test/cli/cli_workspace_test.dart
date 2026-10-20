@@ -126,4 +126,58 @@ void main() {
     expect(memberSource.readAsBytesSync(), originalMember);
     expect(siblingSource.readAsBytesSync(), originalSibling);
   });
+
+  test('copies only the reachable members under package scope', () async {
+    final fixture = await createFixtureWorkspace();
+    final manifest = File(p.join(fixture.root.path, 'pubspec.yaml'));
+    manifest.writeAsStringSync(
+      manifest.readAsStringSync().replaceFirst(
+        '  - packages/sibling\n',
+        '  - packages/sibling\n  - packages/unrelated\n',
+      ),
+    );
+    File(p.join(fixture.root.path, 'packages', 'unrelated', 'pubspec.yaml'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(
+        'name: unrelated\nresolution: workspace\n'
+        'environment:\n  sdk: ^3.12.0\n',
+      );
+    final out = StringBuffer();
+
+    final exit = await butcherMain(
+      [
+        '--jobs',
+        '1',
+        '--sandbox-scope',
+        'package',
+        '--no-collect-coverage',
+        fixture.member.path,
+      ],
+      out: out,
+      paths: paths,
+    );
+
+    expect(exit, 0, reason: out.toString());
+    expect(out.toString(), contains('MSI: 100.00%'));
+    final sandboxes = Directory(paths.root)
+        .listSync()
+        .whereType<Directory>()
+        .where((dir) => p.basename(dir.path).startsWith(sandboxPrefix))
+        .toList();
+    expect(sandboxes, isNotEmpty);
+    for (final sandbox in sandboxes) {
+      expect(
+        Directory(p.join(sandbox.path, 'packages', 'sibling')).existsSync(),
+        isTrue,
+      );
+      expect(
+        Directory(p.join(sandbox.path, 'packages', 'unrelated')).existsSync(),
+        isFalse,
+      );
+      expect(
+        File(p.join(sandbox.path, 'pubspec.yaml')).readAsStringSync(),
+        isNot(contains('unrelated')),
+      );
+    }
+  });
 }

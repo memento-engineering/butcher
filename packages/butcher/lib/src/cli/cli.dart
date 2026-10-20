@@ -66,6 +66,14 @@ Future<int> butcherMain(
           'Parallel workers, each with its own sandbox copy. '
           'Defaults to half the CPU cores.',
     )
+    ..addOption(
+      'sandbox-scope',
+      allowed: ['workspace', 'package'],
+      defaultsTo: 'workspace',
+      help:
+          'What a pub workspace member\'s sandbox copies: the whole '
+          'workspace, or only the members the package can reach.',
+    )
     ..addFlag(
       'collect-coverage',
       defaultsTo: true,
@@ -176,6 +184,7 @@ Future<int> butcherMain(
       paths: resolvedPaths,
       jobs: jobs,
       coverage: coverage,
+      trimWorkspace: options.option('sandbox-scope') == 'package',
       logger: logger,
       onProgress: verbose
           // The rendered `classified` event already covers verbose progress.

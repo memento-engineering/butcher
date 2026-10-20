@@ -29,6 +29,7 @@ import 'run_result.dart';
 import 'test_runner.dart';
 import 'test_version_check.dart';
 import 'viability_checker.dart';
+import 'workspace_closure.dart';
 
 /// Called after each classified mutant with progress counters.
 typedef ProgressCallback =
@@ -49,6 +50,7 @@ final class Engine {
     this.runnerFactory = _defaultRunnerFactory,
     this.onProgress,
     this.logger,
+    this.trimWorkspace = false,
     int? jobs,
   }) : registry = registry ?? MutatorRegistry.defaults(),
        jobs = jobs ?? defaultJobs,
@@ -86,6 +88,10 @@ final class Engine {
 
   /// Receives engine wide events; `null` disables engine logging.
   final ButcherLogger? logger;
+
+  /// Copies only the workspace members the project can reach into each
+  /// sandbox, instead of the whole workspace.
+  final bool trimWorkspace;
 
   /// Correlates and namespaces every mutant-run log from this engine run.
   final String runId;
@@ -161,12 +167,24 @@ final class Engine {
     // oversubscribe; the baseline uses the same concurrency to
     // keep deadlines calibrated (ADR 0017).
     final suiteConcurrency = max(1, Platform.numberOfProcessors ~/ jobs);
+    final closure = trimWorkspace && workspace.root != workspace.projectRoot
+        ? await WorkspaceClosure.resolve(workspace.root, workspace.projectRoot)
+        : null;
     final baseline = await Sandbox.create(
       projectRoot,
       paths: paths,
       workspaceRoot: workspace.root,
       logger: logger,
+      omit: closure?.excludes,
     );
+    if (closure != null) {
+      final manifest = File(p.join(baseline.root, 'pubspec.yaml'));
+      manifest.writeAsStringSync(closure.trim(manifest.readAsStringSync()));
+      logger?.info('trimmed the sandbox workspace to {Kept}', {
+        'Kept': closure.kept.toList()..sort(),
+        'Dropped': closure.dropped.toList()..sort(),
+      });
+    }
     await pubGet(baseline.projectRoot, label: 'the sandbox');
     ensureTestVersion(baseline.root);
     // One pristine clone before the baseline; the workers are cloned
@@ -185,11 +203,15 @@ final class Engine {
       final evidence = summary.isEmpty
           ? '${background.output}${background.errorOutput}'
           : summary;
+      final trimmed = closure == null
+          ? ''
+          : 'The sandbox held only the reachable workspace members; '
+                'retry with --sandbox-scope=workspace.\n';
       throw RunAborted(
         'baseline is red; a green suite is a precondition '
         '(ADR 0005). If the sandbox is missing an asset the suite needs, '
         "check the project's gitignore rules: they decide the copy set.\n"
-        '$evidence',
+        '$trimmed$evidence',
       );
     }
     final deadline = deadlineFor(background.duration);
