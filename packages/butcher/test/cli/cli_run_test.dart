@@ -194,4 +194,33 @@ void main() {
       contains('no scoreable mutants, so no MSI: the 50.00% threshold'),
     );
   });
+
+  test('mutates only the files --files names', () async {
+    final dir = await createFixturePackage();
+    File(
+      p.join(dir.path, 'lib', 'other.dart'),
+    ).writeAsStringSync('int sub(int a, int b) => a - b;\n');
+
+    final exit = await butcherMain(
+      [
+        '--files',
+        'lib/calc.dart',
+        '--output',
+        'report.json',
+        '--no-collect-coverage',
+        dir.path,
+      ],
+      out: StringBuffer(),
+      paths: paths,
+    );
+
+    expect(exit, 0);
+    final report =
+        jsonDecode(File(p.join(dir.path, 'report.json')).readAsStringSync())
+            as Map<String, dynamic>;
+    expect((report['files'] as Map<String, dynamic>).keys, ['lib/calc.dart']);
+    expect(report['config'], {
+      'scope': ['lib/calc.dart'],
+    });
+  });
 }

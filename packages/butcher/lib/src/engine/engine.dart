@@ -49,6 +49,7 @@ final class Engine {
     this.runnerFactory = _defaultRunnerFactory,
     this.onProgress,
     this.logger,
+    this.scope,
     int? jobs,
   }) : registry = registry ?? MutatorRegistry.defaults(),
        jobs = jobs ?? defaultJobs,
@@ -86,6 +87,10 @@ final class Engine {
 
   /// Receives engine wide events; `null` disables engine logging.
   final ButcherLogger? logger;
+
+  /// Project-relative posix paths the run may mutate; `null` mutates all of
+  /// `lib/`. `butcher.yaml` exclusions still apply inside it.
+  final Set<String>? scope;
 
   /// Correlates and namespaces every mutant-run log from this engine run.
   final String runId;
@@ -311,10 +316,13 @@ final class Engine {
     CoverageProvider coverage,
   ) async {
     final watch = Stopwatch()..start();
+    final excluded = MutationScope.load(projectRoot).excludes;
+    final scope = this.scope;
     final generator = MutantGenerator(
       projectRoot: projectRoot,
       registry: registry,
-      isExcluded: MutationScope.load(projectRoot).excludes,
+      isExcluded: (path) =>
+          excluded(path) || (scope != null && !scope.contains(path)),
     );
     final (mutants, sources) = await generator.generate();
     coverage.indexSources(sources);
