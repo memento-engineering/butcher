@@ -37,11 +37,16 @@ Future<String> writeReport(
   Map<String, String> sources = const {
     'lib/a.dart': '// header\nint add(int a, int b) => a + b;\n',
   },
+  Set<String>? scope,
 }) async {
   final dir = await Directory.systemTemp.createTemp('butcher_report_');
   addTearDown(() => dir.delete(recursive: true));
   final output = p.join(dir.path, 'report.json');
-  await StrykerJsonSink(sources: sources, outputPath: output).write(results);
+  await StrykerJsonSink(
+    sources: sources,
+    outputPath: output,
+    scope: scope,
+  ).write(results);
   return File(output).readAsStringSync();
 }
 
@@ -380,5 +385,22 @@ void main() {
       3,
       reason: 'the three explained failures stay distinguishable',
     );
+  });
+
+  test('StrykerJsonSink marks a scoped run in its config', () async {
+    final full = schema.parseMutationTestReport(
+      await writeReport([result(Outcome.killed)]),
+    );
+    final scoped = schema.parseMutationTestReport(
+      await writeReport(
+        [result(Outcome.killed)],
+        scope: {'lib/b.dart', 'lib/a.dart'},
+      ),
+    );
+
+    expect(full.config, isNull);
+    expect(scoped.config, {
+      'scope': ['lib/a.dart', 'lib/b.dart'],
+    });
   });
 }
