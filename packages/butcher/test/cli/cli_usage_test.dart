@@ -85,6 +85,20 @@ void main() {
     );
   });
 
+  test('rejects an invalid heap cap with exit code 64', () async {
+    for (final value in ['0', 'lots']) {
+      expect(
+        await butcherMain(
+          ['--max-heap-mb', value],
+          out: StringBuffer(),
+          paths: paths,
+        ),
+        64,
+        reason: value,
+      );
+    }
+  });
+
   test('prints usage with exit code 0 for --help', () async {
     final out = StringBuffer();
     expect(await butcherMain(['--help'], out: out, paths: paths), 0);

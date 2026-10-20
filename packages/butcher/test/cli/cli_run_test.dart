@@ -33,6 +33,38 @@ void main() {
 }
 ''';
 
+/// An iterator that ends after one element; flipping either literal in
+/// `moveNext` makes it endless, so draining it allocates without bound.
+const _onceCalc = '''
+class Once implements Iterator<int> {
+  var _done = false;
+
+  @override
+  int get current => 1;
+
+  @override
+  bool moveNext() {
+    if (_done) return false;
+    _done = true;
+    return true;
+  }
+}
+
+class Ones extends Iterable<int> {
+  @override
+  Iterator<int> get iterator => Once();
+}
+''';
+
+const _onceTest = '''
+import 'package:fixture/calc.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test('drains', () => expect(Ones().toList(), [1]));
+}
+''';
+
 /// Collects what the CLI writes to `stderr` under [IOOverrides].
 final class _CapturedStderr implements Stdout {
   final _buffer = StringBuffer();
@@ -174,6 +206,27 @@ void main() {
     expect(out.toString(), contains('MSI: none (no scoreable mutants)'));
     expect(out.toString(), contains('Timeout rate: 100.00%'));
   });
+
+  test(
+    'reports a runaway mutant under --max-heap-mb as a memory error',
+    () async {
+      final dir = await createFixturePackage(
+        calc: _onceCalc,
+        testSource: _onceTest,
+      );
+      final out = StringBuffer();
+
+      final exit = await butcherMain(
+        ['--max-heap-mb', '256', '--no-collect-coverage', dir.path],
+        out: out,
+        paths: paths,
+      );
+
+      expect(exit, 0, reason: out.toString());
+      expect(out.toString(), contains('memoryError: '));
+      expect(out.toString(), isNot(contains('runError: ')));
+    },
+  );
 
   test('fails the threshold closed when no mutant is scoreable', () async {
     final dir = await createFixturePackage(calc: 'int add(int a, int b) => 5;');

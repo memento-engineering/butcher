@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
+import '../engine/dart_test_runner.dart';
 import '../engine/engine.dart';
 import '../engine/full_coverage_provider.dart';
 import '../engine/lcov_coverage_provider.dart';
@@ -66,6 +67,13 @@ Future<int> butcherMain(
           'Parallel workers, each with its own sandbox copy. '
           'Defaults to half the CPU cores.',
     )
+    ..addOption(
+      'max-heap-mb',
+      help:
+          'Cap the heap of every test process at this many megabytes. '
+          'A mutant that exhausts it is a memoryError, scored as neither '
+          'killed nor survived.',
+    )
     ..addFlag(
       'collect-coverage',
       defaultsTo: true,
@@ -84,6 +92,7 @@ Future<int> butcherMain(
   final ArgResults options;
   final double? threshold;
   final int? jobs;
+  final int? maxHeapMb;
   final int? maxTimeouts;
   final File? coverageFile;
   try {
@@ -94,7 +103,8 @@ Future<int> butcherMain(
       );
     }
     threshold = _threshold(options);
-    jobs = _jobs(options);
+    jobs = _positive(options, 'jobs');
+    maxHeapMb = _positive(options, 'max-heap-mb');
     maxTimeouts = _maxTimeouts(options);
     coverageFile = _coverageFile(options);
   } on FormatException catch (error) {
@@ -161,6 +171,7 @@ Future<int> butcherMain(
         'Dart': Platform.version,
         'Os': Platform.operatingSystem,
         'Argv': arguments,
+        'MaxHeapMb': ?maxHeapMb,
       },
     );
 
@@ -176,6 +187,8 @@ Future<int> butcherMain(
       paths: resolvedPaths,
       jobs: jobs,
       coverage: coverage,
+      runnerFactory: (root, concurrency) =>
+          DartTestRunner(root, concurrency: concurrency, maxHeapMb: maxHeapMb),
       logger: logger,
       onProgress: verbose
           // The rendered `classified` event already covers verbose progress.
@@ -263,12 +276,12 @@ Future<int> butcherMain(
 double? _rounded(double? value) =>
     value == null ? null : double.parse(value.toStringAsFixed(2));
 
-int? _jobs(ArgResults options) {
-  final raw = options.option('jobs');
+int? _positive(ArgResults options, String name) {
+  final raw = options.option(name);
   if (raw == null) return null;
   final value = int.tryParse(raw);
   if (value == null || value < 1) {
-    throw FormatException('--jobs must be a positive integer: $raw');
+    throw FormatException('--$name must be a positive integer: $raw');
   }
   return value;
 }
