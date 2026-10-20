@@ -153,16 +153,19 @@ Future<int> butcherMain(
           found.readAsStringSync(),
           projectRoot: projectRoot,
         );
-  // A found report that records nothing is stale, not a project without
-  // coverage: routing on it would report every mutant as noCoverage
-  // (ADR 0020). A given one is the user's choice and is honoured as is.
+  // A found report that records nothing, or predates the sources it
+  // describes, is stale, not a project without coverage: routing on it would
+  // report new lines as noCoverage (ADR 0020). A given one is the user's
+  // choice and is honoured as is.
   final ingested =
-      parsed != null && (coverageFile != null || parsed.hits.isNotEmpty)
+      parsed != null &&
+          (coverageFile != null ||
+              (parsed.hits.isNotEmpty &&
+                  !_predatesSources(found!, projectRoot)))
       ? parsed
       : null;
-  final coverage =
-      ingested ??
-      (options.flag('collect-coverage') ? null : const FullCoverageProvider());
+  final collect = options.flag('collect-coverage');
+  final coverage = ingested ?? (collect ? null : const FullCoverageProvider());
   // Startup cleanup is the first run stage and needs the lock first: it must
   // never remove another active run's state (ADR 0018).
   final RunWorkspace workspace;
@@ -232,6 +235,7 @@ Future<int> butcherMain(
   int exitCode;
   try {
     sink.writeln('mutating $projectRoot');
+    sink.writeln(_coverageSource(found, ingested != null, collect));
     final result = await engine.run();
     sink.writeln(
       'baseline: ${result.baseline.inSeconds}s, '
@@ -363,6 +367,33 @@ String _scopedFile(String raw, String projectRoot) {
     throw FormatException('--files takes existing .dart files in lib/: $raw');
   }
   return relative;
+}
+
+/// Whether anything under the project's `lib/` or `test/` changed after
+/// [report] was written.
+bool _predatesSources(File report, String projectRoot) {
+  final written = report.lastModifiedSync();
+  for (final name in ['lib', 'test']) {
+    final dir = Directory(p.join(projectRoot, name));
+    if (!dir.existsSync()) continue;
+    for (final entity in dir.listSync(recursive: true, followLinks: false)) {
+      if (entity is File && entity.lastModifiedSync().isAfter(written)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/// The console line naming what routes the run, so a report's skew is never
+/// invisible in its scores.
+String _coverageSource(File? found, bool ingested, bool collect) {
+  final fallback = collect
+      ? 'collecting it in one extra suite run'
+      : 'treating all code as covered';
+  if (found == null) return 'coverage: $fallback';
+  if (!ingested) return 'coverage: skipping stale ${found.path}; $fallback';
+  return 'coverage: ${found.path} (modified ${found.lastModifiedSync()})';
 }
 
 int? _maxTimeouts(ArgResults options) {

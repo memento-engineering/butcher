@@ -11,6 +11,9 @@
 - `--max-heap-mb` caps the heap of every test process butcher starts. A
   mutant that exhausts it is reported as `memoryError` instead of taking the
   host down, and scores as neither killed nor survived.
+- A `coverage/lcov.info` older than any file in `lib/` or `test/` is skipped
+  as stale and coverage is collected instead, so new lines are no longer
+  reported as noCoverage. The console names the coverage source of every run.
 
 ## 0.1.0
 
