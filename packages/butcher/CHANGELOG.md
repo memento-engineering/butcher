@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `--max-heap-mb` caps the heap of every test process butcher starts. A
+  mutant that exhausts it is reported as `memoryError` instead of taking the
+  host down, and scores as neither killed nor survived.
+
 ## 0.1.0
 
 - First release. butcher is a fork of the MIT-licensed `radioactive_dart`
