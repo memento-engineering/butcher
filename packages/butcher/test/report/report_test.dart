@@ -37,11 +37,16 @@ Future<String> writeReport(
   Map<String, String> sources = const {
     'lib/a.dart': '// header\nint add(int a, int b) => a + b;\n',
   },
+  Set<String>? scope,
 }) async {
   final dir = await Directory.systemTemp.createTemp('butcher_report_');
   addTearDown(() => dir.delete(recursive: true));
   final output = p.join(dir.path, 'report.json');
-  await StrykerJsonSink(sources: sources, outputPath: output).write(results);
+  await StrykerJsonSink(
+    sources: sources,
+    outputPath: output,
+    scope: scope,
+  ).write(results);
   return File(output).readAsStringSync();
 }
 
@@ -204,9 +209,7 @@ void main() {
 
   test('StrykerJsonSink explains the failures a status cannot', () async {
     // Two outcomes collapse onto RuntimeError and a third, unviable, has a
-    // status nobody can read; all three get a reason. The memory error is
-    // reserved — no classification path assigns it — so this result is
-    // constructed directly rather than driven through a run.
+    // status nobody can read; all three get a reason.
     final mutants = await everyOutcomeWritten();
     final reasons = {
       for (final mutant in mutants)
@@ -380,5 +383,22 @@ void main() {
       3,
       reason: 'the three explained failures stay distinguishable',
     );
+  });
+
+  test('StrykerJsonSink marks a scoped run in its config', () async {
+    final full = schema.parseMutationTestReport(
+      await writeReport([result(Outcome.killed)]),
+    );
+    final scoped = schema.parseMutationTestReport(
+      await writeReport(
+        [result(Outcome.killed)],
+        scope: {'lib/b.dart', 'lib/a.dart'},
+      ),
+    );
+
+    expect(full.config, isNull);
+    expect(scoped.config, {
+      'scope': ['lib/a.dart', 'lib/b.dart'],
+    });
   });
 }

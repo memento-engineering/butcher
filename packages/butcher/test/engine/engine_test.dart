@@ -130,6 +130,32 @@ final class SuiteWritingRunner implements TestRunner {
   }
 }
 
+/// Calls [observe] on every run after the baseline, while that run's mutant
+/// is still in flight.
+final class ObservingRunner implements TestRunner {
+  ObservingRunner(this.observe);
+
+  final void Function() observe;
+  var _calls = 0;
+
+  @override
+  Future<TestRun> run({
+    List<String> suites = const [],
+    Duration? timeout,
+    bool failFast = false,
+    String? coverageDir,
+  }) async {
+    final baseline = _calls++ == 0;
+    if (!baseline) observe();
+    return TestRun(
+      exitCode: baseline ? 0 : 1,
+      timedOut: false,
+      output: baseline ? '' : _killedOutput,
+      duration: const Duration(seconds: 1),
+    );
+  }
+}
+
 final class NothingCovered implements CoverageProvider {
   const NothingCovered();
 
@@ -393,6 +419,43 @@ void main() {
     );
     expect(roots.toSet(), hasLength(3), reason: 'sandboxes are distinct');
     expect(_sandboxesIn(paths), hasLength(3));
+  });
+
+  test('logs each mutant as started and tracks it while in flight', () async {
+    final temp = await Directory.systemTemp.createTemp('butcher_engine_log_');
+    addTearDown(() => temp.delete(recursive: true));
+    final paths = ButcherPaths(root: temp.path);
+    late final Engine engine;
+    final seen = <List<String>>[];
+    final runner = ObservingRunner(() => seen.add([...engine.inFlight]));
+    engine = Engine(
+      projectRoot: await miniProject(),
+      paths: paths,
+      jobs: 1,
+      runnerFactory: (_, _) => runner,
+      coverage: RecordingCoverage(),
+      logger: ButcherLogger(
+        verbose: false,
+        path: paths.toolLog,
+        console: StringBuffer(),
+      ),
+    );
+
+    final result = await engine.run();
+
+    final ids = [for (final r in result.results) r.mutant.id];
+    expect(seen, [
+      for (final id in ids) [id],
+    ]);
+    expect(engine.inFlight, isEmpty);
+    final messages = [
+      for (final line in File(paths.toolLog).readAsLinesSync())
+        jsonDecode(line) as Map<String, dynamic>,
+    ].where((e) => e['MutantId'] == ids.first).map((e) => e['@mt']).toList();
+    expect(messages, [
+      'started {MutantId} in {Sandbox}',
+      'classified {MutantId} as {Outcome} ({Done}/{Total})',
+    ]);
   });
 
   test('logs engine stages without removing existing run logs', () async {

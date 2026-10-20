@@ -11,7 +11,8 @@ register:
   obsoletes: []
   updates: []
   obsoleted-by: null
-  updated-by: []
+  updated-by:
+    - stale-coverage-check
   bead: null
   legacy-id: "0020"
 ---

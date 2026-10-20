@@ -14,13 +14,19 @@ final class DartTestRunner implements TestRunner {
   ///
   /// [concurrency] caps the suite's own test concurrency so parallel
   /// workers share the cores instead of oversubscribing them (ADR 0017).
-  const DartTestRunner(this.root, {this.concurrency});
+  ///
+  /// [maxHeapMb] caps the old generation of the VM hosting the suite; its
+  /// tests run in that VM's isolates, so a runaway mutant fails there.
+  const DartTestRunner(this.root, {this.concurrency, this.maxHeapMb});
 
   /// Package root the suite runs from.
   final String root;
 
   /// Value for `dart test --concurrency`; `null` keeps the suite default.
   final int? concurrency;
+
+  /// Heap cap in megabytes; `null` leaves the VM uncapped.
+  final int? maxHeapMb;
 
   /// Characters retained from stdout. Every verdict is parsed out of this
   /// stream, so the bound sits above any real suite (~16k tests' events) and
@@ -41,6 +47,9 @@ final class DartTestRunner implements TestRunner {
     // The suite is a kill boundary from the moment it exists, so what it
     // spawns afterwards dies with it in one call (ADR 0022).
     final process = await SupervisedProcess.start(Platform.resolvedExecutable, [
+      // DART_VM_OPTIONS does not reach the VM `dart test` runs in; only a
+      // flag before the command does.
+      if (maxHeapMb != null) '--old_gen_heap_size=$maxHeapMb',
       'test',
       '--reporter',
       'json',

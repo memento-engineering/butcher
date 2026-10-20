@@ -36,6 +36,10 @@ final class SignalWatcher {
   final void Function(int code) _quit;
   final _subscriptions = <StreamSubscription<ProcessSignal>>[];
 
+  /// Called once a signal arrives, before any suite is reaped, so the run can
+  /// report what it was doing while it still knows.
+  void Function()? onSignal;
+
   /// Whether the handler is installed.
   bool get watching => _subscriptions.isNotEmpty;
 
@@ -57,6 +61,7 @@ final class SignalWatcher {
 
   Future<void> _reap(ProcessSignal signal) async {
     stop();
+    onSignal?.call();
     await terminateAllSupervisedProcesses();
     // 128 plus the signal number is the shell's convention for a signalled
     // exit, and is what a caller reads the interrupt back out of.
