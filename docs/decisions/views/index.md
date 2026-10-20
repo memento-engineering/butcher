@@ -49,5 +49,6 @@ flowchart TD
 | [live-event-surface](../2026-09-22-live-event-surface.md) | Live event surface | accepted |
 | [workspace-shape](../2026-09-22-workspace-shape.md) | Workspace shape | accepted |
 | [standard-mutation-vocabulary](../2026-09-22-standard-mutation-vocabulary.md) | Standard mutation-testing vocabulary | accepted |
+| [sandbox-scope](../2026-10-20-sandbox-scope.md) | Sandbox scope | accepted |
 
 Feature staging: [../../roadmap/index.md](../../roadmap/index.md).
