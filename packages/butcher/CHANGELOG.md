@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- A `coverage/lcov.info` older than any file in `lib/` or `test/` is skipped
+  as stale and coverage is collected instead, so new lines are no longer
+  reported as noCoverage. The console names the coverage source of every run.
+
 ## 0.1.0
 
 - First release. butcher is a fork of the MIT-licensed `radioactive_dart`
