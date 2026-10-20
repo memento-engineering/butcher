@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `--sandbox-scope=package` copies only the pub workspace members the
+  selected package reaches into each sandbox, instead of the whole workspace.
+  The default, `workspace`, is unchanged.
+
 ## 0.1.0
 
 - First release. butcher is a fork of the MIT-licensed `radioactive_dart`

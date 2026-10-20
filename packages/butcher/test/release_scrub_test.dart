@@ -69,13 +69,13 @@ void main() {
 
     setUp(() => changelog = _read('CHANGELOG.md'));
 
-    test('has exactly one version heading', () {
+    test('starts at the fork, carrying no upstream versions', () {
       final headings = RegExp(
         r'^##\s+(\S+)\s*$',
         multiLine: true,
       ).allMatches(changelog).map((m) => m.group(1)).toList();
 
-      expect(headings, ['0.1.0']);
+      expect(headings.last, '0.1.0');
     });
 
     test('states the fork in its first entry', () {

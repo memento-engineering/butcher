@@ -35,6 +35,8 @@ Usage: butcher [options] [project root]
 -c, --coverage                 lcov.info to route from: mutants on lines no test hits are reported as noCoverage without running the suite.
     --max-timeouts             Exit 1 when more mutants than this time out. Timeouts are inconclusive and score as neither killed nor survived.
 -j, --jobs                     Parallel workers, each with its own sandbox copy. Defaults to half the CPU cores.
+    --sandbox-scope            What a pub workspace member's sandbox copies: the whole workspace, or only the members the package can reach.
+                               [workspace (default), package]
     --[no-]collect-coverage    Collect coverage with an extra instrumented suite run when no report is given or found. Disabling treats all code as covered.
                                (defaults to on)
 -v, --verbose                  Also stream structured log events to the console.
@@ -83,6 +85,7 @@ MSI but leaves the covered-code MSI intact. Coverage comes from, in order:
 | `--max-timeouts` | Exit 1 when more mutants than this time out | None |
 | `-o, --output` | Report path, relative to the project root | `mutation-report.json` |
 | `-j, --jobs` | Parallel workers, each with its own sandbox copy | Half the CPU cores |
+| `--sandbox-scope` | `workspace` copies the whole pub workspace, `package` only the reachable members | `workspace` |
 | `-v, --verbose` | Also stream structured log events to the console | Off |
 
 ## Exit codes
@@ -109,6 +112,11 @@ MSI but leaves the covered-code MSI intact. Coverage comes from, in order:
   member copies the whole workspace into each sandbox; tests, mutant
   generation, coverage paths and report output stay rooted at the selected
   member.
+- `--sandbox-scope=package` copies only the members the selected one reaches
+  through its dependencies, dev dependencies and overrides, transitively, and
+  narrows the sandbox's root `workspace:` list to match. Files outside every
+  member, such as root-level tooling, are still copied. If the baseline goes
+  red because a test reads an unreachable member, use the default scope.
 
 ## Exclusions
 
