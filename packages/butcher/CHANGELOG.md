@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 - Flutter packages: a package depending on the Flutter SDK runs its suites
   with `flutter test` and resolves with `flutter pub get`, using the `flutter`
