@@ -81,11 +81,33 @@ jobs:
         working-directory: packages/butcher
         run: dart test -t slow
 
+  # The flutter-tagged suites skip where no Flutter SDK is reachable, which is
+  # every job above; this one runs butcher on Flutter's own dart.
+  flutter:
+    name: Flutter suites
+    needs: [test]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      # The Flutter release that bundles the pinned Dart SDK.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          channel: stable
+      - run: dart pub get
+      - name: Test butcher
+        working-directory: packages/butcher
+        run: dart test -t flutter
+
   # Branch protection needs one check name that does not change when the matrix
   # does, so it requires this job and never the legs.
   ci-required:
     name: CI required
-    needs: [test, slow]
+    needs: [test, slow, flutter]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -97,5 +119,9 @@ jobs:
           fi
           if [ "${{ needs.slow.result }}" != "success" ]; then
             echo "slow result: ${{ needs.slow.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.flutter.result }}" != "success" ]; then
+            echo "flutter result: ${{ needs.flutter.result }}"
             exit 1
           fi
