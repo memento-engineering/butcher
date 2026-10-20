@@ -40,7 +40,17 @@ const strykerLowThreshold = 60;
 /// tests.
 final class StrykerJsonSink implements ReportSink {
   /// Creates a sink over generation-time [sources], writing [outputPath].
-  const StrykerJsonSink({required this.sources, required this.outputPath});
+  ///
+  /// A run narrowed to [scope] records it under the document's `config`, so
+  /// a reader never mistakes its score for the whole package's.
+  const StrykerJsonSink({
+    required this.sources,
+    required this.outputPath,
+    this.scope,
+  });
+
+  /// Project-relative paths a scoped run mutated; `null` for a full run.
+  final Set<String>? scope;
 
   /// Pristine source per mutated file; offsets refer to these texts.
   final Map<String, String> sources;
@@ -137,6 +147,10 @@ final class StrykerJsonSink implements ReportSink {
         high: strykerHighThreshold,
         low: strykerLowThreshold,
       ),
+      config: switch (scope) {
+        final scope? => {'scope': scope.toList()..sort()},
+        null => null,
+      },
       files: {
         for (final entry in mutantsOf.entries)
           entry.key: FileResult(
