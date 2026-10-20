@@ -52,5 +52,6 @@ flowchart TD
 | [scoped-runs](../2026-10-20-scoped-runs.md) | Scoped runs | accepted |
 | [memory-cap](../2026-10-20-memory-cap.md) | Memory cap | accepted |
 | [stale-coverage-check](../2026-10-20-stale-coverage-check.md) | Stale coverage check | accepted |
+| [sandbox-scope](../2026-10-20-sandbox-scope.md) | Sandbox scope | accepted |
 
 Feature staging: [../../roadmap/index.md](../../roadmap/index.md).

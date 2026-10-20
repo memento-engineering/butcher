@@ -14,6 +14,9 @@
 - A `coverage/lcov.info` older than any file in `lib/` or `test/` is skipped
   as stale and coverage is collected instead, so new lines are no longer
   reported as noCoverage. The console names the coverage source of every run.
+- `--sandbox-scope=package` copies only the pub workspace members the
+  selected package reaches into each sandbox, instead of the whole workspace.
+  The default, `workspace`, is unchanged.
 
 ## 0.1.0
 

@@ -41,12 +41,15 @@ final class Sandbox {
   /// dir. The copy set is the workspace's git listing, so the repository's
   /// own ignore rules decide it; a root outside a repository falls back to a
   /// walk under the built-in exclusions alone.
+  ///
+  /// [omit] drops further root-relative posix paths from the copy set.
   static Future<Sandbox> create(
     String projectRoot, {
     required ButcherPaths paths,
     String? workspaceRoot,
     ButcherLogger? logger,
     GitLister lister = runGit,
+    bool Function(String relative)? omit,
   }) async {
     final project = p.normalize(p.absolute(projectRoot));
     final source = p.normalize(p.absolute(workspaceRoot ?? project));
@@ -71,6 +74,7 @@ final class Sandbox {
       prune,
       logger,
       lister,
+      omit ?? (_) => false,
     );
     return Sandbox._(
       target.path,
@@ -90,13 +94,15 @@ final class Sandbox {
     String prune,
     ButcherLogger? logger,
     GitLister lister,
+    bool Function(String relative) omit,
   ) async {
     try {
       final manifest = await FileManifest.of(source, lister: lister);
       return await _copyPaths(source, destination, [
         for (final relative in manifest.paths.toList()..sort())
           if (!_pruned(source, relative, prune) &&
-              !_excluded(relative, source, project))
+              !_excluded(relative, source, project) &&
+              !omit(relative))
             relative,
       ], logger);
     } on NotAGitRepository {
@@ -105,7 +111,7 @@ final class Sandbox {
         'it is not a git repository',
         {'WorkspaceRoot': source},
       );
-      return _copyWalk(source, destination, project, prune);
+      return _copyWalk(source, destination, project, prune, omit);
     }
   }
 
@@ -211,6 +217,7 @@ final class Sandbox {
     String destination,
     String project,
     String prune,
+    bool Function(String relative) omit,
   ) async {
     final copied = <String>{};
     await _copyInto(
@@ -219,7 +226,9 @@ final class Sandbox {
       '',
       copied,
       (entity, relative) =>
-          p.equals(prune, entity.path) || _excluded(relative, source, project),
+          p.equals(prune, entity.path) ||
+          _excluded(relative, source, project) ||
+          omit(relative),
     );
     return copied;
   }
