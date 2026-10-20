@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import '../model/test_events.dart';
+import 'flutter_test_runner.dart';
 import 'lcov_coverage_provider.dart';
 import 'run_aborted.dart';
 import 'suite_coverage_provider.dart';
@@ -43,7 +44,15 @@ final class CoverageCollector {
       );
     }
     final perSuite = _read();
-    final hits = <String, Map<int, int>>{};
+    // `flutter test` writes one merged report instead: no suite split, so
+    // every covered mutant routes to the whole suite.
+    final lcov = File(p.join(outputDir, flutterLcovName));
+    final hits = lcov.existsSync()
+        ? LcovCoverageProvider.parse(
+            lcov.readAsStringSync(),
+            projectRoot: root,
+          ).hits
+        : <String, Map<int, int>>{};
     for (final files in perSuite.values) {
       files.forEach((file, lines) {
         final merged = hits.putIfAbsent(file, () => {});

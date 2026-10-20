@@ -18,6 +18,7 @@ import 'sandbox.dart';
 import 'coverage_collector.dart';
 import 'coverage_provider.dart';
 import 'dart_test_runner.dart';
+import 'flutter_test_runner.dart';
 import 'full_coverage_provider.dart';
 import 'mutant_generator.dart';
 import 'outcome_classifier.dart';
@@ -47,20 +48,34 @@ final class Engine {
     required this.paths,
     MutatorRegistry? registry,
     this.coverage = const FullCoverageProvider(),
-    this.runnerFactory = _defaultRunnerFactory,
+    RunnerFactory? runnerFactory,
     this.onProgress,
     this.logger,
     this.scope,
     this.trimWorkspace = false,
+    this.flutter,
+    int? maxHeapMb,
     int? jobs,
   }) : registry = registry ?? MutatorRegistry.defaults(),
+       runnerFactory =
+           runnerFactory ?? _defaultRunnerFactory(flutter, maxHeapMb),
        jobs = jobs ?? defaultJobs,
        runId =
            logger?.runId ??
            DateTime.now().microsecondsSinceEpoch.toRadixString(36);
 
-  static TestRunner _defaultRunnerFactory(String root, int suiteConcurrency) =>
-      DartTestRunner(root, concurrency: suiteConcurrency);
+  static RunnerFactory _defaultRunnerFactory(String? flutter, int? maxHeapMb) =>
+      (root, suiteConcurrency) => flutter == null
+      ? DartTestRunner(
+          root,
+          concurrency: suiteConcurrency,
+          maxHeapMb: maxHeapMb,
+        )
+      : FlutterTestRunner(
+          root,
+          flutter: flutter,
+          concurrency: suiteConcurrency,
+        );
 
   /// Default worker count: half the cores, since each suite process
   /// parallelizes internally already (ADR 0017).
@@ -78,8 +93,13 @@ final class Engine {
   /// Coverage seam; `null` collects coverage during the run (ADR 0020).
   final CoverageProvider? coverage;
 
-  /// Builds the runner for a sandbox root; seam for `flutter test`.
+  /// Builds the runner for a sandbox root: `flutter test` when [flutter] is
+  /// set, `dart test` otherwise.
   final RunnerFactory runnerFactory;
+
+  /// The `flutter` command a Flutter package's suites and dependency
+  /// resolution go through; `null` for a pure-Dart package.
+  final String? flutter;
 
   /// Optional per-mutant progress hook, called in completion order.
   final ProgressCallback? onProgress;
@@ -196,7 +216,7 @@ final class Engine {
         'Dropped': closure.dropped.toList()..sort(),
       });
     }
-    await pubGet(baseline.projectRoot, label: 'the sandbox');
+    await pubGet(baseline.projectRoot, label: 'the sandbox', flutter: flutter);
     ensureTestVersion(baseline.root);
     // One pristine clone before the baseline; the workers are cloned
     // from it, so none inherits what that suite writes into the package tree
@@ -538,7 +558,7 @@ final class Engine {
     // sandbox stages than from `pub get` here.
     if (!File(p.join(projectRoot, 'pubspec.yaml')).existsSync()) return;
     final watch = Stopwatch()..start();
-    await pubGet(projectRoot, label: 'the project');
+    await pubGet(projectRoot, label: 'the project', flutter: flutter);
     logger?.info('provisioned {ProjectRoot} in {DurationMs} ms', {
       'ProjectRoot': projectRoot,
       'DurationMs': watch.elapsedMilliseconds,

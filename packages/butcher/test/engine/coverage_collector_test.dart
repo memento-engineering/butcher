@@ -42,6 +42,27 @@ final class _ReportingRunner implements TestRunner {
   }
 }
 
+/// Writes one merged `lcov.info`, as `flutter test --coverage-path` does.
+final class _LcovRunner implements TestRunner {
+  @override
+  Future<TestRun> run({
+    List<String> suites = const [],
+    Duration? timeout,
+    bool failFast = false,
+    String? coverageDir,
+  }) async {
+    File(p.join(coverageDir!, 'lcov.info'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('SF:lib/calc.dart\nDA:1,2\nDA:2,0\nend_of_record\n');
+    return TestRun(
+      exitCode: 0,
+      timedOut: false,
+      output: '',
+      duration: const Duration(seconds: 1),
+    );
+  }
+}
+
 Map<String, Object?> _entry(String source, List<int> hits) => {
   'source': source,
   'script': <String, Object?>{},
@@ -228,6 +249,17 @@ void main() {
       ),
       reason: 'an unmeasured run must not pass as fully uncovered code',
     );
+  });
+
+  test('reads the merged lcov.info a flutter suite writes', () async {
+    final provider = await CoverageCollector(
+      root: sandbox.path,
+      outputDir: coverageDir,
+    ).collect(_LcovRunner());
+
+    expect(provider.merged.hits, {
+      'lib/calc.dart': {1: 2, 2: 0},
+    });
   });
 
   test('aborts when the instrumented run fails', () async {
