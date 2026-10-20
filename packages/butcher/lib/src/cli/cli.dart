@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
+import '../config/diff_scope.dart';
 import '../engine/dart_test_runner.dart';
 import '../engine/engine.dart';
 import '../engine/full_coverage_provider.dart';
@@ -54,6 +55,18 @@ Future<int> butcherMain(
           'lcov.info to route from: mutants on lines no test hits are '
           'reported as noCoverage without running the suite.',
     )
+    ..addMultiOption(
+      'files',
+      valueHelp: 'path',
+      help: 'Mutate only these lib/ files, relative to the project root.',
+    )
+    ..addOption(
+      'diff-base',
+      valueHelp: 'ref',
+      help:
+          'Mutate only the lib/ files changed since this git ref, '
+          'uncommitted and untracked ones included.',
+    )
     ..addOption(
       'max-timeouts',
       help:
@@ -102,6 +115,9 @@ Future<int> butcherMain(
         'expected at most one project root, got: ${options.rest.join(' ')}',
       );
     }
+    if (options.wasParsed('files') && options.wasParsed('diff-base')) {
+      throw const FormatException('--files and --diff-base are exclusive');
+    }
     threshold = _threshold(options);
     jobs = _positive(options, 'jobs');
     maxHeapMb = _positive(options, 'max-heap-mb');
@@ -120,6 +136,13 @@ Future<int> butcherMain(
   final projectRoot = p.normalize(
     p.absolute(options.rest.isEmpty ? '.' : options.rest.single),
   );
+  final Set<String>? scope;
+  try {
+    scope = await _scope(options, projectRoot);
+  } on FormatException catch (error) {
+    stderr.writeln(error.message);
+    return 64;
+  }
   final resolvedPaths = paths ?? ButcherPaths.production();
   // Given, then found, then collected by the engine (ADR 0020).
   final found = coverageFile ?? _projectCoverageFile(projectRoot);
@@ -171,6 +194,7 @@ Future<int> butcherMain(
         'Dart': Platform.version,
         'Os': Platform.operatingSystem,
         'Argv': arguments,
+        'Scope': ?scope?.toList(),
         'MaxHeapMb': ?maxHeapMb,
       },
     );
@@ -187,6 +211,7 @@ Future<int> butcherMain(
       paths: resolvedPaths,
       jobs: jobs,
       coverage: coverage,
+      scope: scope,
       runnerFactory: (root, concurrency) =>
           DartTestRunner(root, concurrency: concurrency, maxHeapMb: maxHeapMb),
       logger: logger,
@@ -202,6 +227,7 @@ Future<int> butcherMain(
     workspace.release();
     rethrow;
   }
+  watcher.onSignal = () => _reportInFlight(engine, logger);
 
   int exitCode;
   try {
@@ -217,6 +243,7 @@ Future<int> butcherMain(
     await StrykerJsonSink(
       sources: result.sources,
       outputPath: reportPath,
+      scope: scope,
     ).write(result.results);
     sink.writeln('report: $reportPath');
 
@@ -265,12 +292,27 @@ Future<int> butcherMain(
       'DurationMs': watch.elapsedMilliseconds,
     });
     stderr.writeln(abort.message);
+    _reportInFlight(engine, logger);
     exitCode = 70;
   } finally {
     watcher.stop();
     workspace.release();
   }
   return exitCode;
+}
+
+/// Names the mutants [engine] was running when the run stopped early.
+void _reportInFlight(Engine engine, ButcherLogger logger) {
+  final ids = [...engine.inFlight];
+  if (ids.isEmpty) return;
+  logger.error('stopped with {MutantCount} mutants in flight', {
+    'MutantCount': ids.length,
+    'MutantIds': ids,
+  });
+  stderr.writeln('mutants in flight:');
+  for (final id in ids) {
+    stderr.writeln('  $id');
+  }
 }
 
 double? _rounded(double? value) =>
@@ -300,6 +342,27 @@ File? _coverageFile(ArgResults options) {
 File? _projectCoverageFile(String projectRoot) {
   final file = File(p.join(projectRoot, 'coverage', 'lcov.info'));
   return file.existsSync() ? file : null;
+}
+
+/// The files a `--files` or `--diff-base` run may mutate; `null` when the
+/// run is not scoped.
+Future<Set<String>?> _scope(ArgResults options, String projectRoot) async {
+  final ref = options.option('diff-base');
+  if (ref != null) return diffScope(projectRoot, ref);
+  final files = options.multiOption('files');
+  if (files.isEmpty) return null;
+  return {for (final raw in files) _scopedFile(raw, projectRoot)};
+}
+
+String _scopedFile(String raw, String projectRoot) {
+  final path = p.normalize(p.join(projectRoot, raw));
+  final relative = p.relative(path, from: projectRoot).replaceAll(r'\', '/');
+  if (!relative.startsWith('lib/') ||
+      !relative.endsWith('.dart') ||
+      !File(path).existsSync()) {
+    throw FormatException('--files takes existing .dart files in lib/: $raw');
+  }
+  return relative;
 }
 
 int? _maxTimeouts(ArgResults options) {

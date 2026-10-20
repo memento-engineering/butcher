@@ -33,6 +33,8 @@ Usage: butcher [options] [project root]
 -o, --output                   Path of the Stryker JSON report.
                                (defaults to "mutation-report.json")
 -c, --coverage                 lcov.info to route from: mutants on lines no test hits are reported as noCoverage without running the suite.
+    --files=<path>             Mutate only these lib/ files, relative to the project root.
+    --diff-base=<ref>          Mutate only the lib/ files changed since this git ref, uncommitted and untracked ones included.
     --max-timeouts             Exit 1 when more mutants than this time out. Timeouts are inconclusive and score as neither killed nor survived.
 -j, --jobs                     Parallel workers, each with its own sandbox copy. Defaults to half the CPU cores.
     --max-heap-mb              Cap the heap of every test process at this many megabytes. A mutant that exhausts it is a memoryError, scored as neither killed nor survived.
@@ -84,6 +86,8 @@ MSI but leaves the covered-code MSI intact. Coverage comes from, in order:
 |---|---|---|
 | `-c, --coverage` | `lcov.info` to route from; unhit lines are not run | None |
 | `--[no-]collect-coverage` | Collect coverage when no report is given or found | `true` |
+| `--files` | Mutate only these `lib/` files; repeatable or comma-separated | All of `lib/` |
+| `--diff-base` | Mutate only the `lib/` files changed since this git ref | All of `lib/` |
 | `-t, --threshold` | Exit 1 when the MSI is below this percentage (0-100) | None |
 | `--max-timeouts` | Exit 1 when more mutants than this time out | None |
 | `-o, --output` | Report path, relative to the project root | `mutation-report.json` |
@@ -91,13 +95,28 @@ MSI but leaves the covered-code MSI intact. Coverage comes from, in order:
 | `--max-heap-mb` | Heap cap per test process, in megabytes | Uncapped |
 | `-v, --verbose` | Also stream structured log events to the console | Off |
 
+## Scoped runs
+
+`--files` and `--diff-base` narrow what is mutated, for checking one change
+instead of the whole package. They are mutually exclusive.
+
+- `--files lib/a.dart --files lib/b.dart` mutates only those files.
+- `--diff-base main` mutates the `lib/` files that differ from `main` in the
+  working tree: committed, uncommitted and untracked changes alike. Deleted
+  files drop out.
+- `exclude` in `butcher.yaml` still applies inside the scope.
+- The baseline and coverage collection still run the whole suite; only the
+  mutants are fewer.
+- The report records the scope under `config.scope`, so its score is never
+  mistaken for the package's.
+
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
 | 0 | The run finished and every gate passed |
 | 1 | A gate failed (`--threshold` or `--max-timeouts`) |
-| 64 | Usage error |
+| 64 | Usage error, including a `--files` path outside `lib/` or a `--diff-base` git cannot resolve |
 | 70 | The run aborted: held lock, red baseline, failed `pub get` or coverage collection |
 
 ## Baseline and sandbox
@@ -169,6 +188,9 @@ All temp data — sandbox copies and logs — lives under one butcher temp root.
   tool run's files.
 - Sandboxes and logs survive the run that made them, until the next run's
   startup cleanup.
+- `butcher.log` records each mutant as `started` before its suite runs, so a
+  run killed outright still names the mutants it was running. An interrupted
+  or aborted run also prints them to stderr.
 
 ## Windows performance
 
