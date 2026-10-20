@@ -37,22 +37,24 @@ final class WorkspaceClosure {
         '${result.stdout}${result.stderr}',
       );
     }
-    // pub lists resolved paths, so the roots are resolved to match them.
-    final root = Directory(workspaceRoot).resolveSymbolicLinksSync();
-    final project = Directory(projectRoot).resolveSymbolicLinksSync();
-    final listed = (jsonDecode('${result.stdout}') as Map)['packages'] as List;
+    // Members are matched by name and relativized against pub's own path for
+    // the root: pub prints resolved long paths, which need not match the
+    // spelling of the roots given here (a symlinked or 8.3 short temp dir).
+    final listed = {
+      for (final member
+          in ((jsonDecode('${result.stdout}') as Map)['packages'] as List)
+              .cast<Map<dynamic, dynamic>>())
+        member['name'] as String: member['path'] as String,
+    };
+    final rootName = _name(workspaceRoot);
     final members = {
-      for (final member in listed.cast<Map<dynamic, dynamic>>())
-        member['name'] as String: p
-            .relative(member['path'] as String, from: root)
+      for (final entry in listed.entries)
+        entry.key: p
+            .relative(entry.value, from: listed[rootName])
             .replaceAll(r'\', '/'),
     };
-    final target = p.relative(project, from: root).replaceAll(r'\', '/');
     final reached = <String>{};
-    final pending = [
-      for (final entry in members.entries)
-        if (entry.value == '.' || entry.value == target) entry.key,
-    ];
+    final pending = [rootName, _name(projectRoot)];
     while (pending.isNotEmpty) {
       final name = pending.removeLast();
       if (!reached.add(name)) continue;
@@ -71,10 +73,14 @@ final class WorkspaceClosure {
     );
   }
 
+  static Object? _manifest(String packageRoot) =>
+      loadYaml(File(p.join(packageRoot, 'pubspec.yaml')).readAsStringSync());
+
+  static String _name(String packageRoot) =>
+      (_manifest(packageRoot) as YamlMap)['name'] as String;
+
   static Iterable<String> _dependencies(String memberRoot) sync* {
-    final manifest = loadYaml(
-      File(p.join(memberRoot, 'pubspec.yaml')).readAsStringSync(),
-    );
+    final manifest = _manifest(memberRoot);
     if (manifest is! YamlMap) return;
     for (final key in [
       'dependencies',
