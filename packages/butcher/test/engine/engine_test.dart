@@ -187,20 +187,21 @@ final class RecordingCoverage implements CoverageProvider {
   void indexSources(Map<String, String> sources) => indexed = true;
 }
 
-List<Directory> _sandboxesIn(ButcherPaths paths) => Directory(paths.root)
-    .listSync()
-    .whereType<Directory>()
-    .where((dir) => p.basename(dir.path).startsWith(sandboxPrefix))
-    .toList();
+List<Directory> _sandboxesIn(ButcherPaths paths) {
+  final entries = Directory(paths.root).listSync().whereType<Directory>();
+  return [
+    for (final dir in entries)
+      if (p.basename(dir.path).startsWith(sandboxPrefix)) dir,
+  ];
+}
 
 Future<String> miniProject({
   String calc = 'int add(int a, int b) => a + b;\n',
 }) async {
   final dir = await Directory.systemTemp.createTemp('butcher_engine_');
   addTearDown(() => dir.delete(recursive: true));
-  File(
-    p.join(dir.path, 'pubspec.yaml'),
-  ).writeAsStringSync('name: fixture\nenvironment:\n  sdk: ^3.0.0\n');
+  const pubspec = 'name: fixture\nenvironment:\n  sdk: ^3.0.0\n';
+  File(p.join(dir.path, 'pubspec.yaml')).writeAsStringSync(pubspec);
   File(p.join(dir.path, 'lib', 'calc.dart'))
     ..parent.createSync(recursive: true)
     ..writeAsStringSync(calc);
@@ -226,9 +227,10 @@ void main() {
       expect(result.deadline, const Duration(seconds: 10));
       expect(progress, ['1/2 killed', '2/2 killed']);
       expect(runner.timeouts, [null, result.deadline, result.deadline]);
+      const failFasts = [false, true, true];
       expect(
         runner.failFasts,
-        [false, true, true],
+        failFasts,
         reason: 'mutant runs stop at the first failure, the reading does not',
       );
     },
@@ -247,13 +249,11 @@ void main() {
     ).run();
 
     expect(result.results.map((r) => r.outcome).toSet(), {Outcome.killed});
+    const routed = ['test/fast_test.dart', 'test/slow_test.dart'];
+    const selections = [<String>[], routed, routed];
     expect(
       runner.selections,
-      [
-        const <String>[],
-        const ['test/fast_test.dart', 'test/slow_test.dart'],
-        const ['test/fast_test.dart', 'test/slow_test.dart'],
-      ],
+      selections,
       reason: 'the reading runs everything, the mutants only their suites',
     );
     expect(
@@ -710,15 +710,16 @@ void main() {
 
       final events = await published;
       expect(result.results.length, greaterThan(1));
+      final started = [
+        RunStarted(
+          mutantCount: result.results.length,
+          baseline: result.baseline,
+          deadline: result.deadline,
+        ),
+      ];
       expect(
         events.whereType<RunStarted>(),
-        [
-          RunStarted(
-            mutantCount: result.results.length,
-            baseline: result.baseline,
-            deadline: result.deadline,
-          ),
-        ],
+        started,
         reason: 'one start, carrying the count and the run result timings',
       );
       expect(
