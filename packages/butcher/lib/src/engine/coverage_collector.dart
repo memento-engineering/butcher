@@ -48,10 +48,7 @@ final class CoverageCollector {
     // every covered mutant routes to the whole suite.
     final lcov = File(p.join(outputDir, flutterLcovName));
     final hits = lcov.existsSync()
-        ? LcovCoverageProvider.parse(
-            lcov.readAsStringSync(),
-            projectRoot: root,
-          ).hits
+        ? _readLcov(lcov)
         : <String, Map<int, int>>{};
     for (final files in perSuite.values) {
       files.forEach((file, lines) {
@@ -123,6 +120,29 @@ final class CoverageCollector {
       }
     }
     return perSuite;
+  }
+
+  /// The hits of the merged [lcov] report, keyed by sandbox-relative posix
+  /// path. Each path resolves through the filesystem like the VM reports'
+  /// do: an `SF:` path may spell the sandbox differently than [root] does.
+  Map<String, Map<int, int>> _readLcov(File lcov) {
+    final realRoot = Directory(root).resolveSymbolicLinksSync();
+    final parsed = LcovCoverageProvider.parse(
+      lcov.readAsStringSync(),
+      projectRoot: root,
+    ).hits;
+    String key(String relative) {
+      try {
+        final real = File(
+          p.normalize(p.join(root, relative)),
+        ).resolveSymbolicLinksSync();
+        return p.relative(real, from: realRoot).replaceAll(r'\', '/');
+      } on FileSystemException {
+        return relative;
+      }
+    }
+
+    return {for (final entry in parsed.entries) key(entry.key): entry.value};
   }
 
   /// Suite a report belongs to: `dart test` names each `<suite>.<runtime>.json`

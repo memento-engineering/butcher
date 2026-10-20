@@ -44,6 +44,11 @@ final class _ReportingRunner implements TestRunner {
 
 /// Writes one merged `lcov.info`, as `flutter test --coverage-path` does.
 final class _LcovRunner implements TestRunner {
+  _LcovRunner([this.source = 'lib/calc.dart']);
+
+  /// The `SF:` path the report records.
+  final String source;
+
   @override
   Future<TestRun> run({
     List<String> suites = const [],
@@ -53,7 +58,7 @@ final class _LcovRunner implements TestRunner {
   }) async {
     File(p.join(coverageDir!, 'lcov.info'))
       ..parent.createSync(recursive: true)
-      ..writeAsStringSync('SF:lib/calc.dart\nDA:1,2\nDA:2,0\nend_of_record\n');
+      ..writeAsStringSync('SF:$source\nDA:1,2\nDA:2,0\nend_of_record\n');
     return TestRun(
       exitCode: 0,
       timedOut: false,
@@ -260,6 +265,29 @@ void main() {
     expect(provider.merged.hits, {
       'lib/calc.dart': {1: 2, 2: 0},
     });
+  });
+
+  test('resolves an absolute lcov path the root spells differently', () async {
+    // The VM's spelling of a temp dir need not be butcher's: a symlinked
+    // root, or an 8.3 short name on Windows.
+    final link = Link(
+      p.join(
+        Directory.systemTemp.path,
+        'butcher_lcov_link_'
+        '${DateTime.now().microsecondsSinceEpoch}',
+      ),
+    )..createSync(sandbox.path);
+    addTearDown(link.deleteSync);
+    final real = File(
+      p.join(sandbox.path, 'lib', 'calc.dart'),
+    ).resolveSymbolicLinksSync();
+
+    final provider = await CoverageCollector(
+      root: link.path,
+      outputDir: p.join(link.path, 'coverage'),
+    ).collect(_LcovRunner(real));
+
+    expect(provider.merged.hits.keys, ['lib/calc.dart']);
   });
 
   test('aborts when the instrumented run fails', () async {
