@@ -4,6 +4,8 @@
 
 - `--test <path>`, or `tests` in `butcher.yaml`, runs the named test files
   instead of every `*_test.dart`, so a bundled suite pays its startup once.
+- `--sandbox-scope=package` also skips directories holding their own
+  `pubspec.yaml` that no kept package reaches, such as nested workspace roots.
 
 ## 0.2.1
 

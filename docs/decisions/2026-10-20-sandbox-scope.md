@@ -14,7 +14,8 @@ register:
   updates:
     - "shadow-copy-isolation"
   obsoleted-by: null
-  updated-by: []
+  updated-by:
+    - non-member-packages
   bead: "butcher-5ln"
 ---
 # Sandbox scope
