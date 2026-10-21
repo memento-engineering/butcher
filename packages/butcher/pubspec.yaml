@@ -1,6 +1,6 @@
 name: butcher
 description: Mutation testing for Dart; rewrites the source into mutants and scores which ones the tests kill.
-version: 0.2.1-dev
+version: 0.2.1
 repository: https://github.com/memento-engineering/butcher
 
 environment:
