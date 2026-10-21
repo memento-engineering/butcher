@@ -55,5 +55,6 @@ flowchart TD
 | [sandbox-scope](../2026-10-20-sandbox-scope.md) | Sandbox scope | accepted |
 | [flutter-test-runner](../2026-10-20-flutter-test-runner.md) | Flutter test runner | accepted |
 | [test-entries](../2026-10-20-test-entries.md) | Test entries | accepted |
+| [non-member-packages](../2026-10-20-non-member-packages.md) | Non-member packages under package scope | accepted |
 
 Feature staging: [../../roadmap/index.md](../../roadmap/index.md).
