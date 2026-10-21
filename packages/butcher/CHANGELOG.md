@@ -5,6 +5,11 @@
 - `--test <path>`, or `tests` in `butcher.yaml`, runs the named test files
   instead of every `*_test.dart`, so a bundled suite pays its startup once.
 
+## 0.2.1
+
+- `--sandbox-scope=package` no longer breaks a root pubspec whose
+  `workspace:` list is followed by another key.
+
 ## 0.2.0
 
 - Flutter packages: a package depending on the Flutter SDK runs its suites
