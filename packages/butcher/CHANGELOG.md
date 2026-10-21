@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 - `--test <path>`, or `tests` in `butcher.yaml`, runs the named test files
   instead of every `*_test.dart`, so a bundled suite pays its startup once.
