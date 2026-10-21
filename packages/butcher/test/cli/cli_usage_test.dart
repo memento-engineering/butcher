@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:butcher/butcher.dart';
 import 'package:butcher/src/cli/cli.dart';
@@ -114,6 +116,32 @@ void main() {
         reason: file,
       );
     }
+  });
+
+  test('rejects missing or outside test entries with exit code 64', () async {
+    final dir = await createFixturePackage(resolve: false);
+    for (final file in [
+      'test/nope.dart',
+      '../calc_test.dart',
+      'pubspec.yaml',
+    ]) {
+      expect(
+        await butcherMain(
+          ['--test', file, dir.path],
+          out: StringBuffer(),
+          paths: paths,
+        ),
+        64,
+        reason: file,
+      );
+    }
+    File(
+      p.join(dir.path, 'butcher.yaml'),
+    ).writeAsStringSync('tests:\n  - test/nope.dart\n');
+    expect(
+      await butcherMain([dir.path], out: StringBuffer(), paths: paths),
+      64,
+    );
   });
 
   test('rejects an unresolvable --diff-base with exit code 64', () async {

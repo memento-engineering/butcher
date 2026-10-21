@@ -19,6 +19,7 @@ import 'coverage_collector.dart';
 import 'coverage_provider.dart';
 import 'dart_test_runner.dart';
 import 'flutter_test_runner.dart';
+import 'named_tests_runner.dart';
 import 'full_coverage_provider.dart';
 import 'mutant_generator.dart';
 import 'outcome_classifier.dart';
@@ -54,11 +55,14 @@ final class Engine {
     this.scope,
     this.trimWorkspace = false,
     this.flutter,
+    this.tests = const [],
     int? maxHeapMb,
     int? jobs,
   }) : registry = registry ?? MutatorRegistry.defaults(),
-       runnerFactory =
-           runnerFactory ?? _defaultRunnerFactory(flutter, maxHeapMb),
+       runnerFactory = _named(
+         runnerFactory ?? _defaultRunnerFactory(flutter, maxHeapMb),
+         tests,
+       ),
        jobs = jobs ?? defaultJobs,
        runId =
            logger?.runId ??
@@ -76,6 +80,12 @@ final class Engine {
           flutter: flutter,
           concurrency: suiteConcurrency,
         );
+
+  static RunnerFactory _named(RunnerFactory factory, List<String> tests) =>
+      tests.isEmpty
+      ? factory
+      : (root, suiteConcurrency) =>
+            NamedTestsRunner(factory(root, suiteConcurrency), tests);
 
   /// Default worker count: half the cores, since each suite process
   /// parallelizes internally already (ADR 0017).
@@ -100,6 +110,10 @@ final class Engine {
   /// The `flutter` command a Flutter package's suites and dependency
   /// resolution go through; `null` for a pure-Dart package.
   final String? flutter;
+
+  /// Project-relative test files every whole-suite run executes; empty lets
+  /// the runner discover `test/`.
+  final List<String> tests;
 
   /// Optional per-mutant progress hook, called in completion order.
   final ProgressCallback? onProgress;

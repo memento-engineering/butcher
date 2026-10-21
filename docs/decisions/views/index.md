@@ -54,5 +54,6 @@ flowchart TD
 | [stale-coverage-check](../2026-10-20-stale-coverage-check.md) | Stale coverage check | accepted |
 | [sandbox-scope](../2026-10-20-sandbox-scope.md) | Sandbox scope | accepted |
 | [flutter-test-runner](../2026-10-20-flutter-test-runner.md) | Flutter test runner | accepted |
+| [test-entries](../2026-10-20-test-entries.md) | Test entries | accepted |
 
 Feature staging: [../../roadmap/index.md](../../roadmap/index.md).

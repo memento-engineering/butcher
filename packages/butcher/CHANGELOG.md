@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `--test <path>`, or `tests` in `butcher.yaml`, runs the named test files
+  instead of every `*_test.dart`, so a bundled suite pays its startup once.
+
 ## 0.2.1
 
 - `--sandbox-scope=package` no longer breaks a root pubspec whose

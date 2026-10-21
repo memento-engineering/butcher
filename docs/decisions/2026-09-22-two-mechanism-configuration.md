@@ -15,6 +15,7 @@ register:
   obsoleted-by: null
   updated-by:
     - scoped-runs
+    - test-entries
   bead: null
 ---
 # Two-mechanism configuration

@@ -74,6 +74,26 @@ void main() {
     );
   });
 
+  test('reads the test files to run in place of the suite', () {
+    final config = ButcherConfig.parse('tests:\n  - test/all_tests.dart\n');
+
+    expect(config.tests, ['test/all_tests.dart']);
+    expect(config.exclude, isEmpty);
+  });
+
+  test('a malformed tests value throws naming the key', () {
+    expect(
+      () => ButcherConfig.parse('tests: test/all_tests.dart\n'),
+      throwsA(
+        isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          contains("'tests'"),
+        ),
+      ),
+    );
+  });
+
   test('a document that is not a map throws naming the file', () {
     expect(
       () => ButcherConfig.parse('- lib/src/**\n'),
