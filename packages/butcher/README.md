@@ -183,7 +183,7 @@ A package with any dependency on the Flutter SDK (`flutter`, or
 | Finding `flutter` | The command beside the `dart` butcher runs on, else `FLUTTER_ROOT`; never `PATH` |
 | Dependencies | `flutter pub get` |
 | Coverage | One merged `lcov.info`: uncovered mutants are skipped, covered ones run the whole suite |
-| `--max-heap-mb` | Not supported yet; exits 64 |
+| `--max-heap-mb` | Not supported, exits 64: the `flutter test` tool outweighs `flutter_tester`. Bound the whole run with an OS limit instead, such as a cgroup `MemoryMax` on Linux |
 
 - Run butcher with Flutter's own `dart` (`dart pub global activate butcher`
   with Flutter's `dart` on the `PATH`), or set `FLUTTER_ROOT`. Without
