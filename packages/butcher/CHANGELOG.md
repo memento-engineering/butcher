@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.1
 
 - `--sandbox-scope=package` no longer breaks a root pubspec whose
   `workspace:` list is followed by another key.
