@@ -19,7 +19,7 @@ dev_dependencies:
   # `dart` commands — a per-bead worktree's validation lane cannot see a
   # script the same branch adds, so nothing here may be load-bearing for
   # either of those.
-  melos: ^7.7.0
+  melos: ^8.9.0
   test: ^1.25.6
   # `tool/check_workflows.dart` parses the GitHub workflow files with this.
   yaml: ^3.1.2
