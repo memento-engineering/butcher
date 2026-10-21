@@ -166,9 +166,11 @@ tests:
   member.
 - `--sandbox-scope=package` copies only the members the selected one reaches
   through its dependencies, dev dependencies and overrides, transitively, and
-  narrows the sandbox's root `workspace:` list to match. Files outside every
-  member, such as root-level tooling, are still copied. If the baseline goes
-  red because a test reads an unreachable member, use the default scope.
+  narrows the sandbox's root `workspace:` list to match. It also drops every
+  other directory with its own `pubspec.yaml`, such as a nested workspace
+  root, unless a kept package depends on it by path. Other files, such as
+  root-level tooling or `docs/`, are still copied. If the baseline goes red
+  because a test reads a dropped directory, use the default scope.
 
 ## Flutter packages
 

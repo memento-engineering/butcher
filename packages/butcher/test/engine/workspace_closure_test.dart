@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
+import '../helpers/fixtures.dart';
+
 void main() {
   late String root;
 
@@ -61,6 +63,37 @@ dev_dependencies: {}
     expect(closure.excludes('packages/unrelated/lib/a.dart'), isTrue);
     expect(closure.excludes('packages/direct/lib/a.dart'), isFalse);
     expect(closure.excludes('pubspec.yaml'), isFalse);
+  });
+
+  test('drops other packages unless a kept one reaches them by path', () async {
+    member(
+      'target',
+      dependencies: '  direct: any\n  vendored:\n    path: ../../vendor/a\n',
+    );
+    for (final (dir, source) in [
+      ('vendor/a', 'name: vendored\ndependencies:\n  deep:\n    path: ../b\n'),
+      ('vendor/b', 'name: deep\n'),
+      ('stray', 'name: stray\n'),
+      ('nested', 'name: nested\nworkspace:\n  - packages/inner\n'),
+      ('nested/packages/inner', 'name: inner\nresolution: workspace\n'),
+      ('packages/target/example', 'name: example\n'),
+    ]) {
+      File(p.join(root, dir, 'pubspec.yaml'))
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(source);
+    }
+    await initGitRepository(root);
+
+    final closure = await WorkspaceClosure.resolve(
+      root,
+      p.join(root, 'packages', 'target'),
+    );
+
+    expect(closure.dropped, {'packages/unrelated', 'stray', 'nested'});
+    expect(closure.excludes('nested/packages/inner/lib/a.dart'), isTrue);
+    expect(closure.excludes('vendor/b/lib/b.dart'), isFalse);
+    expect(closure.excludes('packages/target/example/main.dart'), isFalse);
+    expect(closure.excludes('docs/index.md'), isFalse);
   });
 
   test('narrows the root workspace list to the kept members', () async {
