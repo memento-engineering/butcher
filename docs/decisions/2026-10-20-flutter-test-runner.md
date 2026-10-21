@@ -15,7 +15,8 @@ register:
   updates:
     - "distribution-and-sdk-resolution"
   obsoleted-by: null
-  updated-by: []
+  updated-by:
+    - test-entries
   bead: "butcher-5co"
 ---
 # Flutter test runner
