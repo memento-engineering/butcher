@@ -276,4 +276,25 @@ void main() {
       'scope': ['lib/calc.dart'],
     });
   });
+
+  test('runs the --test entry instead of every *_test.dart', () async {
+    final dir = await createFixturePackage(
+      testSource:
+          "import 'package:test/test.dart';\n\n"
+          "void main() => test('red', () => fail('discovered'));\n",
+    );
+    File(p.join(dir.path, 'test', 'entry', 'all.dart'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(fixtureTest);
+    final out = StringBuffer();
+
+    final exit = await butcherMain(
+      ['--test', 'test/entry/all.dart', dir.path],
+      out: out,
+      paths: paths,
+    );
+
+    expect(exit, 0, reason: out.toString());
+    expect(out.toString(), contains('MSI: 100.00%'));
+  });
 }

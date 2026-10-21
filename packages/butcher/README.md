@@ -35,6 +35,7 @@ Usage: butcher [options] [project root]
 -c, --coverage                 lcov.info to route from: mutants on lines no test hits are reported as noCoverage without running the suite.
     --files=<path>             Mutate only these lib/ files, relative to the project root.
     --diff-base=<ref>          Mutate only the lib/ files changed since this git ref, uncommitted and untracked ones included.
+    --test=<path>              Run these test files instead of every *_test.dart, relative to the project root. Overrides tests in butcher.yaml.
     --max-timeouts             Exit 1 when more mutants than this time out. Timeouts are inconclusive and score as neither killed nor survived.
 -j, --jobs                     Parallel workers, each with its own sandbox copy. Defaults to half the CPU cores.
     --max-heap-mb              Cap the heap of every test process at this many megabytes. A mutant that exhausts it is a memoryError, scored as neither killed nor survived.
@@ -94,6 +95,7 @@ MSI but leaves the covered-code MSI intact. Coverage comes from, in order:
 | `--[no-]collect-coverage` | Collect coverage when no report is given or found | `true` |
 | `--files` | Mutate only these `lib/` files; repeatable or comma-separated | All of `lib/` |
 | `--diff-base` | Mutate only the `lib/` files changed since this git ref | All of `lib/` |
+| `--test` | Run these test files instead of every `*_test.dart`; repeatable | `tests` in `butcher.yaml`, else every `*_test.dart` |
 | `-t, --threshold` | Exit 1 when the MSI is below this percentage (0-100) | None |
 | `--max-timeouts` | Exit 1 when more mutants than this time out | None |
 | `-o, --output` | Report path, relative to the project root | `mutation-report.json` |
@@ -116,6 +118,26 @@ instead of the whole package. They are mutually exclusive.
   mutants are fewer.
 - The report records the scope under `config.scope`, so its score is never
   mistaken for the package's.
+
+## Test entries
+
+A package that bundles its test files into one entry, to pay test startup
+once, names that entry instead of letting the runner discover every
+`*_test.dart`:
+
+```yaml
+# butcher.yaml
+tests:
+  - test/all_tests.g.dart
+```
+
+- `--test <path>` does the same for one run and overrides `tests`.
+- Every whole-suite run uses the entries: the baseline, coverage collection
+  and each mutant. Routing still narrows a mutant's run to the entries that
+  cover it.
+- Entries must be existing `.dart` files inside the package; anything else
+  exits 64. Generated entries (`.g.dart`) are copied into the sandbox even
+  when gitignored.
 
 ## Exit codes
 
@@ -166,6 +188,8 @@ A package with any dependency on the Flutter SDK (`flutter`, or
   either, a Flutter package aborts with exit 70.
 - Golden files must match the host they run on, like any other test: a
   failing golden turns the baseline red.
+- Each test file costs a `flutter_tester` startup per run; bundle them into
+  one [test entry](#test-entries) to pay it once.
 
 ## Exclusions
 

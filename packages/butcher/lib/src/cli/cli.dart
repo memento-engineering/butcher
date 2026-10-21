@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
+import '../config/butcher_config.dart';
 import '../config/diff_scope.dart';
 import '../engine/flutter_sdk.dart';
 import '../engine/engine.dart';
@@ -66,6 +67,13 @@ Future<int> butcherMain(
       help:
           'Mutate only the lib/ files changed since this git ref, '
           'uncommitted and untracked ones included.',
+    )
+    ..addMultiOption(
+      'test',
+      valueHelp: 'path',
+      help:
+          'Run these test files instead of every *_test.dart, relative to '
+          'the project root. Overrides tests in butcher.yaml.',
     )
     ..addOption(
       'max-timeouts',
@@ -145,9 +153,11 @@ Future<int> butcherMain(
     p.absolute(options.rest.isEmpty ? '.' : options.rest.single),
   );
   final Set<String>? scope;
+  final List<String> tests;
   final String? flutter;
   try {
     scope = await _scope(options, projectRoot);
+    tests = _tests(options, projectRoot);
     flutter = flutterFor(projectRoot);
     if (flutter != null && maxHeapMb != null) {
       throw const FormatException(
@@ -217,6 +227,7 @@ Future<int> butcherMain(
         'Os': Platform.operatingSystem,
         'Argv': arguments,
         'Scope': ?scope?.toList(),
+        if (tests.isNotEmpty) 'Tests': tests,
         'MaxHeapMb': ?maxHeapMb,
         'Flutter': ?flutter,
       },
@@ -236,6 +247,7 @@ Future<int> butcherMain(
       coverage: coverage,
       scope: scope,
       flutter: flutter,
+      tests: tests,
       maxHeapMb: maxHeapMb,
       trimWorkspace: options.option('sandbox-scope') == 'package',
       logger: logger,
@@ -388,6 +400,29 @@ String _scopedFile(String raw, String projectRoot) {
     throw FormatException('--files takes existing .dart files in lib/: $raw');
   }
   return relative;
+}
+
+/// The test files `--test`, else `tests` in `butcher.yaml`, names; empty
+/// lets the runner discover the suite.
+List<String> _tests(ArgResults options, String projectRoot) {
+  final named = options.multiOption('test');
+  return [
+    for (final raw
+        in named.isEmpty ? ButcherConfig.load(projectRoot).tests : named)
+      _testFile(raw, projectRoot),
+  ];
+}
+
+String _testFile(String raw, String projectRoot) {
+  final path = p.normalize(p.join(projectRoot, raw));
+  if (!p.isWithin(projectRoot, path) ||
+      !path.endsWith('.dart') ||
+      !File(path).existsSync()) {
+    throw FormatException(
+      'tests must be existing .dart files in the package: $raw',
+    );
+  }
+  return p.relative(path, from: projectRoot).replaceAll(r'\', '/');
 }
 
 /// Whether anything under the project's `lib/` or `test/` changed after
