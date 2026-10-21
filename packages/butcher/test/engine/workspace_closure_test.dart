@@ -35,6 +35,8 @@ workspace:
   - packages/direct
   - packages/dev_only
   - packages/unrelated
+
+dev_dependencies: {}
 ''');
     member('target', dependencies: '  direct: any\n');
     member('direct', dev: '  dev_only: any\n');
@@ -76,5 +78,6 @@ workspace:
       'packages/target',
     ]);
     expect(trimmed['name'], 'closure_workspace');
+    expect(trimmed['dev_dependencies'], isEmpty);
   });
 }
