@@ -110,10 +110,12 @@ final class WorkspaceClosure {
       for (final member in kept.toList()..sort())
         if (member != '.') jsonEncode(member),
     ];
+    // A block list's span runs up to the next key, line breaks included.
+    final text = workspace.span.text;
     return source.replaceRange(
       workspace.span.start.offset,
       workspace.span.end.offset,
-      '[${members.join(', ')}]',
+      '[${members.join(', ')}]${text.substring(text.trimRight().length)}',
     );
   }
 }
